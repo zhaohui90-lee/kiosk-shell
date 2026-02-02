@@ -44,10 +44,10 @@
 
 **优先级**: P0 (其他模块依赖)
 
-- [ ] 定义平台适配器接口 (adapter.ts)
-- [ ] 实现 Windows 平台 (windows/)
-- [ ] 实现 macOS 平台 (darwin/)
-- [ ] 编写单元测试
+- [x] 定义平台适配器接口 (adapter.ts)
+- [x] 实现 Windows 平台 (windows/)
+- [x] 实现 macOS 平台 (darwin/)
+- [x] 编写单元测试
 
 ### 2.3 @kiosk/core
 
@@ -155,7 +155,7 @@
 **当前阶段**: Phase 2 - 核心模块实现
 
 **下一步行动**:
-1. 实现 @kiosk/platform 模块
+1. ~~实现 @kiosk/platform 模块~~ ✅
 2. 实现 @kiosk/core 模块
 
 ---
@@ -175,4 +175,5 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-02-02 | 完成 @kiosk/platform 模块实现 |
 | 2026-02-02 | 创建路线图文档 |

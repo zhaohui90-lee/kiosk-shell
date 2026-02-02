@@ -3,4 +3,24 @@
  * Platform adapter for Windows and macOS
  */
 
-export { }; // Placeholder - implementation coming in Phase 2
+// Export types
+export type {
+  Platform,
+  PlatformAdapter,
+  SystemInfo,
+  ShutdownOptions,
+  RestartOptions,
+  ShortcutConfig,
+} from './types';
+
+// Export adapter factory
+export {
+  detectPlatform,
+  createPlatformAdapter,
+  getPlatformAdapter,
+  resetPlatformAdapter,
+} from './adapter';
+
+// Export platform implementations (for direct use if needed)
+export { WindowsAdapter } from './windows';
+export { DarwinAdapter } from './darwin';
