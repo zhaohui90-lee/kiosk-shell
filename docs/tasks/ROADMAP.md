@@ -53,11 +53,11 @@
 
 **优先级**: P0
 
-- [ ] 实现 window.ts (窗口管理)
-- [ ] 实现 loader.ts (资源加载)
-- [ ] 实现 protocol.ts (kiosk:// 协议)
-- [ ] 实现 lifecycle.ts (生命周期)
-- [ ] 编写单元测试
+- [x] 实现 window.ts (窗口管理)
+- [x] 实现 loader.ts (资源加载)
+- [x] 实现 protocol.ts (kiosk:// 协议)
+- [x] 实现 lifecycle.ts (生命周期)
+- [x] 编写单元测试
 
 ### 2.4 @kiosk/ipc
 
@@ -156,7 +156,8 @@
 
 **下一步行动**:
 1. ~~实现 @kiosk/platform 模块~~ ✅
-2. 实现 @kiosk/core 模块
+2. ~~实现 @kiosk/core 模块~~ ✅
+3. 实现 @kiosk/ipc 模块
 
 ---
 
@@ -175,5 +176,6 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-02-02 | 完成 @kiosk/core 模块实现 |
 | 2026-02-02 | 完成 @kiosk/platform 模块实现 |
 | 2026-02-02 | 创建路线图文档 |
