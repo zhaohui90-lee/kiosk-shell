@@ -43,7 +43,7 @@ const DEV_CONFIG: Partial<WindowConfig> = {
  * Check if running in development mode
  */
 function isDev(): boolean {
-  return process.env.NODE_ENV === 'development' || process.env.ELECTRON_IS_DEV === '1';
+  return process.env['NODE_ENV'] === 'development' || process.env['ELECTRON_IS_DEV'] === '1';
 }
 
 /**
@@ -83,20 +83,20 @@ export class WindowManager {
     const windowOptions: BrowserWindowConstructorOptions = {
       width,
       height,
-      fullscreen: this.config.fullscreen,
-      kiosk: this.config.kiosk,
-      frame: this.config.frame,
-      resizable: this.config.resizable,
-      skipTaskbar: this.config.skipTaskbar,
-      alwaysOnTop: this.config.alwaysOnTop,
-      backgroundColor: this.config.backgroundColor,
+      fullscreen: this.config.fullscreen ?? true,
+      kiosk: this.config.kiosk ?? true,
+      frame: this.config.frame ?? false,
+      resizable: this.config.resizable ?? false,
+      skipTaskbar: this.config.skipTaskbar ?? true,
+      alwaysOnTop: this.config.alwaysOnTop ?? true,
+      backgroundColor: this.config.backgroundColor ?? '#FFFFFF',
       show: false, // Show after ready-to-show event
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
         sandbox: true,
-        preload: this.config.preload,
-        devTools: this.config.devTools,
+        devTools: this.config.devTools ?? false,
+        ...(this.config.preload ? { preload: this.config.preload } : {}),
       },
       ...this.config.additionalOptions,
     };

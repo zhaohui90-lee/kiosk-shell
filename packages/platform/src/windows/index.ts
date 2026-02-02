@@ -156,7 +156,7 @@ export class WindowsAdapter implements PlatformAdapter {
 
   getAppDataPath(): string {
     // On Windows, app data is typically in %APPDATA%
-    const appData = process.env.APPDATA;
+    const appData = process.env['APPDATA'];
     if (appData) {
       return path.join(appData, 'kiosk-shell');
     }
