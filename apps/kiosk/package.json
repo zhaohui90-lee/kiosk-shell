@@ -1,0 +1,37 @@
+{
+  "name": "@kiosk/app",
+  "version": "1.0.0",
+  "description": "Kiosk shell application for medical self-service terminals",
+  "main": "dist/main/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc && electron .",
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "pack:win": "electron-builder --win --dir",
+    "pack:mac": "electron-builder --mac --dir",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@kiosk/core": "workspace:*",
+    "@kiosk/updater": "workspace:*",
+    "@kiosk/security": "workspace:*",
+    "@kiosk/recovery": "workspace:*",
+    "@kiosk/logger": "workspace:*",
+    "@kiosk/ipc": "workspace:*",
+    "@kiosk/platform": "workspace:*",
+    "@kiosk/device": "workspace:*",
+    "@kiosk/watchdog": "workspace:*"
+  },
+  "devDependencies": {
+    "electron": "^40.1.0",
+    "electron-builder": "^24.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "license": "ISC"
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@kiosk/ipc",
+  "version": "1.0.0",
+  "description": "IPC handlers and preload scripts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@kiosk/logger": "workspace:*"
+  },
+  "devDependencies": {
+    "electron": "^40.1.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "ISC"
+}

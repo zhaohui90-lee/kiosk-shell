@@ -1,0 +1,89 @@
+appId: com.kiosk.shell
+productName: Kiosk Shell
+copyright: Copyright © 2024
+
+# 目录配置
+directories:
+  output: release/${version}
+  buildResources: build
+
+# 文件配置
+files:
+  - dist/**/*
+  - resources/**/*
+  - "!**/*.ts"
+  - "!**/*.map"
+
+# 额外资源（业务资源目录）
+extraResources:
+  - from: resources/renderer
+    to: renderer
+    filter:
+      - "**/*"
+
+# asar 配置
+asar: true
+asarUnpack:
+  - "**/*.node"
+
+# Windows 配置
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.ico
+  artifactName: ${productName}-${version}-win-${arch}.${ext}
+
+# Windows NSIS 安装程序配置
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: false
+  perMachine: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Kiosk Shell
+  # 安装后自动启动
+  runAfterFinish: true
+  # 安装目录
+  installDirectory: "C:\\Program Files\\KioskShell"
+
+# macOS 配置
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  icon: build/icon.icns
+  artifactName: ${productName}-${version}-mac-${arch}.${ext}
+  category: public.app-category.medical
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+
+# macOS DMG 配置
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+# 发布配置（用于 electron-updater）
+publish:
+  provider: generic
+  url: ${UPDATE_SERVER_URL}
+  channel: latest
+
+# 构建后钩子
+afterPack: scripts/after-pack.js
+
+# 压缩配置
+compression: maximum

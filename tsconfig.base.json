@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    /* 语言和环境 */
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "CommonJS",
+    "moduleResolution": "node",
+
+    /* 严格模式 - 必须全部开启 */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+
+    /* 代码质量 */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "exactOptionalPropertyTypes": true,
+
+    /* 输出 */
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+
+    /* 互操作性 */
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+
+    /* 项目配置 */
+    "skipLibCheck": true,
+    "incremental": true,
+
+    /* 路径别名 */
+    "baseUrl": ".",
+    "paths": {
+      "@kiosk/core": ["packages/core/src"],
+      "@kiosk/core/*": ["packages/core/src/*"],
+      "@kiosk/updater": ["packages/updater/src"],
+      "@kiosk/updater/*": ["packages/updater/src/*"],
+      "@kiosk/security": ["packages/security/src"],
+      "@kiosk/security/*": ["packages/security/src/*"],
+      "@kiosk/recovery": ["packages/recovery/src"],
+      "@kiosk/recovery/*": ["packages/recovery/src/*"],
+      "@kiosk/logger": ["packages/logger/src"],
+      "@kiosk/logger/*": ["packages/logger/src/*"],
+      "@kiosk/device": ["packages/device/src"],
+      "@kiosk/device/*": ["packages/device/src/*"],
+      "@kiosk/watchdog": ["packages/watchdog/src"],
+      "@kiosk/watchdog/*": ["packages/watchdog/src/*"],
+      "@kiosk/ipc": ["packages/ipc/src"],
+      "@kiosk/ipc/*": ["packages/ipc/src/*"],
+      "@kiosk/platform": ["packages/platform/src"],
+      "@kiosk/platform/*": ["packages/platform/src/*"],
+      "@kiosk/shared/*": ["shared/*"]
+    }
+  },
+  "exclude": [
+    "node_modules",
+    "**/dist/**",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
+}

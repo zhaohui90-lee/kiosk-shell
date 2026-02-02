@@ -1,0 +1,36 @@
+{
+  "name": "kiosk-shell-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kiosk shell for medical self-service terminals",
+  "scripts": {
+    "dev": "tsx scripts/dev.ts",
+    "build": "pnpm -r build",
+    "build:app": "tsx scripts/build.ts",
+    "build:win": "tsx scripts/build.ts --win",
+    "build:mac": "tsx scripts/build.ts --mac",
+    "build:all": "tsx scripts/build.ts --all",
+    "release": "tsx scripts/release.ts",
+    "release:patch": "tsx scripts/release.ts patch",
+    "release:minor": "tsx scripts/release.ts minor",
+    "release:major": "tsx scripts/release.ts major",
+    "test": "pnpm -r test",
+    "clean": "pnpm -r exec rm -rf dist && rm -rf apps/kiosk/release"
+  },
+  "keywords": [
+    "kiosk",
+    "electron",
+    "monorepo"
+  ],
+  "author": "lizhaohui",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^40.1.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

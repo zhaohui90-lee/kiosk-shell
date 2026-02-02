@@ -1,0 +1,25 @@
+{
+  "name": "@kiosk/watchdog",
+  "version": "1.0.0",
+  "description": "Watchdog module for process monitoring (Windows only)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@kiosk/logger": "workspace:*"
+  },
+  "devDependencies": {
+    "electron": "^40.1.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "ISC"
+}
