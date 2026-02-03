@@ -86,10 +86,10 @@
 
 **优先级**: P1
 
-- [ ] 实现 crash-handler.ts (崩溃处理)
-- [ ] 实现 blank-detector.ts (白屏检测)
-- [ ] 实现 auto-retry.ts (自动重试)
-- [ ] 编写单元测试
+- [x] 实现 crash-handler.ts (崩溃处理)
+- [x] 实现 blank-detector.ts (白屏检测)
+- [x] 实现 auto-retry.ts (自动重试)
+- [x] 编写单元测试 (132 个测试全部通过)
 
 ---
 
@@ -152,14 +152,15 @@
 
 > 使用此区域追踪当前正在进行的工作
 
-**当前阶段**: Phase 3 - 安全与恢复
+**当前阶段**: Phase 4 - 更新系统
 
 **下一步行动**:
 1. ~~实现 @kiosk/platform 模块~~ ✅
 2. ~~实现 @kiosk/core 模块~~ ✅
 3. ~~实现 @kiosk/ipc 模块~~ ✅
 4. ~~实现 @kiosk/security 模块~~ ✅
-5. 实现 @kiosk/recovery 模块
+5. ~~实现 @kiosk/recovery 模块~~ ✅
+6. 实现 @kiosk/updater 模块
 
 ---
 
@@ -178,6 +179,7 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-02-03 | 完成 @kiosk/recovery 模块实现 |
 | 2026-02-03 | 完成 @kiosk/security 模块实现 |
 | 2026-02-03 | 完成 @kiosk/ipc 模块实现 |
 | 2026-02-02 | 完成 @kiosk/core 模块实现 |
