@@ -11,7 +11,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@kiosk/logger": "workspace:*"
+    "@kiosk/logger": "workspace:*",
+    "@kiosk/platform": "workspace:*",
+    "@kiosk/shared": "workspace:*"
   },
   "devDependencies": {
     "electron": "^40.1.0",
