@@ -99,11 +99,11 @@
 
 **优先级**: P2
 
-- [ ] 实现 shell-updater.ts (壳更新)
-- [ ] 实现 business-updater.ts (业务热更新)
-- [ ] 实现 rollback.ts (回滚机制)
-- [ ] 实现 A/B 双缓冲机制
-- [ ] 编写单元测试
+- [x] 实现 shell-updater.ts (壳更新)
+- [x] 实现 business-updater.ts (业务热更新)
+- [x] 实现 rollback.ts (回滚机制)
+- [x] 实现 A/B 双缓冲机制
+- [x] 编写单元测试 (81 个测试全部通过)
 
 ---
 
@@ -152,7 +152,7 @@
 
 > 使用此区域追踪当前正在进行的工作
 
-**当前阶段**: Phase 4 - 更新系统
+**当前阶段**: Phase 5 - 设备与监控
 
 **下一步行动**:
 1. ~~实现 @kiosk/platform 模块~~ ✅
@@ -160,7 +160,8 @@
 3. ~~实现 @kiosk/ipc 模块~~ ✅
 4. ~~实现 @kiosk/security 模块~~ ✅
 5. ~~实现 @kiosk/recovery 模块~~ ✅
-6. 实现 @kiosk/updater 模块
+6. ~~实现 @kiosk/updater 模块~~ ✅
+7. 实现 @kiosk/device 模块
 
 ---
 
@@ -179,6 +180,7 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-02-03 | 完成 @kiosk/updater 模块实现 |
 | 2026-02-03 | 完成 @kiosk/recovery 模块实现 |
 | 2026-02-03 | 完成 @kiosk/security 模块实现 |
 | 2026-02-03 | 完成 @kiosk/ipc 模块实现 |
