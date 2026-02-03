@@ -122,6 +122,7 @@ export class ProtocolHandler {
 
   /**
    * Handle incoming protocol requests
+   * Note: Using type assertion due to undici-types/Electron Response type mismatch
    */
   private handleRequest(request: Request): Response {
     const url = new URL(request.url);
@@ -140,7 +141,7 @@ export class ProtocolHandler {
           'Content-Type': response.mimeType,
           'Content-Length': String(response.data.length),
         },
-      });
+      }) as Response;
     } catch (error) {
       const err = error as Error;
       logger.error('Protocol request failed', {
@@ -151,7 +152,7 @@ export class ProtocolHandler {
       return new Response('Not Found', {
         status: 404,
         headers: { 'Content-Type': 'text/plain' },
-      });
+      }) as Response;
     }
   }
 
