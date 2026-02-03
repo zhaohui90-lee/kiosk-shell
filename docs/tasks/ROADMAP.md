@@ -63,11 +63,11 @@
 
 **优先级**: P1
 
-- [ ] 实现 preload.ts (contextBridge)
-- [ ] 实现 handlers/system.ts (关机/重启)
-- [ ] 实现 handlers/device.ts (设备信息)
-- [ ] 实现 handlers/debug.ts (DevTools)
-- [ ] 编写单元测试
+- [x] 实现 preload.ts (contextBridge)
+- [x] 实现 handlers/system.ts (关机/重启)
+- [x] 实现 handlers/device.ts (设备信息)
+- [x] 实现 handlers/debug.ts (DevTools)
+- [x] 编写单元测试
 
 ---
 
@@ -152,12 +152,14 @@
 
 > 使用此区域追踪当前正在进行的工作
 
-**当前阶段**: Phase 2 - 核心模块实现
+**当前阶段**: Phase 3 - 安全与恢复
 
 **下一步行动**:
 1. ~~实现 @kiosk/platform 模块~~ ✅
 2. ~~实现 @kiosk/core 模块~~ ✅
-3. 实现 @kiosk/ipc 模块
+3. ~~实现 @kiosk/ipc 模块~~ ✅
+4. 实现 @kiosk/security 模块
+5. 实现 @kiosk/recovery 模块
 
 ---
 
@@ -176,6 +178,7 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-02-03 | 完成 @kiosk/ipc 模块实现 |
 | 2026-02-02 | 完成 @kiosk/core 模块实现 |
 | 2026-02-02 | 完成 @kiosk/platform 模块实现 |
 | 2026-02-02 | 创建路线图文档 |
