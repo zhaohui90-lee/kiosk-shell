@@ -77,10 +77,10 @@
 
 **优先级**: P1
 
-- [ ] 实现 shortcuts.ts (快捷键屏蔽)
-- [ ] 实现 kiosk-mode.ts (Kiosk 模式)
-- [ ] 实现 ipc-guard.ts (IPC 权限)
-- [ ] 编写单元测试
+- [x] 实现 shortcuts.ts (快捷键屏蔽)
+- [x] 实现 kiosk-mode.ts (Kiosk 模式)
+- [x] 实现 ipc-guard.ts (IPC 权限)
+- [x] 编写单元测试 (108 个测试全部通过)
 
 ### 3.2 @kiosk/recovery
 
@@ -158,7 +158,7 @@
 1. ~~实现 @kiosk/platform 模块~~ ✅
 2. ~~实现 @kiosk/core 模块~~ ✅
 3. ~~实现 @kiosk/ipc 模块~~ ✅
-4. 实现 @kiosk/security 模块
+4. ~~实现 @kiosk/security 模块~~ ✅
 5. 实现 @kiosk/recovery 模块
 
 ---
@@ -178,6 +178,7 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-02-03 | 完成 @kiosk/security 模块实现 |
 | 2026-02-03 | 完成 @kiosk/ipc 模块实现 |
 | 2026-02-02 | 完成 @kiosk/core 模块实现 |
 | 2026-02-02 | 完成 @kiosk/platform 模块实现 |
