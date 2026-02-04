@@ -104,8 +104,17 @@ async function initialize(): Promise<void> {
   const platform = getPlatformAdapter();
   logger().info(`[main] Platform: ${platform.getPlatform()}`);
 
-  // Register custom protocol
-  const protocolHandler = getProtocolHandler();
+  // Register custom protocol with resource path
+  // In production: extraResources are at process.resourcesPath/renderer
+  // In development: resources are at app.getAppPath()/resources/renderer
+  const isProduction = app.isPackaged;
+  const rendererPath = isProduction
+    ? join(process.resourcesPath, 'renderer')
+    : join(app.getAppPath(), 'resources', 'renderer');
+
+  logger().info(`[main] Renderer path: ${rendererPath} (packaged: ${isProduction})`);
+
+  const protocolHandler = getProtocolHandler(rendererPath);
   protocolHandler.register();
   logger().info(`[main] Registered ${KIOSK_PROTOCOL} protocol`);
 

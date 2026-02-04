@@ -63,10 +63,23 @@ const shellAPI: ShellAPI = {
 };
 
 /**
+ * Check if running in preload context
+ * contextBridge is only available in the preload script context
+ */
+function isPreloadContext(): boolean {
+  return typeof contextBridge !== 'undefined' && contextBridge !== null;
+}
+
+/**
  * Expose shellAPI to renderer window via contextBridge
  * This ensures context isolation while providing secure API access
  */
 function exposeShellAPI(): void {
+  if (!isPreloadContext()) {
+    // Not in preload context (e.g., main process import), skip
+    return;
+  }
+
   try {
     contextBridge.exposeInMainWorld(SHELL_API_NAMESPACE, shellAPI);
     console.log('[Preload] shellAPI exposed successfully');
@@ -75,7 +88,7 @@ function exposeShellAPI(): void {
   }
 }
 
-// Auto-expose when script loads
+// Auto-expose when script loads (only in preload context)
 exposeShellAPI();
 
 export { shellAPI, exposeShellAPI };
