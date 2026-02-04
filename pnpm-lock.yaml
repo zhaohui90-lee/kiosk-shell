@@ -86,6 +86,9 @@ importers:
         specifier: workspace:*
         version: link:../logger
     devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.30
       electron:
         specifier: ^40.1.0
         version: 40.1.0
@@ -94,7 +97,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.0.0
-        version: 1.6.1(@types/node@24.10.9)
+        version: 1.6.1(@types/node@20.19.30)
 
   packages/ipc:
     dependencies:
@@ -225,6 +228,9 @@ importers:
         specifier: workspace:*
         version: link:../logger
     devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.30
       electron:
         specifier: ^40.1.0
         version: 40.1.0
@@ -233,7 +239,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.0.0
-        version: 1.6.1(@types/node@24.10.9)
+        version: 1.6.1(@types/node@20.19.30)
 
   shared/types:
     devDependencies:

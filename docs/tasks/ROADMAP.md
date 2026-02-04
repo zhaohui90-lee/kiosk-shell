@@ -113,18 +113,18 @@
 
 **优先级**: P2
 
-- [ ] 实现 uuid-manager.ts (UUID 管理)
-- [ ] 实现 hardware-info.ts (硬件信息)
-- [ ] 编写单元测试
+- [x] 实现 uuid-manager.ts (UUID 管理)
+- [x] 实现 hardware-info.ts (硬件信息)
+- [x] 编写单元测试 (78 个测试全部通过)
 
 ### 5.2 @kiosk/watchdog (Windows)
 
 **优先级**: P3
 
-- [ ] 实现 monitor.ts (进程监控)
-- [ ] 实现 heartbeat.ts (心跳检测)
-- [ ] 开发独立看门狗进程 (native/)
-- [ ] 编写单元测试
+- [x] 实现 monitor.ts (进程监控)
+- [x] 实现 heartbeat.ts (心跳检测)
+- [ ] 开发独立看门狗进程 (native/) - 待后续实现
+- [x] 编写单元测试 (97 个测试全部通过)
 
 ---
 
@@ -152,7 +152,7 @@
 
 > 使用此区域追踪当前正在进行的工作
 
-**当前阶段**: Phase 5 - 设备与监控
+**当前阶段**: Phase 6 - 应用集成
 
 **下一步行动**:
 1. ~~实现 @kiosk/platform 模块~~ ✅
@@ -161,7 +161,9 @@
 4. ~~实现 @kiosk/security 模块~~ ✅
 5. ~~实现 @kiosk/recovery 模块~~ ✅
 6. ~~实现 @kiosk/updater 模块~~ ✅
-7. 实现 @kiosk/device 模块
+7. ~~实现 @kiosk/device 模块~~ ✅
+8. ~~实现 @kiosk/watchdog 模块~~ ✅
+9. 实现 apps/kiosk 主进程入口
 
 ---
 
@@ -180,6 +182,8 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-02-04 | 完成 @kiosk/watchdog 模块实现 (97 个测试) |
+| 2026-02-04 | 完成 @kiosk/device 模块实现 (78 个测试) |
 | 2026-02-03 | 完成 @kiosk/updater 模块实现 |
 | 2026-02-03 | 完成 @kiosk/recovery 模块实现 |
 | 2026-02-03 | 完成 @kiosk/security 模块实现 |
