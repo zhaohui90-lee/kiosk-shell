@@ -166,8 +166,17 @@ describe('Rollback', () => {
       resetRollbackState();
       initRollback({ backupDir, onBeforeRollback });
 
+      // Use fake timers to ensure distinct timestamps
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2024-01-01T00:00:00Z'));
+
       createBackup(sourceDir, '1.0.0');
+      vi.advanceTimersByTime(1000); // 1.0.0 is older
+
       createBackup(sourceDir, '2.0.0');
+      // 2.0.0 is newer (current version)
+
+      vi.useRealTimers();
 
       const destDir = path.join(testDir, 'dest');
       rollbackToVersion('1.0.0', destDir);
@@ -213,9 +222,19 @@ describe('Rollback', () => {
 
   describe('getAvailableBackups', () => {
     it('should return backups sorted by timestamp descending', () => {
+      // Use fake timers to ensure distinct timestamps
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2024-01-01T00:00:00Z'));
+
       createBackup(sourceDir, '1.0.0');
+      vi.advanceTimersByTime(1000); // Advance 1 second
+
       createBackup(sourceDir, '2.0.0');
+      vi.advanceTimersByTime(1000); // Advance 1 second
+
       createBackup(sourceDir, '3.0.0');
+
+      vi.useRealTimers();
 
       const backups = getAvailableBackups();
 
