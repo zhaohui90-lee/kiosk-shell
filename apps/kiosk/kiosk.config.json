@@ -1,14 +1,11 @@
 {
-  "kioskMode": false,
-  "devMode": true,
+  "kioskMode": true,
+  "devMode": false,
   "crashMonitoring": true,
   "blankDetection": true,
-  "contentUrl": "http://localhost:8081/static/iframe/index_b.html?deviceNo=JD001",
+  "contentUrl": "kiosk://render/index.html",
   "width": 1080,
   "height": 1920,
   "whitelist": [
-    "http://localhost:8081",
-    "https://cdn.jsdelivr.net",
-    "https://unpkg.com"
   ]
 }
