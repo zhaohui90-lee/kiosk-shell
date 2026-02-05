@@ -20,6 +20,8 @@ extraResources:
     to: renderer
     filter:
       - "**/*"
+  - from: kiosk.config.json
+    to: kiosk.config.json
 
 # asar 配置
 asar: true
@@ -48,8 +50,6 @@ nsis:
   shortcutName: Kiosk Shell
   # 安装后自动启动
   runAfterFinish: true
-  # 安装目录
-  installDirectory: "C:\\Program Files\\KioskShell"
 
 # macOS 配置
 mac:
@@ -77,9 +77,11 @@ dmg:
       path: /Applications
 
 # 发布配置（用于 electron-updater）
+# 构建时通过环境变量 UPDATE_SERVER_URL 指定更新服务器地址
+# 例如: UPDATE_SERVER_URL=https://update.example.com pnpm build:mac
 publish:
   provider: generic
-  url: ${UPDATE_SERVER_URL}
+  url: ${env.UPDATE_SERVER_URL}
   channel: latest
 
 # 构建后钩子

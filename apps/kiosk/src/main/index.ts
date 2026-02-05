@@ -36,7 +36,7 @@ import { initUuidManager, getDeviceUuidAsync } from '@kiosk/device';
 import { getPlatformAdapter } from '@kiosk/platform';
 
 // Configuration
-import { loadConfig, generateCSP, type AppConfig } from './config';
+import { loadConfig, ensureConfigFile, generateCSP, type AppConfig } from './config';
 
 /**
  * Current configuration (loaded at startup)
@@ -363,6 +363,9 @@ async function main(): Promise<void> {
   logger().info(`[main] Electron: ${process.versions['electron']}`);
   logger().info(`[main] Node: ${process.versions['node']}`);
   logger().info(`[main] Chrome: ${process.versions['chrome']}`);
+
+  // Ensure configuration file exists (copies bundled config on first run)
+  ensureConfigFile();
 
   // Load configuration from file
   config = loadConfig();

@@ -184,6 +184,24 @@ describe('IPC Handlers', () => {
       expect(result.uuid).toBe(mockDeviceUuid);
     });
 
+    it('should return N/A uuid when UUID retrieval fails', async () => {
+      const { getDeviceUuidAsync } = await import('@kiosk/device');
+      (getDeviceUuidAsync as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new Error('UUID storage failed')
+      );
+
+      const { handleGetDeviceInfo } = await import('../handlers/device');
+
+      const mockEvent = {} as Electron.IpcMainInvokeEvent;
+      const result = await handleGetDeviceInfo(mockEvent);
+
+      // Should still return device info with N/A uuid instead of throwing
+      expect(result.uuid).toBe('N/A');
+      expect(result.platform).toBe('darwin');
+      expect(result.arch).toBe('arm64');
+      expect(result.hostname).toBe('test-machine');
+    });
+
     it('should register and unregister handlers', async () => {
       const { ipcMain } = await import('electron');
       const { registerDeviceHandlers, unregisterDeviceHandlers } = await import(

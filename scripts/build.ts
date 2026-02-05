@@ -35,6 +35,7 @@ function runCommand(
       cwd,
       stdio: 'inherit',
       shell: true,
+      env: process.env,
     });
 
     proc.on('close', (code) => {
@@ -122,6 +123,18 @@ async function main(): Promise<void> {
   console.log('\n========================================');
   console.log('  Kiosk Shell - Build');
   console.log('========================================\n');
+
+  // Set default UPDATE_SERVER_URL if not provided (required by electron-builder publish config)
+  if (!process.env['UPDATE_SERVER_URL']) {
+    process.env['UPDATE_SERVER_URL'] = 'https://update.example.com';
+    log('UPDATE_SERVER_URL not set, using placeholder. Set this env var for production builds.');
+  }
+
+  // Skip code signing if CSC_LINK is not set (development builds)
+  if (!process.env['CSC_LINK'] && !process.env['CSC_IDENTITY_AUTO_DISCOVERY']) {
+    process.env['CSC_IDENTITY_AUTO_DISCOVERY'] = 'false';
+    log('CSC_LINK not set, skipping code signing. Set CSC_LINK for production builds.');
+  }
 
   const options = parseArgs();
   const startTime = Date.now();

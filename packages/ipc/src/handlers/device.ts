@@ -18,6 +18,7 @@ const logger = getLogger();
 /**
  * Get device UUID from @kiosk/device module
  * Ensures UUID manager is initialized before retrieving UUID
+ * Returns 'N/A' as fallback if UUID retrieval fails
  */
 async function getDeviceUuid(): Promise<string> {
   try {
@@ -28,7 +29,7 @@ async function getDeviceUuid(): Promise<string> {
   } catch (error) {
     const err = error as Error;
     logger.error('[IPC:Device] Failed to get device UUID', { error: err.message });
-    throw new Error(`Failed to get device UUID: ${err.message}`);
+    return 'N/A';
   }
 }
 
@@ -44,15 +45,21 @@ async function handleGetDeviceInfo(
     const platform = getPlatformAdapter();
     const systemInfo = platform.getSystemInfo();
 
+    const uuid = await getDeviceUuid();
+
     const deviceInfo: DeviceInfoResult = {
-      uuid: await getDeviceUuid(),
+      uuid,
       platform: systemInfo.platform,
       arch: systemInfo.arch,
       hostname: systemInfo.hostname,
       version: app.getVersion(),
     };
 
-    logger.debug('[IPC:Device] Device info retrieved', { uuid: deviceInfo.uuid });
+    logger.info('[IPC:Device] Device info retrieved', {
+      uuid: deviceInfo.uuid,
+      platform: deviceInfo.platform,
+      arch: deviceInfo.arch,
+    });
     return deviceInfo;
   } catch (error) {
     const err = error as Error;
