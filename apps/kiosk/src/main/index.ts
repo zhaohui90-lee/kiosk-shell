@@ -146,14 +146,10 @@ async function createMainWindow(): Promise<BrowserWindow> {
     fullscreen: config.kioskMode,
     kiosk: config.kioskMode,
     frame: !config.kioskMode,
-    autoHideMenuBar: config.kioskMode,
-    webPreferences: {
-      preload: preloadPath,
-      nodeIntegration: false,
-      contextIsolation: true,
-      sandbox: true,
-      webSecurity: true,
-    },
+    // Preload script path (used by WindowManager)
+    preload: preloadPath,
+    // Enable devTools based on config
+    devTools: config.allowDevTools,
   };
 
   // Get or create window manager with config
