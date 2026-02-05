@@ -145,6 +145,10 @@
         <span class="info-value" id="platform">Loading...</span>
       </div>
       <div class="info-row">
+        <span class="info-label">Architecture</span>
+        <span class="info-value" id="arch">Loading...</span>
+      </div>
+      <div class="info-row">
         <span class="info-label">Version</span>
         <span class="info-value" id="version">1.0.0</span>
       </div>
@@ -168,18 +172,21 @@
           const deviceInfo = await window.shellAPI.getDeviceInfo();
           document.getElementById('device-uuid').textContent = deviceInfo.uuid || 'N/A';
           document.getElementById('platform').textContent = deviceInfo.platform || 'N/A';
+          document.getElementById('arch').textContent = deviceInfo.arch || 'N/A';
           if (deviceInfo.version) {
             document.getElementById('version').textContent = deviceInfo.version;
           }
         } else {
           console.warn('shellAPI not available');
-          document.getElementById('device-uuid').textContent = 'N/A';
-          document.getElementById('platform').textContent = navigator.platform;
+          document.getElementById('device-uuid').textContent = 'Unavailable';
+          document.getElementById('platform').textContent = 'Unavailable';
+          document.getElementById('arch').textContent = 'Unavailable';
         }
       } catch (error) {
         console.error('Failed to load device info:', error);
         document.getElementById('device-uuid').textContent = 'Error';
-        document.getElementById('platform').textContent = navigator.platform;
+        document.getElementById('platform').textContent = 'Error';
+        document.getElementById('arch').textContent = 'Error';
       }
     }
 
