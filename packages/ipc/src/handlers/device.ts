@@ -6,30 +6,30 @@ import { ipcMain } from 'electron';
 import { app } from 'electron';
 import { getLogger } from '@kiosk/logger';
 import { getPlatformAdapter } from '@kiosk/platform';
+import {
+  getDeviceUuidAsync,
+  isUuidManagerInitialized,
+  initUuidManager,
+} from '@kiosk/device';
 import { IPC_CHANNELS, type DeviceInfoResult } from '../types';
 
 const logger = getLogger();
 
 /**
- * Generate or retrieve device UUID
- * In production, this should be persisted and managed by @kiosk/device module
+ * Get device UUID from @kiosk/device module
+ * Ensures UUID manager is initialized before retrieving UUID
  */
-function getDeviceUuid(): string {
-  // Placeholder: In production, use @kiosk/device module for UUID management
-  // For now, generate a simple hash based on machine ID
-  const platform = getPlatformAdapter();
-  const systemInfo = platform.getSystemInfo();
-  const machineId = `${systemInfo.hostname}-${systemInfo.platform}-${systemInfo.arch}`;
-
-  // Simple hash function for demo purposes
-  let hash = 0;
-  for (let i = 0; i < machineId.length; i++) {
-    const char = machineId.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32bit integer
+async function getDeviceUuid(): Promise<string> {
+  try {
+    if (!isUuidManagerInitialized()) {
+      await initUuidManager();
+    }
+    return await getDeviceUuidAsync();
+  } catch (error) {
+    const err = error as Error;
+    logger.error('[IPC:Device] Failed to get device UUID', { error: err.message });
+    throw new Error(`Failed to get device UUID: ${err.message}`);
   }
-
-  return `kiosk-${Math.abs(hash).toString(16).padStart(8, '0')}`;
 }
 
 /**
@@ -45,7 +45,7 @@ async function handleGetDeviceInfo(
     const systemInfo = platform.getSystemInfo();
 
     const deviceInfo: DeviceInfoResult = {
-      uuid: getDeviceUuid(),
+      uuid: await getDeviceUuid(),
       platform: systemInfo.platform,
       arch: systemInfo.arch,
       hostname: systemInfo.hostname,

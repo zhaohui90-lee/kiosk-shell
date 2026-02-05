@@ -29,6 +29,14 @@ vi.mock('@kiosk/logger', () => ({
   })),
 }));
 
+// Mock @kiosk/device
+const mockDeviceUuid = '550e8400-e29b-41d4-a716-446655440000';
+vi.mock('@kiosk/device', () => ({
+  getDeviceUuidAsync: vi.fn().mockResolvedValue(mockDeviceUuid),
+  isUuidManagerInitialized: vi.fn().mockReturnValue(true),
+  initUuidManager: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Mock @kiosk/platform
 const mockPlatformAdapter = {
   getPlatform: vi.fn(() => 'darwin'),
@@ -173,8 +181,7 @@ describe('IPC Handlers', () => {
         hostname: 'test-machine',
         version: '1.0.0',
       });
-      expect(result.uuid).toBeDefined();
-      expect(result.uuid).toMatch(/^kiosk-/);
+      expect(result.uuid).toBe(mockDeviceUuid);
     });
 
     it('should register and unregister handlers', async () => {

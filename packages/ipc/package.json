@@ -11,6 +11,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@kiosk/device": "workspace:*",
     "@kiosk/logger": "workspace:*",
     "@kiosk/platform": "workspace:*",
     "@kiosk/shared": "workspace:*"

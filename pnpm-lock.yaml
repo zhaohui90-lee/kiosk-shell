@@ -101,6 +101,9 @@ importers:
 
   packages/ipc:
     dependencies:
+      '@kiosk/device':
+        specifier: workspace:*
+        version: link:../device
       '@kiosk/logger':
         specifier: workspace:*
         version: link:../logger
