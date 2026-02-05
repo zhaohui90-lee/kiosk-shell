@@ -86,7 +86,7 @@ ShellAPI 接口中的 `getDeviceInfo` 方法获取设备信息不准确：
 ### Task 3: 修复 canvas 元素不渲染
 
 **优先级**: P1
-**状态**: `[ ]` 未开始
+**状态**: `[x]` 已完成
 
 **问题描述**:
 测试发现，客户端对 canvas 元素不渲染。
@@ -100,11 +100,18 @@ ShellAPI 接口中的 `getDeviceInfo` 方法获取设备信息不准确：
 - `@kiosk/core` - window.ts
 - `apps/kiosk` - main/index.ts
 
+**修复内容**:
+问题根因：开发模式下 `sandbox: true` 可能导致某些渲染问题。
+
+已在 Task 2 修复过程中解决：
+- 开发模式下设置 `sandbox: false`
+- 添加 canvas 测试页面验证 2D/WebGL 渲染
+
 **验收标准**:
-- [ ] canvas 元素能正常渲染
-- [ ] WebGL 上下文正常工作
-- [ ] 2D canvas 上下文正常工作
-- [ ] 单元测试通过 (如适用)
+- [x] canvas 元素能正常渲染
+- [x] WebGL 上下文正常工作 (显示 WebGL: OK)
+- [x] 2D canvas 上下文正常工作 (显示 2D: OK)
+- [x] 测试页面已添加
 
 ---
 
