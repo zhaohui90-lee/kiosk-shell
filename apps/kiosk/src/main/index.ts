@@ -35,43 +35,13 @@ import { initUuidManager, getDeviceUuidAsync } from '@kiosk/device';
 // Platform
 import { getPlatformAdapter } from '@kiosk/platform';
 
-/**
- * Application configuration
- */
-interface AppConfig {
-  /** Enable kiosk mode (fullscreen, shortcuts blocked) */
-  kioskMode: boolean;
-  /** Enable DevTools in kiosk mode */
-  allowDevTools: boolean;
-  /** Enable crash monitoring */
-  crashMonitoring: boolean;
-  /** Enable blank screen detection */
-  blankDetection: boolean;
-  /** Content URL to load (file:// or kiosk://) */
-  contentUrl: string;
-  /** Window width (ignored in kiosk mode) */
-  width: number;
-  /** Window height (ignored in kiosk mode) */
-  height: number;
-}
+// Configuration
+import { loadConfig, type AppConfig } from './config';
 
 /**
- * Default configuration
+ * Current configuration (loaded at startup)
  */
-const DEFAULT_CONFIG: AppConfig = {
-  kioskMode: process.env['NODE_ENV'] === 'production',
-  allowDevTools: process.env['NODE_ENV'] !== 'production',
-  crashMonitoring: true,
-  blankDetection: true,
-  contentUrl: 'kiosk://renderer/index.html',
-  width: 1920,
-  height: 1080,
-};
-
-/**
- * Current configuration
- */
-let config: AppConfig = { ...DEFAULT_CONFIG };
+let config: AppConfig;
 
 /**
  * Main window reference
@@ -149,7 +119,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
     // Preload script path (used by WindowManager)
     preload: preloadPath,
     // Enable devTools based on config
-    devTools: config.allowDevTools,
+    devTools: config.devMode,
   };
 
   // Get or create window manager with config
@@ -165,7 +135,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
       fullscreen: true,
       alwaysOnTop: true,
       blockShortcuts: true,
-      allowDevTools: config.allowDevTools,
+      allowDevTools: config.devMode,
     });
 
     if (result.success) {
@@ -197,7 +167,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
   await loadContent(window);
 
   // Open DevTools in development mode
-  if (config.allowDevTools) {
+  if (config.devMode) {
     window.webContents.openDevTools({ mode: 'detach' });
     logger().info('[main] DevTools opened (dev mode)');
   }
@@ -388,6 +358,13 @@ async function main(): Promise<void> {
   logger().info(`[main] Electron: ${process.versions['electron']}`);
   logger().info(`[main] Node: ${process.versions['node']}`);
   logger().info(`[main] Chrome: ${process.versions['chrome']}`);
+
+  // Load configuration from file
+  config = loadConfig();
+  logger().info('[main] Configuration loaded', {
+    kioskMode: config.kioskMode,
+    devMode: config.devMode,
+  });
 
   // Request single instance lock
   const gotTheLock = app.requestSingleInstanceLock();

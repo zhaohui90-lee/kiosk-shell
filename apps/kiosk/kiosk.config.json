@@ -1,0 +1,9 @@
+{
+  "kioskMode": false,
+  "devMode": true,
+  "crashMonitoring": true,
+  "blankDetection": true,
+  "contentUrl": "kiosk://renderer/index.html",
+  "width": 1920,
+  "height": 1080
+}

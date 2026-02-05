@@ -11,7 +11,7 @@
 ### Task 1: 实现开发者模式开关
 
 **优先级**: P1
-**状态**: `[ ]` 未开始
+**状态**: `[x]` 已完成
 
 **问题描述**:
 目前没有实现 dev 开发者面板模式，希望在配置文件中新增一个开关，可以控制客户端开发者模式。
@@ -22,15 +22,32 @@
 - 开发环境默认开启，生产环境默认关闭
 
 **涉及模块**:
-- `@kiosk/core` - 配置加载
-- `@kiosk/ipc` - handlers/debug.ts
 - `apps/kiosk` - 主进程配置
 
+**修复内容**:
+- 创建 `apps/kiosk/src/main/config.ts` 配置加载模块
+- 创建 `apps/kiosk/kiosk.config.json` 配置文件
+- 支持从外部配置文件控制 `devMode` 开关
+- 配置文件路径: 开发时在项目根目录，生产时在 userData 目录
+
+**配置文件示例**:
+```json
+{
+  "kioskMode": false,
+  "devMode": true,
+  "crashMonitoring": true,
+  "blankDetection": true,
+  "contentUrl": "kiosk://renderer/index.html",
+  "width": 1920,
+  "height": 1080
+}
+```
+
 **验收标准**:
-- [ ] 配置文件中存在 devMode 开关选项
-- [ ] 开关为 true 时可以打开 DevTools
-- [ ] 开关为 false 时禁止打开 DevTools
-- [ ] 单元测试通过
+- [x] 配置文件中存在 devMode 开关选项
+- [x] 开关为 true 时可以打开 DevTools
+- [x] 开关为 false 时禁止打开 DevTools
+- [x] 单元测试通过 (3 tests)
 
 ---
 
