@@ -115,11 +115,56 @@ ShellAPI 接口中的 `getDeviceInfo` 方法获取设备信息不准确：
 
 ---
 
+---
+
+### Task 4: 新增白名单功能
+
+**优先级**: P1
+**状态**: `[x]` 已完成
+
+**问题描述**:
+新增白名单功能，白名单上的第三方资源可以访问。
+
+**需求分析**:
+- 在配置文件中添加 `whitelist` 数组
+- 白名单中的域名可以被页面访问（加载脚本、样式、图片等）
+- 动态生成 Content-Security-Policy 头部
+
+**涉及模块**:
+- `apps/kiosk/src/main/config.ts` - 配置加载
+- `apps/kiosk/src/main/index.ts` - CSP 头部生成
+
+**修复内容**:
+- 在 AppConfig 中添加 `whitelist: string[]` 字段
+- 新增 `generateCSP()` 函数动态生成 CSP 策略
+- CSP 策略自动包含白名单域名
+- 支持 default-src、script-src、style-src、img-src、font-src、connect-src、media-src、frame-src
+
+**配置示例**:
+```json
+{
+  "whitelist": [
+    "http://localhost:8081",
+    "https://cdn.jsdelivr.net",
+    "https://unpkg.com"
+  ]
+}
+```
+
+**验收标准**:
+- [x] 配置文件中可以添加白名单域名
+- [x] 白名单域名的资源可以正常加载
+- [x] 非白名单域名被 CSP 阻止
+- [x] 单元测试通过 (3 tests)
+
+---
+
 ## 执行顺序建议
 
-1. **Task 2** (P0) - 设备信息问题可能影响其他功能
-2. **Task 1** (P1) - 开发者模式便于调试后续问题
-3. **Task 3** (P1) - canvas 渲染问题
+1. **Task 2** (P0) - 设备信息问题可能影响其他功能 ✅
+2. **Task 1** (P1) - 开发者模式便于调试后续问题 ✅
+3. **Task 3** (P1) - canvas 渲染问题 ✅
+4. **Task 4** (P1) - 白名单功能
 
 ---
 

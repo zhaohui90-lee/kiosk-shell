@@ -36,7 +36,7 @@ import { initUuidManager, getDeviceUuidAsync } from '@kiosk/device';
 import { getPlatformAdapter } from '@kiosk/platform';
 
 // Configuration
-import { loadConfig, type AppConfig } from './config';
+import { loadConfig, generateCSP, type AppConfig } from './config';
 
 /**
  * Current configuration (loaded at startup)
@@ -279,14 +279,19 @@ async function cleanup(): Promise<void> {
 async function onAppReady(): Promise<void> {
   logger().info('[main] App is ready');
 
+  // Generate CSP based on whitelist configuration
+  const cspPolicy = generateCSP(config.whitelist);
+  logger().info('[main] CSP policy generated', {
+    whitelist: config.whitelist,
+    policy: cspPolicy.substring(0, 100) + '...',
+  });
+
   // Set security headers for session
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
         ...details.responseHeaders,
-        'Content-Security-Policy': [
-          "default-src 'self' kiosk:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: kiosk:; font-src 'self' data:;",
-        ],
+        'Content-Security-Policy': [cspPolicy],
       },
     });
   });

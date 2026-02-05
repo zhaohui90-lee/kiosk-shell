@@ -28,6 +28,8 @@ export interface AppConfig {
   width: number;
   /** Window height (ignored in kiosk mode) */
   height: number;
+  /** Whitelist of allowed external domains for CSP */
+  whitelist: string[];
 }
 
 /**
@@ -43,6 +45,7 @@ const DEFAULT_CONFIG: AppConfig = {
   contentUrl: 'kiosk://renderer/index.html',
   width: 1920,
   height: 1080,
+  whitelist: [],
 };
 
 /**
@@ -131,6 +134,34 @@ export function ensureConfigFile(): void {
  */
 export function getDefaultConfig(): AppConfig {
   return { ...DEFAULT_CONFIG };
+}
+
+/**
+ * Generate Content-Security-Policy string based on whitelist
+ * @param whitelist - Array of allowed external domains
+ * @returns CSP policy string
+ */
+export function generateCSP(whitelist: string[] = []): string {
+  // Base sources (always allowed)
+  const baseSources = ["'self'", 'kiosk:'];
+
+  // Add whitelist domains
+  const allSources = [...baseSources, ...whitelist];
+  const sourcesStr = allSources.join(' ');
+
+  // Build CSP directives
+  const directives = [
+    `default-src ${sourcesStr}`,
+    `script-src ${sourcesStr} 'unsafe-inline'`,
+    `style-src ${sourcesStr} 'unsafe-inline'`,
+    `img-src ${sourcesStr} data: blob:`,
+    `font-src ${sourcesStr} data:`,
+    `connect-src ${sourcesStr}`,
+    `media-src ${sourcesStr}`,
+    `frame-src ${sourcesStr}`,
+  ];
+
+  return directives.join('; ') + ';';
 }
 
 export { DEFAULT_CONFIG };
