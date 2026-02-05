@@ -196,6 +196,12 @@ async function createMainWindow(): Promise<BrowserWindow> {
   // Load content
   await loadContent(window);
 
+  // Open DevTools in development mode
+  if (config.allowDevTools) {
+    window.webContents.openDevTools({ mode: 'detach' });
+    logger().info('[main] DevTools opened (dev mode)');
+  }
+
   return window;
 }
 
