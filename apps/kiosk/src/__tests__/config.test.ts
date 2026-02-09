@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, copyFileSync } from 'fs';
 import { join } from 'path';
 
 // Mock fs module
@@ -13,6 +13,7 @@ vi.mock('fs', () => ({
   readFileSync: vi.fn(),
   writeFileSync: vi.fn(),
   mkdirSync: vi.fn(),
+  copyFileSync: vi.fn(),
 }));
 
 // Mock electron
@@ -53,6 +54,7 @@ import { app } from 'electron';
 const mockedExistsSync = vi.mocked(existsSync);
 const mockedReadFileSync = vi.mocked(readFileSync);
 const mockedWriteFileSync = vi.mocked(writeFileSync);
+const mockedCopyFileSync = vi.mocked(copyFileSync);
 
 describe('Config Module', () => {
   beforeEach(() => {
@@ -133,30 +135,7 @@ describe('Config Module', () => {
       });
     });
 
-    it('should fall back to bundled config when userData config not found', () => {
-      mockGetPath.mockImplementation((name: string) => `/mock/${name}`);
-
-      // userData config does NOT exist, bundled config exists
-      mockedExistsSync.mockImplementation((path) => {
-        if (path === join('/mock/userData', 'kiosk.config.json')) {
-          return false;
-        }
-        if (path === join(MOCK_RESOURCES_PATH, 'kiosk.config.json')) {
-          return true;
-        }
-        return false;
-      });
-
-      mockedReadFileSync.mockReturnValue(
-        JSON.stringify({ devMode: true })
-      );
-
-      const config = loadConfig();
-
-      expect(config.devMode).toBe(true);
-    });
-
-    it('should prefer userData config over bundled config in production', () => {
+    it('should always read from userData path in production', () => {
       mockGetPath.mockImplementation((name: string) => `/mock/${name}`);
 
       // userData config exists
@@ -176,6 +155,17 @@ describe('Config Module', () => {
       expect(config.kioskMode).toBe(true);
       expect(config.width).toBe(800);
     });
+
+    it('should return defaults when userData config does not exist in production', () => {
+      mockGetPath.mockImplementation((name: string) => `/mock/${name}`);
+
+      mockedExistsSync.mockReturnValue(false);
+
+      const config = loadConfig();
+
+      expect(config.contentUrl).toBe('kiosk://renderer/index.html');
+      expect(config.crashMonitoring).toBe(true);
+    });
   });
 
   describe('ensureConfigFile', () => {
@@ -192,15 +182,31 @@ describe('Config Module', () => {
       );
     });
 
-    it('should not overwrite existing config in development', () => {
+    it('should not overwrite existing config in development when up to date', () => {
+      mockGetAppPath.mockReturnValue('/dev/project');
+
+      // Config file exists
       mockedExistsSync.mockReturnValue(true);
+
+      // Return a full config (all default fields present)
+      const fullConfig = {
+        kioskMode: false,
+        devMode: true,
+        crashMonitoring: true,
+        blankDetection: true,
+        contentUrl: 'kiosk://renderer/index.html',
+        width: 1920,
+        height: 1080,
+        whitelist: [],
+      };
+      mockedReadFileSync.mockReturnValue(JSON.stringify(fullConfig));
 
       ensureConfigFile();
 
       expect(mockedWriteFileSync).not.toHaveBeenCalled();
     });
 
-    it('should copy bundled config to userData in production', () => {
+    it('should always copy bundled config to userData when resources config exists (even if userData exists)', () => {
       Object.defineProperty(app, 'isPackaged', {
         value: true,
         writable: true,
@@ -209,28 +215,115 @@ describe('Config Module', () => {
 
       mockGetPath.mockImplementation((name: string) => `/mock/${name}`);
 
-      // userData config does not exist, bundled config exists
+      const userConfigPath = join('/mock/userData', 'kiosk.config.json');
+      const bundledConfigPath = join(MOCK_RESOURCES_PATH, 'kiosk.config.json');
+
+      // Both userData and bundled config exist, userData dir exists
       mockedExistsSync.mockImplementation((path) => {
-        if (path === join('/mock/userData', 'kiosk.config.json')) {
-          return false;
-        }
-        if (path === join(MOCK_RESOURCES_PATH, 'kiosk.config.json')) {
-          return true;
-        }
-        // userData directory does not exist
+        if (path === userConfigPath) return true;
+        if (path === bundledConfigPath) return true;
+        if (path === '/mock/userData') return true;
         return false;
       });
 
-      mockedReadFileSync.mockReturnValue('{"devMode": false}');
+      ensureConfigFile();
+
+      // Should copy bundled → userData (overwrite)
+      expect(mockedCopyFileSync).toHaveBeenCalledWith(
+        bundledConfigPath,
+        userConfigPath
+      );
+      // Should NOT use writeFileSync for this (uses copyFileSync instead)
+      expect(mockedWriteFileSync).not.toHaveBeenCalled();
+    });
+
+    it('should copy bundled config to userData when userData does not exist', () => {
+      Object.defineProperty(app, 'isPackaged', {
+        value: true,
+        writable: true,
+        configurable: true,
+      });
+
+      mockGetPath.mockImplementation((name: string) => `/mock/${name}`);
+
+      const userConfigPath = join('/mock/userData', 'kiosk.config.json');
+      const bundledConfigPath = join(MOCK_RESOURCES_PATH, 'kiosk.config.json');
+
+      // userData config does NOT exist, bundled config exists
+      mockedExistsSync.mockImplementation((path) => {
+        if (path === bundledConfigPath) return true;
+        // userData dir does not exist
+        return false;
+      });
 
       ensureConfigFile();
 
-      // Should write to userData path
+      // Should copy bundled → userData
+      expect(mockedCopyFileSync).toHaveBeenCalledWith(
+        bundledConfigPath,
+        userConfigPath
+      );
+    });
+
+    it('should keep userData unchanged when bundled config does not exist', () => {
+      Object.defineProperty(app, 'isPackaged', {
+        value: true,
+        writable: true,
+        configurable: true,
+      });
+
+      mockGetPath.mockImplementation((name: string) => `/mock/${name}`);
+
+      const userConfigPath = join('/mock/userData', 'kiosk.config.json');
+      const bundledConfigPath = join(MOCK_RESOURCES_PATH, 'kiosk.config.json');
+
+      // userData config exists, but bundled config does NOT exist
+      mockedExistsSync.mockImplementation((path) => {
+        if (path === userConfigPath) return true;
+        if (path === bundledConfigPath) return false;
+        return false;
+      });
+
+      ensureConfigFile();
+
+      // Should NOT write or copy anything
+      expect(mockedWriteFileSync).not.toHaveBeenCalled();
+      expect(mockedCopyFileSync).not.toHaveBeenCalled();
+    });
+
+    it('should create DEFAULT_CONFIG when neither bundled nor userData config exist', () => {
+      Object.defineProperty(app, 'isPackaged', {
+        value: true,
+        writable: true,
+        configurable: true,
+      });
+
+      mockGetPath.mockImplementation((name: string) => `/mock/${name}`);
+
+      const userConfigPath = join('/mock/userData', 'kiosk.config.json');
+
+      // Neither config exists, but userData dir exists
+      mockedExistsSync.mockImplementation((path) => {
+        if (path === '/mock/userData') return true;
+        return false;
+      });
+
+      ensureConfigFile();
+
+      // Should write DEFAULT_CONFIG to userData
       expect(mockedWriteFileSync).toHaveBeenCalledWith(
-        join('/mock/userData', 'kiosk.config.json'),
-        '{"devMode": false}',
+        userConfigPath,
+        expect.any(String),
         'utf-8'
       );
+      // Should NOT use copyFileSync
+      expect(mockedCopyFileSync).not.toHaveBeenCalled();
+
+      // Verify written content is DEFAULT_CONFIG
+      const writtenContent = mockedWriteFileSync.mock.calls[0]?.[1] as string;
+      const writtenConfig = JSON.parse(writtenContent);
+      expect(writtenConfig.contentUrl).toBe('kiosk://renderer/index.html');
+      expect(writtenConfig.crashMonitoring).toBe(true);
     });
   });
 
