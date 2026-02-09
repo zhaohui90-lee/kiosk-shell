@@ -107,7 +107,11 @@ async function createMainWindow(): Promise<BrowserWindow> {
   logger().info('[main] Creating main window...');
 
   // Get preload script path
-  const preloadPath = join(__dirname, '..', 'preload', 'index.js');
+  const preloadPath = app.isPackaged
+    ? join(app.getAppPath(), 'dist', 'preload', 'index.js')
+    : join(__dirname, '..', 'preload', 'index.js');
+  
+  logger().info(`[main] Preload path calculated: ${preloadPath}`)
 
   // Create window configuration
   const windowConfig = {

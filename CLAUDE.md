@@ -11,6 +11,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 每次实现一个新的feature，都需要新建单元测试
 - 单元测试通过以后，才能执行`git commit`命令
 - 每次提交一个新的`git commit`，都需要在`docs/milestone`下记录里程碑
+- When fixing build failures, always trace the full cascade of errors before starting fixes. Check for: missing assets, invalid config values, environment variable interpolation issues, and code signing problems.
+- This is a TypeScript project. Always use TypeScript (not JavaScript) for new files. Use strict typing — avoid `any` unless absolutely necessary.
+- After fixing build or configuration issues, always run a verification build (`npm run build` or equivalent) before considering the task complete.
 
 ## Project Overview
 

@@ -27,6 +27,7 @@ extraResources:
 asar: true
 asarUnpack:
   - "**/*.node"
+  - "dist/preload/**/*"
 
 # Windows 配置
 win:

@@ -13,11 +13,8 @@
  */
 
 // Import and auto-execute the preload script from @kiosk/ipc
-// This will expose shellAPI to window.shellAPI
+// This will expose shellAPI to window.shellAPI via contextBridge
 import '@kiosk/ipc/preload';
-
-// Re-export for type definitions
-export { shellAPI, exposeShellAPI } from '@kiosk/ipc';
 
 /**
  * The shellAPI is now available on window.shellAPI in the renderer process.

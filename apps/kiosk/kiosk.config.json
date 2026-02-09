@@ -1,6 +1,6 @@
 {
   "kioskMode": false,
-  "devMode": false,
+  "devMode": true,
   "crashMonitoring": true,
   "blankDetection": true,
   "contentUrl": "kiosk://renderer/index.html",
