@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #1a1a2e;
+      color: #e8e8e8;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Custom titlebar */
+    .titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 36px;
+      padding: 0 12px;
+      background: #0f0f23;
+      -webkit-app-region: drag;
+      flex-shrink: 0;
+    }
+
+    .titlebar-title {
+      font-size: 12px;
+      color: #888;
+      font-weight: 500;
+    }
+
+    .titlebar-close {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      color: #888;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-app-region: no-drag;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .titlebar-close:hover {
+      background: #e94560;
+      color: #fff;
+    }
+
+    /* Main content */
+    .content {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    /* Login section */
+    .login-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+
+    .login-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(233, 69, 96, 0.3);
+    }
+
+    .login-icon svg {
+      width: 32px;
+      height: 32px;
+      fill: white;
+    }
+
+    .login-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .login-subtitle {
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 24px;
+    }
+
+    .input-group {
+      width: 100%;
+      max-width: 280px;
+      margin-bottom: 16px;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #e8e8e8;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-group input:focus {
+      border-color: #e94560;
+    }
+
+    .input-group input::placeholder {
+      color: #555;
+    }
+
+    .btn {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      color: #fff;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background: #e94560;
+      width: 100%;
+      max-width: 280px;
+    }
+
+    .btn-primary:hover {
+      background: #d63851;
+    }
+
+    .btn-primary:disabled {
+      background: #444;
+      cursor: not-allowed;
+    }
+
+    .error-text {
+      color: #e94560;
+      font-size: 0.8rem;
+      margin-top: 8px;
+      min-height: 20px;
+    }
+
+    /* Operations panel */
+    .panel-section {
+      display: none;
+    }
+
+    .panel-section.active {
+      display: block;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .panel-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .btn-logout {
+      padding: 6px 14px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      color: #888;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .btn-logout:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #e8e8e8;
+    }
+
+    /* System info card */
+    .info-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .info-card-title {
+      font-size: 0.75rem;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 0.85rem;
+    }
+
+    .info-label {
+      color: #888;
+    }
+
+    .info-value {
+      color: #e94560;
+      font-weight: 500;
+      font-size: 0.8rem;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Action buttons */
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .action-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      color: #e8e8e8;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      text-align: left;
+    }
+
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .action-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .action-btn .action-icon {
+      width: 20px;
+      text-align: center;
+      font-size: 16px;
+    }
+
+    .action-btn.danger {
+      border-color: rgba(233, 69, 96, 0.2);
+    }
+
+    .action-btn.danger:hover {
+      background: rgba(233, 69, 96, 0.1);
+      border-color: rgba(233, 69, 96, 0.4);
+    }
+
+    /* Confirmation dialog */
+    .dialog-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dialog-overlay.active {
+      display: flex;
+    }
+
+    .dialog {
+      background: #1e1e38;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 24px;
+      width: 320px;
+      text-align: center;
+    }
+
+    .dialog-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .dialog-message {
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 20px;
+    }
+
+    .dialog-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .dialog-actions .btn {
+      flex: 1;
+      padding: 10px;
+    }
+
+    .btn-cancel {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-cancel:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-danger {
+      background: #e94560;
+    }
+
+    .btn-danger:hover {
+      background: #d63851;
+    }
+
+    /* Status message */
+    .status-message {
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .status-message.success {
+      display: block;
+      background: rgba(46, 213, 115, 0.1);
+      border: 1px solid rgba(46, 213, 115, 0.3);
+      color: #2ed573;
+    }
+
+    .status-message.error {
+      display: block;
+      background: rgba(233, 69, 96, 0.1);
+      border: 1px solid rgba(233, 69, 96, 0.3);
+      color: #e94560;
+    }
+  </style>
+</head>
+<body>
+  <!-- Titlebar -->
+  <div class="titlebar">
+    <span class="titlebar-title">Admin Panel</span>
+    <button class="titlebar-close" id="btn-close" title="Close">&times;</button>
+  </div>
+
+  <div class="content">
+    <!-- Login Section -->
+    <div class="login-section panel-section active" id="login-section">
+      <div class="login-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+        </svg>
+      </div>
+      <div class="login-title">Admin Login</div>
+      <div class="login-subtitle">Enter password to access admin controls</div>
+      <div class="input-group">
+        <input type="password" id="password-input" placeholder="Password" autocomplete="off" />
+      </div>
+      <button class="btn btn-primary" id="btn-login">Login</button>
+      <div class="error-text" id="login-error"></div>
+    </div>
+
+    <!-- Operations Panel -->
+    <div class="panel-section" id="operations-section">
+      <div class="panel-header">
+        <span class="panel-title">System Controls</span>
+        <button class="btn-logout" id="btn-logout">Logout</button>
+      </div>
+
+      <!-- System Info -->
+      <div class="info-card">
+        <div class="info-card-title">System Information</div>
+        <div class="info-row">
+          <span class="info-label">App Version</span>
+          <span class="info-value" id="info-version">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Platform</span>
+          <span class="info-value" id="info-platform">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Architecture</span>
+          <span class="info-value" id="info-arch">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Hostname</span>
+          <span class="info-value" id="info-hostname">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Electron</span>
+          <span class="info-value" id="info-electron">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Memory</span>
+          <span class="info-value" id="info-memory">-</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="info-card">
+        <div class="info-card-title">Operations</div>
+        <div class="actions">
+          <button class="action-btn" id="btn-reload">
+            <span class="action-icon">&#x21BB;</span>
+            Reload Business Page
+          </button>
+          <button class="action-btn" id="btn-restart-app">
+            <span class="action-icon">&#x21BA;</span>
+            Restart Application
+          </button>
+          <button class="action-btn danger" id="btn-exit-app">
+            <span class="action-icon">&#x2716;</span>
+            Exit Application
+          </button>
+          <button class="action-btn danger" id="btn-restart-system">
+            <span class="action-icon">&#x27F3;</span>
+            Restart System
+          </button>
+          <button class="action-btn danger" id="btn-shutdown-system">
+            <span class="action-icon">&#x23FB;</span>
+            Shutdown System
+          </button>
+        </div>
+      </div>
+
+      <div class="status-message" id="status-message"></div>
+    </div>
+  </div>
+
+  <!-- Confirmation Dialog -->
+  <div class="dialog-overlay" id="dialog-overlay">
+    <div class="dialog">
+      <div class="dialog-title" id="dialog-title">Confirm</div>
+      <div class="dialog-message" id="dialog-message">Are you sure?</div>
+      <div class="dialog-actions">
+        <button class="btn btn-cancel" id="dialog-cancel">Cancel</button>
+        <button class="btn btn-danger" id="dialog-confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let sessionToken = null;
+    let pendingAction = null;
+
+    // Elements
+    const loginSection = document.getElementById('login-section');
+    const operationsSection = document.getElementById('operations-section');
+    const passwordInput = document.getElementById('password-input');
+    const btnLogin = document.getElementById('btn-login');
+    const loginError = document.getElementById('login-error');
+    const btnLogout = document.getElementById('btn-logout');
+    const btnClose = document.getElementById('btn-close');
+    const statusMessage = document.getElementById('status-message');
+    const dialogOverlay = document.getElementById('dialog-overlay');
+    const dialogTitle = document.getElementById('dialog-title');
+    const dialogMessage = document.getElementById('dialog-message');
+    const dialogCancel = document.getElementById('dialog-cancel');
+    const dialogConfirm = document.getElementById('dialog-confirm');
+
+    // Close button
+    btnClose.addEventListener('click', () => {
+      window.close();
+    });
+
+    // Login
+    btnLogin.addEventListener('click', doLogin);
+    passwordInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doLogin();
+    });
+
+    async function doLogin() {
+      const password = passwordInput.value;
+      if (!password) {
+        loginError.textContent = 'Please enter password';
+        return;
+      }
+
+      btnLogin.disabled = true;
+      loginError.textContent = '';
+
+      try {
+        const result = await window.adminAPI.login(password);
+        if (result.success) {
+          sessionToken = result.token;
+          showOperationsPanel();
+          loadSystemInfo();
+        } else {
+          loginError.textContent = result.message || 'Login failed';
+        }
+      } catch (error) {
+        loginError.textContent = 'Connection error';
+      }
+
+      btnLogin.disabled = false;
+    }
+
+    // Logout
+    btnLogout.addEventListener('click', () => {
+      sessionToken = null;
+      showLoginPanel();
+    });
+
+    // Panel switching
+    function showOperationsPanel() {
+      loginSection.classList.remove('active');
+      operationsSection.classList.add('active');
+      passwordInput.value = '';
+      loginError.textContent = '';
+    }
+
+    function showLoginPanel() {
+      operationsSection.classList.remove('active');
+      loginSection.classList.add('active');
+      passwordInput.value = '';
+      passwordInput.focus();
+      hideStatus();
+    }
+
+    // Load system info
+    async function loadSystemInfo() {
+      if (!sessionToken) return;
+
+      try {
+        const result = await window.adminAPI.getSystemInfo(sessionToken);
+        if (result.success && result.data) {
+          const d = result.data;
+          document.getElementById('info-version').textContent = d.appVersion || '-';
+          document.getElementById('info-platform').textContent = d.platform || '-';
+          document.getElementById('info-arch').textContent = d.arch || '-';
+          document.getElementById('info-hostname').textContent = d.hostname || '-';
+          document.getElementById('info-electron').textContent = d.electronVersion || '-';
+
+          if (d.totalMemory && d.freeMemory) {
+            const totalGB = (d.totalMemory / (1024 * 1024 * 1024)).toFixed(1);
+            const freeGB = (d.freeMemory / (1024 * 1024 * 1024)).toFixed(1);
+            document.getElementById('info-memory').textContent = freeGB + ' / ' + totalGB + ' GB';
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load system info:', error);
+      }
+    }
+
+    // Action buttons
+    document.getElementById('btn-reload').addEventListener('click', async () => {
+      await executeAction('reloadBusiness', 'Business page reloaded');
+    });
+
+    document.getElementById('btn-restart-app').addEventListener('click', () => {
+      showConfirmDialog(
+        'Restart Application',
+        'This will restart the kiosk application. Continue?',
+        () => executeAction('restartApp', 'Application restarting...')
+      );
+    });
+
+    document.getElementById('btn-exit-app').addEventListener('click', () => {
+      showConfirmDialog(
+        'Exit Application',
+        'This will close the kiosk application completely. Continue?',
+        () => executeAction('exitApp', 'Application exiting...')
+      );
+    });
+
+    document.getElementById('btn-restart-system').addEventListener('click', () => {
+      showConfirmDialog(
+        'Restart System',
+        'This will restart the operating system. All unsaved data will be lost. Continue?',
+        () => executeAction('systemRestart', 'System restarting...')
+      );
+    });
+
+    document.getElementById('btn-shutdown-system').addEventListener('click', () => {
+      showConfirmDialog(
+        'Shutdown System',
+        'This will shut down the operating system completely. Continue?',
+        () => executeAction('systemShutdown', 'System shutting down...')
+      );
+    });
+
+    // Execute admin action
+    async function executeAction(action, successMsg) {
+      if (!sessionToken) {
+        showStatus('Session expired, please login again', 'error');
+        showLoginPanel();
+        return;
+      }
+
+      try {
+        const result = await window.adminAPI[action](sessionToken);
+        if (result.success) {
+          showStatus(successMsg, 'success');
+        } else {
+          showStatus(result.message || 'Operation failed', 'error');
+          if (result.message && result.message.includes('token')) {
+            sessionToken = null;
+            setTimeout(() => showLoginPanel(), 1500);
+          }
+        }
+      } catch (error) {
+        showStatus('Operation failed: ' + error.message, 'error');
+      }
+    }
+
+    // Confirmation dialog
+    function showConfirmDialog(title, message, onConfirm) {
+      dialogTitle.textContent = title;
+      dialogMessage.textContent = message;
+      pendingAction = onConfirm;
+      dialogOverlay.classList.add('active');
+    }
+
+    function hideConfirmDialog() {
+      dialogOverlay.classList.remove('active');
+      pendingAction = null;
+    }
+
+    dialogCancel.addEventListener('click', hideConfirmDialog);
+
+    dialogConfirm.addEventListener('click', () => {
+      if (pendingAction) {
+        pendingAction();
+      }
+      hideConfirmDialog();
+    });
+
+    // Click overlay to cancel
+    dialogOverlay.addEventListener('click', (e) => {
+      if (e.target === dialogOverlay) {
+        hideConfirmDialog();
+      }
+    });
+
+    // Status message
+    function showStatus(message, type) {
+      statusMessage.textContent = message;
+      statusMessage.className = 'status-message ' + type;
+      // Auto-hide after 5 seconds
+      setTimeout(hideStatus, 5000);
+    }
+
+    function hideStatus() {
+      statusMessage.className = 'status-message';
+    }
+
+    // Auto-focus password input when window becomes visible
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && loginSection.classList.contains('active')) {
+        passwordInput.focus();
+      }
+    });
+
+    // Focus password input on load
+    window.addEventListener('load', () => {
+      passwordInput.focus();
+    });
+  </script>
+</body>
+</html>

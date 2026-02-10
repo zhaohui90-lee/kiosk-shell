@@ -20,6 +20,19 @@ export const IPC_CHANNELS = {
 
   // Debug (requires password)
   OPEN_DEV_TOOLS: 'shell:openDevTools',
+
+  // Admin panel (requires session token)
+  ADMIN_LOGIN: 'shell:adminLogin',
+  ADMIN_EXIT_APP: 'shell:adminExitApp',
+  ADMIN_RESTART_APP: 'shell:adminRestartApp',
+  ADMIN_SYSTEM_RESTART: 'shell:adminSystemRestart',
+  ADMIN_SYSTEM_SHUTDOWN: 'shell:adminSystemShutdown',
+  ADMIN_GET_CONFIG: 'shell:adminGetConfig',
+  ADMIN_GET_SYSTEM_INFO: 'shell:adminGetSystemInfo',
+  ADMIN_RELOAD_BUSINESS: 'shell:adminReloadBusiness',
+
+  // Admin trigger (from renderer click zone)
+  ADMIN_TRIGGER: 'shell:adminTrigger',
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];
@@ -41,6 +54,12 @@ export const RATE_LIMITS: Partial<Record<IpcChannel, RateLimitConfig>> = {
   [IPC_CHANNELS.SYSTEM_SHUTDOWN]: { maxCalls: 1, windowMs: 60000 },
   [IPC_CHANNELS.SYSTEM_RESTART]: { maxCalls: 1, windowMs: 60000 },
   [IPC_CHANNELS.OPEN_DEV_TOOLS]: { maxCalls: 3, windowMs: 60000 },
+  [IPC_CHANNELS.ADMIN_LOGIN]: { maxCalls: 5, windowMs: 60000 },
+  [IPC_CHANNELS.ADMIN_EXIT_APP]: { maxCalls: 1, windowMs: 60000 },
+  [IPC_CHANNELS.ADMIN_RESTART_APP]: { maxCalls: 1, windowMs: 60000 },
+  [IPC_CHANNELS.ADMIN_SYSTEM_RESTART]: { maxCalls: 1, windowMs: 60000 },
+  [IPC_CHANNELS.ADMIN_SYSTEM_SHUTDOWN]: { maxCalls: 1, windowMs: 60000 },
+  [IPC_CHANNELS.ADMIN_RELOAD_BUSINESS]: { maxCalls: 3, windowMs: 60000 },
 };
 
 /**
@@ -81,6 +100,24 @@ export interface UpdateResult extends UpdateInfo {}
 export interface DebugResult {
   success: boolean;
   message?: string;
+}
+
+/**
+ * Admin login result
+ */
+export interface AdminLoginResult {
+  success: boolean;
+  token?: string;
+  message?: string;
+}
+
+/**
+ * Admin operation result
+ */
+export interface AdminOperationResult {
+  success: boolean;
+  message?: string;
+  data?: Record<string, unknown>;
 }
 
 /**

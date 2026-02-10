@@ -6,6 +6,7 @@
 // Export types
 export type {
   WindowConfig,
+  AdminWindowConfig,
   LoaderConfig,
   SlotId,
   SlotInfo,

@@ -6,7 +6,7 @@
  * It initializes all modules and manages the application lifecycle.
  */
 
-import { app, BrowserWindow, protocol, session } from 'electron';
+import { app, BrowserWindow, protocol, session, globalShortcut, ipcMain } from 'electron';
 import { join } from 'path';
 
 // Logger (initialize first)
@@ -21,7 +21,13 @@ import {
 } from '@kiosk/core';
 
 // IPC handlers
-import { registerAllHandlers, unregisterAllHandlers } from '@kiosk/ipc';
+import {
+  registerAllHandlers,
+  unregisterAllHandlers,
+  setAdminPassword,
+  setMainWindowRef,
+  IPC_CHANNELS,
+} from '@kiosk/ipc';
 
 // Security
 import { enableKioskMode } from '@kiosk/security';
@@ -262,10 +268,91 @@ async function loadErrorPage(window: BrowserWindow): Promise<void> {
 }
 
 /**
+ * Setup admin panel window and triggers
+ */
+function setupAdminPanel(): void {
+  logger().info('[main] Setting up admin panel...');
+
+  const windowManager = getWindowManager();
+
+  // Resolve admin preload path
+  const adminPreloadPath = app.isPackaged
+    ? join(app.getAppPath(), 'dist', 'preload', 'admin.js')
+    : join(__dirname, '..', 'preload', 'admin.js');
+
+  logger().info(`[main] Admin preload path: ${adminPreloadPath}`);
+
+  // Create admin window (hidden)
+  const adminWindow = windowManager.createAdminWindow({
+    preload: adminPreloadPath,
+  });
+
+  // Load admin HTML
+  const isProduction = app.isPackaged;
+  const adminHtmlPath = isProduction
+    ? join(process.resourcesPath, 'renderer', 'admin', 'index.html')
+    : join(app.getAppPath(), 'resources', 'renderer', 'admin', 'index.html');
+
+  adminWindow.loadFile(adminHtmlPath).then(() => {
+    logger().info('[main] Admin panel HTML loaded');
+  }).catch((error) => {
+    logger().error(`[main] Failed to load admin panel HTML: ${String(error)}`);
+  });
+
+  // Set admin password from config if provided
+  if (config.adminPassword) {
+    setAdminPassword(config.adminPassword);
+  }
+
+  // Set main window reference for admin handlers
+  if (mainWindow) {
+    setMainWindowRef(mainWindow);
+  }
+
+  logger().info('[main] Admin panel setup complete');
+}
+
+/**
+ * Setup admin panel triggers (keyboard shortcut + renderer IPC)
+ */
+function setupAdminTriggers(): void {
+  logger().info('[main] Setting up admin triggers...');
+
+  const windowManager = getWindowManager();
+
+  // Keyboard shortcut trigger (backup, works even when renderer is crashed)
+  const shortcut = process.platform === 'darwin' ? 'CommandOrControl+Shift+F12' : 'Ctrl+Shift+F12';
+  const registered = globalShortcut.register(shortcut, () => {
+    logger().info('[main] Admin panel triggered via keyboard shortcut');
+    windowManager.toggleAdminWindow();
+  });
+
+  if (registered) {
+    logger().info(`[main] Admin keyboard shortcut registered: ${shortcut}`);
+  } else {
+    logger().warn(`[main] Failed to register admin keyboard shortcut: ${shortcut}`);
+  }
+
+  // Renderer click zone trigger (primary)
+  ipcMain.on(IPC_CHANNELS.ADMIN_TRIGGER, () => {
+    logger().info('[main] Admin panel triggered via renderer click zone');
+    windowManager.showAdminWindow();
+  });
+
+  logger().info('[main] Admin triggers setup complete');
+}
+
+/**
  * Cleanup before quit
  */
 async function cleanup(): Promise<void> {
   logger().info('[main] Cleaning up...');
+
+  // Unregister global shortcuts
+  globalShortcut.unregisterAll();
+
+  // Remove admin trigger listener
+  ipcMain.removeAllListeners(IPC_CHANNELS.ADMIN_TRIGGER);
 
   // Unregister IPC handlers
   unregisterAllHandlers();
@@ -309,8 +396,13 @@ async function onAppReady(): Promise<void> {
   // Handle window closed
   mainWindow.on('closed', () => {
     mainWindow = null;
+    setMainWindowRef(null);
     logger().info('[main] Main window closed');
   });
+
+  // Setup admin panel and triggers
+  setupAdminPanel();
+  setupAdminTriggers();
 }
 
 /**

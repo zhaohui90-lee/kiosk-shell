@@ -32,6 +32,9 @@ export interface ShellAPI {
 
   /** Open DevTools (requires password) */
   openDevTools(password: string): Promise<boolean>;
+
+  /** Trigger admin panel (fires IPC event to main process) */
+  triggerAdmin(): void;
 }
 
 declare global {

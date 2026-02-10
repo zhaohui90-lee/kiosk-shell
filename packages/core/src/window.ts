@@ -6,7 +6,7 @@
 import { BrowserWindow, screen } from 'electron';
 import type { BrowserWindowConstructorOptions } from 'electron';
 import { getLogger } from '@kiosk/logger';
-import type { WindowConfig } from './types';
+import type { WindowConfig, AdminWindowConfig } from './types';
 
 const logger = getLogger().child('core:window');
 
@@ -64,6 +64,7 @@ function mergeConfig(userConfig: WindowConfig = {}): WindowConfig {
  */
 export class WindowManager {
   private mainWindow: BrowserWindow | null = null;
+  private adminWindow: BrowserWindow | null = null;
   private config: WindowConfig;
 
   constructor(config: WindowConfig = {}) {
@@ -350,6 +351,124 @@ export class WindowManager {
   }
 
   /**
+   * Create the admin window (hidden by default)
+   */
+  createAdminWindow(config: AdminWindowConfig = {}): BrowserWindow {
+    if (this.adminWindow && !this.adminWindow.isDestroyed()) {
+      logger.warn('Admin window already exists, returning existing instance');
+      return this.adminWindow;
+    }
+
+    const width = config.width ?? 480;
+    const height = config.height ?? 600;
+
+    const windowOptions: BrowserWindowConstructorOptions = {
+      width,
+      height,
+      show: false,
+      frame: false,
+      resizable: false,
+      alwaysOnTop: true,
+      skipTaskbar: true,
+      center: true,
+      backgroundColor: '#1a1a2e',
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+        devTools: true,
+        ...(config.preload ? { preload: config.preload } : {}),
+      },
+    };
+
+    logger.info('Creating admin window', { width, height });
+
+    this.adminWindow = new BrowserWindow(windowOptions);
+    this.setupAdminWindowEvents();
+
+    return this.adminWindow;
+  }
+
+  /**
+   * Setup admin window event handlers
+   */
+  private setupAdminWindowEvents(): void {
+    if (!this.adminWindow) return;
+
+    // Intercept close to hide instead of destroy
+    this.adminWindow.on('close', (event) => {
+      if (this.adminWindow && !this.adminWindow.isDestroyed()) {
+        event.preventDefault();
+        this.adminWindow.hide();
+        logger.debug('Admin window hidden (close intercepted)');
+      }
+    });
+  }
+
+  /**
+   * Show the admin window
+   */
+  showAdminWindow(): void {
+    if (!this.isAdminWindowValid()) return;
+
+    logger.info('Showing admin window');
+    this.adminWindow!.show();
+    this.adminWindow!.focus();
+  }
+
+  /**
+   * Hide the admin window
+   */
+  hideAdminWindow(): void {
+    if (!this.isAdminWindowValid()) return;
+
+    logger.debug('Hiding admin window');
+    this.adminWindow!.hide();
+  }
+
+  /**
+   * Toggle admin window visibility
+   */
+  toggleAdminWindow(): void {
+    if (!this.isAdminWindowValid()) return;
+
+    if (this.adminWindow!.isVisible()) {
+      this.hideAdminWindow();
+    } else {
+      this.showAdminWindow();
+    }
+  }
+
+  /**
+   * Get the admin window instance
+   */
+  getAdminWindow(): BrowserWindow | null {
+    return this.adminWindow;
+  }
+
+  /**
+   * Check if admin window exists and is not destroyed
+   */
+  isAdminWindowValid(): boolean {
+    return this.adminWindow !== null && !this.adminWindow.isDestroyed();
+  }
+
+  /**
+   * Destroy the admin window (bypasses close intercept)
+   */
+  destroyAdminWindow(): void {
+    if (!this.adminWindow) return;
+
+    logger.info('Destroying admin window');
+    // Remove close event listener to avoid intercept
+    this.adminWindow.removeAllListeners('close');
+    if (!this.adminWindow.isDestroyed()) {
+      this.adminWindow.destroy();
+    }
+    this.adminWindow = null;
+  }
+
+  /**
    * Destroy the window
    */
   destroy(): void {
@@ -360,6 +479,9 @@ export class WindowManager {
       this.mainWindow.destroy();
     }
     this.mainWindow = null;
+
+    // Also cleanup admin window
+    this.destroyAdminWindow();
   }
 
   /**

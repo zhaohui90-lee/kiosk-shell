@@ -37,6 +37,18 @@ export interface WindowConfig {
 }
 
 /**
+ * Admin window configuration
+ */
+export interface AdminWindowConfig {
+  /** Preload script path for admin window */
+  preload?: string;
+  /** Window width (default: 480) */
+  width?: number;
+  /** Window height (default: 600) */
+  height?: number;
+}
+
+/**
  * Resource loader configuration
  */
 export interface LoaderConfig {

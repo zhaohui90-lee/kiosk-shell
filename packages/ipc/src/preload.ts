@@ -60,6 +60,14 @@ const shellAPI: ShellAPI = {
     const result = await ipcRenderer.invoke(IPC_CHANNELS.OPEN_DEV_TOOLS, password);
     return result.success;
   },
+
+  /**
+   * Trigger admin panel
+   * Fires a one-way IPC event to main process to show the admin window
+   */
+  triggerAdmin(): void {
+    ipcRenderer.send(IPC_CHANNELS.ADMIN_TRIGGER);
+  },
 };
 
 /**

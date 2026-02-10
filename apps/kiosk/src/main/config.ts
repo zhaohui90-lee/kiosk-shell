@@ -30,6 +30,8 @@ export interface AppConfig {
   height: number;
   /** Whitelist of allowed external domains for CSP */
   whitelist: string[];
+  /** Admin panel password (optional, overrides default) */
+  adminPassword?: string;
 }
 
 /**

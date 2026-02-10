@@ -9,9 +9,19 @@
 export const DEFAULT_DEBUG_PASSWORD = 'kiosk-debug-2024';
 
 /**
+ * Default admin password (should be overridden in production)
+ */
+export const DEFAULT_ADMIN_PASSWORD = 'kiosk-admin-2024';
+
+/**
  * API namespace for contextBridge
  */
 export const SHELL_API_NAMESPACE = 'shellAPI';
+
+/**
+ * Admin API namespace for contextBridge (admin window only)
+ */
+export const ADMIN_API_NAMESPACE = 'adminAPI';
 
 /**
  * Preload script context isolation settings
@@ -34,4 +44,6 @@ export const ERROR_MESSAGES = {
   INVALID_PASSWORD: 'Invalid password.',
   OPERATION_FAILED: 'Operation failed.',
   NOT_INITIALIZED: 'IPC handlers not initialized.',
+  INVALID_TOKEN: 'Invalid or expired session token.',
+  ADMIN_NOT_AUTHENTICATED: 'Admin authentication required.',
 } as const;
