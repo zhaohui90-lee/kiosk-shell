@@ -66,6 +66,7 @@ export class WindowManager {
   private mainWindow: BrowserWindow | null = null;
   private adminWindow: BrowserWindow | null = null;
   private config: WindowConfig;
+  private adminWindowConfig: AdminWindowConfig = {}
 
   constructor(config: WindowConfig = {}) {
     this.config = mergeConfig(config);
@@ -354,6 +355,8 @@ export class WindowManager {
    * Create the admin window (hidden by default)
    */
   createAdminWindow(config: AdminWindowConfig = {}): BrowserWindow {
+    this.adminWindowConfig = config
+
     if (this.adminWindow && !this.adminWindow.isDestroyed()) {
       logger.warn('Admin window already exists, returning existing instance');
       return this.adminWindow;
@@ -386,6 +389,16 @@ export class WindowManager {
     this.adminWindow = new BrowserWindow(windowOptions);
     this.setupAdminWindowEvents();
 
+    // auto reload HTML file
+    if (config.loadFile) {
+      logger.info('Loading admin window content', {
+        path: config.loadFile
+      })
+      this.adminWindow.loadFile(config.loadFile).catch(err => {
+        logger.error(`Failed to load admin content: ${err}`)
+      })
+    }
+
     return this.adminWindow;
   }
 
@@ -409,11 +422,18 @@ export class WindowManager {
    * Show the admin window
    */
   showAdminWindow(): void {
-    if (!this.isAdminWindowValid()) return;
+    // rebuild the window
+    if (!this.isAdminWindowValid()) {
+      logger.info('Admin window invalid or destroyed, recreating...')
+      this.createAdminWindow(this.adminWindowConfig)
+    }
 
-    logger.info('Showing admin window');
-    this.adminWindow!.show();
-    this.adminWindow!.focus();
+    // check again
+    if (this.adminWindow && !this.adminWindow.isDestroyed()) {
+      logger.info('Showing admin window');
+      this.adminWindow.show();
+      this.adminWindow.focus();
+    }
   }
 
   /**
@@ -430,7 +450,10 @@ export class WindowManager {
    * Toggle admin window visibility
    */
   toggleAdminWindow(): void {
-    if (!this.isAdminWindowValid()) return;
+    if (!this.isAdminWindowValid()) {
+      this.showAdminWindow()
+      return;
+    }
 
     if (this.adminWindow!.isVisible()) {
       this.hideAdminWindow();

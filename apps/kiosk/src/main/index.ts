@@ -282,21 +282,16 @@ function setupAdminPanel(): void {
 
   logger().info(`[main] Admin preload path: ${adminPreloadPath}`);
 
-  // Create admin window (hidden)
-  const adminWindow = windowManager.createAdminWindow({
-    preload: adminPreloadPath,
-  });
-
   // Load admin HTML
   const isProduction = app.isPackaged;
   const adminHtmlPath = isProduction
     ? join(process.resourcesPath, 'renderer', 'admin', 'index.html')
     : join(app.getAppPath(), 'resources', 'renderer', 'admin', 'index.html');
 
-  adminWindow.loadFile(adminHtmlPath).then(() => {
-    logger().info('[main] Admin panel HTML loaded');
-  }).catch((error) => {
-    logger().error(`[main] Failed to load admin panel HTML: ${String(error)}`);
+  // Create admin window (hidden)
+  windowManager.createAdminWindow({
+    preload: adminPreloadPath,
+    loadFile: adminHtmlPath
   });
 
   // Set admin password from config if provided
@@ -360,6 +355,10 @@ async function cleanup(): Promise<void> {
   // Unregister protocol
   const protocolHandler = getProtocolHandler();
   protocolHandler.unregister();
+
+  // Destroy admin window
+  const windowManager = getWindowManager();
+  windowManager.destroyAdminWindow();
 
   logger().info('[main] Cleanup completed');
 }
@@ -426,6 +425,7 @@ async function onActivate(): Promise<void> {
   // On macOS, re-create window if dock icon is clicked
   if (BrowserWindow.getAllWindows().length === 0) {
     mainWindow = await createMainWindow();
+    setMainWindowRef(mainWindow)
   }
 }
 

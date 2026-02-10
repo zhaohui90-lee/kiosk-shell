@@ -46,6 +46,8 @@ export interface AdminWindowConfig {
   width?: number;
   /** Window height (default: 600) */
   height?: number;
+  /** HTML file path to load */
+  loadFile?: string;
 }
 
 /**

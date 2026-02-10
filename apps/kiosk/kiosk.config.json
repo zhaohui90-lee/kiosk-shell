@@ -7,5 +7,6 @@
   "width": 1080,
   "height": 1920,
   "whitelist": [
-  ]
+  ],
+  "adminPassword": "12345678"
 }
