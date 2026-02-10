@@ -37,6 +37,7 @@ const DEV_CONFIG: Partial<WindowConfig> = {
   skipTaskbar: false,
   alwaysOnTop: false,
   devTools: true,
+  sandbox: false, // Disable sandbox in dev to allow workspace dependencies
 };
 
 /**
@@ -94,7 +95,7 @@ export class WindowManager {
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
-        sandbox: true,
+        sandbox: this.config.sandbox ?? true,
         devTools: this.config.devTools ?? false,
         ...(this.config.preload ? { preload: this.config.preload } : {}),
       },

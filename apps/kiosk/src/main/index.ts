@@ -35,43 +35,13 @@ import { initUuidManager, getDeviceUuidAsync } from '@kiosk/device';
 // Platform
 import { getPlatformAdapter } from '@kiosk/platform';
 
-/**
- * Application configuration
- */
-interface AppConfig {
-  /** Enable kiosk mode (fullscreen, shortcuts blocked) */
-  kioskMode: boolean;
-  /** Enable DevTools in kiosk mode */
-  allowDevTools: boolean;
-  /** Enable crash monitoring */
-  crashMonitoring: boolean;
-  /** Enable blank screen detection */
-  blankDetection: boolean;
-  /** Content URL to load (file:// or kiosk://) */
-  contentUrl: string;
-  /** Window width (ignored in kiosk mode) */
-  width: number;
-  /** Window height (ignored in kiosk mode) */
-  height: number;
-}
+// Configuration
+import { loadConfig, ensureConfigFile, generateCSP, type AppConfig } from './config';
 
 /**
- * Default configuration
+ * Current configuration (loaded at startup)
  */
-const DEFAULT_CONFIG: AppConfig = {
-  kioskMode: process.env['NODE_ENV'] === 'production',
-  allowDevTools: process.env['NODE_ENV'] !== 'production',
-  crashMonitoring: true,
-  blankDetection: true,
-  contentUrl: 'kiosk://renderer/index.html',
-  width: 1920,
-  height: 1080,
-};
-
-/**
- * Current configuration
- */
-let config: AppConfig = { ...DEFAULT_CONFIG };
+let config: AppConfig;
 
 /**
  * Main window reference
@@ -137,7 +107,11 @@ async function createMainWindow(): Promise<BrowserWindow> {
   logger().info('[main] Creating main window...');
 
   // Get preload script path
-  const preloadPath = join(__dirname, '..', 'preload', 'index.js');
+  const preloadPath = app.isPackaged
+    ? join(app.getAppPath(), 'dist', 'preload', 'index.js')
+    : join(__dirname, '..', 'preload', 'index.js');
+  
+  logger().info(`[main] Preload path calculated: ${preloadPath}`)
 
   // Create window configuration
   const windowConfig = {
@@ -146,14 +120,10 @@ async function createMainWindow(): Promise<BrowserWindow> {
     fullscreen: config.kioskMode,
     kiosk: config.kioskMode,
     frame: !config.kioskMode,
-    autoHideMenuBar: config.kioskMode,
-    webPreferences: {
-      preload: preloadPath,
-      nodeIntegration: false,
-      contextIsolation: true,
-      sandbox: true,
-      webSecurity: true,
-    },
+    // Preload script path (used by WindowManager)
+    preload: preloadPath,
+    // Enable devTools based on config
+    devTools: config.devMode,
   };
 
   // Get or create window manager with config
@@ -169,7 +139,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
       fullscreen: true,
       alwaysOnTop: true,
       blockShortcuts: true,
-      allowDevTools: config.allowDevTools,
+      allowDevTools: config.devMode,
     });
 
     if (result.success) {
@@ -199,6 +169,12 @@ async function createMainWindow(): Promise<BrowserWindow> {
 
   // Load content
   await loadContent(window);
+
+  // Open DevTools in development mode
+  if (config.devMode) {
+    window.webContents.openDevTools({ mode: 'detach' });
+    logger().info('[main] DevTools opened (dev mode)');
+  }
 
   return window;
 }
@@ -307,14 +283,19 @@ async function cleanup(): Promise<void> {
 async function onAppReady(): Promise<void> {
   logger().info('[main] App is ready');
 
+  // Generate CSP based on whitelist configuration
+  const cspPolicy = generateCSP(config.whitelist);
+  logger().info('[main] CSP policy generated', {
+    whitelist: config.whitelist,
+    policy: cspPolicy.substring(0, 100) + '...',
+  });
+
   // Set security headers for session
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
         ...details.responseHeaders,
-        'Content-Security-Policy': [
-          "default-src 'self' kiosk:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: kiosk:; font-src 'self' data:;",
-        ],
+        'Content-Security-Policy': [cspPolicy],
       },
     });
   });
@@ -386,6 +367,16 @@ async function main(): Promise<void> {
   logger().info(`[main] Electron: ${process.versions['electron']}`);
   logger().info(`[main] Node: ${process.versions['node']}`);
   logger().info(`[main] Chrome: ${process.versions['chrome']}`);
+
+  // Ensure configuration file exists (copies bundled config on first run)
+  ensureConfigFile();
+
+  // Load configuration from file
+  config = loadConfig();
+  logger().info('[main] Configuration loaded', {
+    kioskMode: config.kioskMode,
+    devMode: config.devMode,
+  });
 
   // Request single instance lock
   const gotTheLock = app.requestSingleInstanceLock();

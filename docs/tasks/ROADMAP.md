@@ -138,6 +138,8 @@
 - [x] 实现 preload/index.ts (Preload 入口)
 - [x] 配置 electron-builder.yml
 - [x] 添加应用图标资源 (SVG 源文件, renderer/index.html)
+- [x] 生成正式应用图标 (ico/icns/png)
+- [x] 修复构建脚本 (build:mac / build:win)
 
 ### 6.2 集成测试
 
@@ -145,7 +147,7 @@
 - [ ] 端到端启动测试 (待后续实现)
 - [ ] 更新流程测试 (待后续实现)
 - [ ] 崩溃恢复测试 (待后续实现)
-- [ ] 跨平台打包测试 (待后续实现)
+- [x] 跨平台打包测试 (macOS DMG + Windows NSIS)
 
 ---
 
@@ -173,6 +175,22 @@
 
 ---
 
+## Bug 修复阶段
+
+> 详见: [bugfix-01-issue.md](./bugfix-01-issue.md)
+
+### Issue 01 修复任务
+
+- [x] Task 1: 实现开发者模式开关 (P1)
+- [x] Task 2: 修复设备信息获取不准确 (P0)
+- [x] Task 3: 修复 canvas 元素不渲染 (P1)
+- [x] Task 4: 新增白名单功能 (P1)
+- [x] Task 5: 修复 build:mac 和 build:win 构建失败 (P0)
+- [x] Task 6: 修复构建产物中缺少 kiosk.config.json 配置文件 (P0)
+- [x] Task 7: 修复 Windows 构建产物设备信息获取异常 (P1)
+
+---
+
 ## 任务状态说明
 
 | 状态 | 含义 |
@@ -188,6 +206,8 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-02-05 | 修复构建产物运行异常: config 文件未打包 + 设备信息获取异常 |
+| 2026-02-05 | 修复 build:mac/build:win 构建失败 (图标、NSIS配置、签名、环境变量) |
 | 2026-02-04 | 修复应用启动问题: preload 上下文检测 + ProtocolHandler 路径 |
 | 2026-02-04 | **完成 Phase 6: 应用集成** (662 个测试全部通过) |
 | 2026-02-04 | 实现 apps/kiosk 主进程入口和 preload 脚本 |

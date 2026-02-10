@@ -26,6 +26,8 @@ export interface WindowConfig {
   alwaysOnTop?: boolean;
   /** Enable DevTools (default: false in production) */
   devTools?: boolean;
+  /** Enable sandbox mode (default: true, disable for dev with workspace deps) */
+  sandbox?: boolean;
   /** Background color (default: #FFFFFF) */
   backgroundColor?: string;
   /** Preload script path */

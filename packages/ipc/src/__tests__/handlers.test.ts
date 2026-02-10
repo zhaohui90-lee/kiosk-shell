@@ -29,6 +29,14 @@ vi.mock('@kiosk/logger', () => ({
   })),
 }));
 
+// Mock @kiosk/device
+const mockDeviceUuid = '550e8400-e29b-41d4-a716-446655440000';
+vi.mock('@kiosk/device', () => ({
+  getDeviceUuidAsync: vi.fn().mockResolvedValue(mockDeviceUuid),
+  isUuidManagerInitialized: vi.fn().mockReturnValue(true),
+  initUuidManager: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Mock @kiosk/platform
 const mockPlatformAdapter = {
   getPlatform: vi.fn(() => 'darwin'),
@@ -173,8 +181,25 @@ describe('IPC Handlers', () => {
         hostname: 'test-machine',
         version: '1.0.0',
       });
-      expect(result.uuid).toBeDefined();
-      expect(result.uuid).toMatch(/^kiosk-/);
+      expect(result.uuid).toBe(mockDeviceUuid);
+    });
+
+    it('should return N/A uuid when UUID retrieval fails', async () => {
+      const { getDeviceUuidAsync } = await import('@kiosk/device');
+      (getDeviceUuidAsync as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new Error('UUID storage failed')
+      );
+
+      const { handleGetDeviceInfo } = await import('../handlers/device');
+
+      const mockEvent = {} as Electron.IpcMainInvokeEvent;
+      const result = await handleGetDeviceInfo(mockEvent);
+
+      // Should still return device info with N/A uuid instead of throwing
+      expect(result.uuid).toBe('N/A');
+      expect(result.platform).toBe('darwin');
+      expect(result.arch).toBe('arm64');
+      expect(result.hostname).toBe('test-machine');
     });
 
     it('should register and unregister handlers', async () => {

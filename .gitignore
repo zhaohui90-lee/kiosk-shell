@@ -3,3 +3,5 @@ dist
 .DS_Store
 node_modules
 *.tsbuildinfo
+docs/issues
+release
