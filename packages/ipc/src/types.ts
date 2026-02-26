@@ -33,6 +33,10 @@ export const IPC_CHANNELS = {
 
   // Admin trigger (from renderer click zone)
   ADMIN_TRIGGER: 'shell:adminTrigger',
+
+  // System metrics
+  ADMIN_SYSTEM_METRICS: 'admin:getSystemMetrics',
+  ADMIN_BUSINESS_STATUS: 'admin:getBusinessStatus'
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

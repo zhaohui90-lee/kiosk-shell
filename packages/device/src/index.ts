@@ -54,4 +54,10 @@ export {
   collectHardwareInfo,
   formatBytes,
   getHardwareSummary,
+  getSystemMerics
 } from './hardware-info';
+
+// Export business status
+export {
+  checkBusinessStatus
+} from './network-status'

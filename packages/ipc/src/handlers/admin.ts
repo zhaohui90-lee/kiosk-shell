@@ -7,6 +7,7 @@ import { ipcMain, app, BrowserWindow } from 'electron';
 import { randomBytes } from 'crypto';
 import { getLogger } from '@kiosk/logger';
 import { getPlatformAdapter } from '@kiosk/platform';
+import { getSystemMerics, checkBusinessStatus } from "@kiosk/device";
 import { IPC_CHANNELS, type AdminLoginResult, type AdminOperationResult } from '../types';
 import { DEFAULT_ADMIN_PASSWORD, ERROR_MESSAGES } from '../constants';
 import { checkRateLimit } from '../rate-limiter';
@@ -340,6 +341,15 @@ export function registerAdminHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.ADMIN_GET_CONFIG, handleAdminGetConfig);
   ipcMain.handle(IPC_CHANNELS.ADMIN_GET_SYSTEM_INFO, handleAdminGetSystemInfo);
   ipcMain.handle(IPC_CHANNELS.ADMIN_RELOAD_BUSINESS, handleAdminReloadBusiness);
+  ipcMain.handle(IPC_CHANNELS.ADMIN_SYSTEM_METRICS, async () => {
+    return await getSystemMerics()
+  });
+  ipcMain.handle(IPC_CHANNELS.ADMIN_BUSINESS_STATUS, async (_, targetUrl: string) => {
+    if (!targetUrl) {
+      throw new Error('未提供交易地址');
+    }
+    return await checkBusinessStatus(targetUrl)
+  });
 
   logger.debug('[IPC:Admin] Admin handlers registered');
 }

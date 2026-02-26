@@ -4,6 +4,7 @@
  */
 
 import * as os from 'os';
+import si from 'systeminformation'
 import { getLogger } from '@kiosk/logger';
 import type {
   HardwareInfo,
@@ -13,6 +14,7 @@ import type {
   MemoryInfo,
   NetworkInterface,
   DisplayInfo,
+  SystemResource,
 } from './types';
 import {
   DEFAULT_HARDWARE_INFO_CONFIG,
@@ -123,6 +125,40 @@ export function getNetworkInfo(includeInternal = false): NetworkInterface[] {
   }
 
   return result;
+}
+
+/**
+ * 获取系统运行状态
+ */
+export async function getSystemMerics(): Promise<SystemResource> {
+  try {
+    // 并发获取 CPU、内存、磁盘、温度等信息
+    const [cpuLoad, mem, fsSize, cpuTemp] = await Promise.all([
+      si.currentLoad(),
+      si.mem(),
+      si.fsSize(),
+      si.cpuTemperature(),
+    ])
+
+    return {
+      cpuUsage: Math.round(cpuLoad.currentLoad),
+      memUsed: Math.round(mem.active / (1024 * 1024)), // 转为 MB
+      memTotal: Math.round(mem.total / (1024 * 1024)),
+      diskUsed: Math.round(fsSize[0]!.used / (1024 * 1024 * 1024)), // 主分区 GB
+      diskTotal: Math.round(fsSize[0]!.size / (1024 * 1024 * 1024)),
+      temperature: Math.round(cpuTemp.main || 40), // 某些主板可能读不到，给个默认值
+    }
+  } catch (error) {
+    getHardwareLogger().info(`[system-metrics] ${error}`);
+    return {
+      cpuUsage: 0,
+      memUsed: 0,
+      memTotal: 0,
+      diskTotal: 0,
+      diskUsed: 0,
+      temperature: NaN
+    }
+  }
 }
 
 /**
