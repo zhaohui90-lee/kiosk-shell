@@ -182,24 +182,3 @@ export interface DeviceIdentification {
   /** Hardware information */
   hardware: HardwareInfo;
 }
-
-export interface SystemResource {
-  /** % 0-100 */
-  cpuUsage: number
-  /** MB */
-  memUsed: number
-  /** MB */
-  memTotal: number
-  /** GB */
-  diskUsed: number
-  /** GB */
-  diskTotal: number
-  /** CPU temperature °C */
-  temperature: number
-}
-
-export interface BusinessNetworkStatus {
-  latency: number
-  isOnline: boolean
-  statusCode: number
-}

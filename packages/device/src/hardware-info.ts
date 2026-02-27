@@ -3,9 +3,9 @@
  * Collects hardware and system information
  */
 
-import * as os from 'os';
+import * as os from 'os'
 import si from 'systeminformation'
-import { getLogger } from '@kiosk/logger';
+import { getLogger } from '@kiosk/logger'
 import type {
   HardwareInfo,
   HardwareInfoConfig,
@@ -14,33 +14,29 @@ import type {
   MemoryInfo,
   NetworkInterface,
   DisplayInfo,
-  SystemResource,
-} from './types';
-import {
-  DEFAULT_HARDWARE_INFO_CONFIG,
-  ERROR_MESSAGES,
-  LOG_MESSAGES,
-} from './constants';
+} from './types'
+import type { SystemResource } from '@kiosk/shared'
+import { DEFAULT_HARDWARE_INFO_CONFIG, ERROR_MESSAGES, LOG_MESSAGES } from './constants'
 
 /**
  * Get logger instance
  */
 function getHardwareLogger() {
-  return getLogger();
+  return getLogger()
 }
 
 /**
  * Log info message with hardware prefix
  */
 function logInfo(msg: string): void {
-  getHardwareLogger().info(`[hardware] ${msg}`);
+  getHardwareLogger().info(`[hardware] ${msg}`)
 }
 
 /**
  * Log error message with hardware prefix
  */
 function logError(msg: string): void {
-  getHardwareLogger().error(`[hardware] ${msg}`);
+  getHardwareLogger().error(`[hardware] ${msg}`)
 }
 
 /**
@@ -54,37 +50,37 @@ export function getOsInfo(): OsInfo {
     hostname: os.hostname(),
     type: os.type(),
     version: os.version(),
-  };
+  }
 }
 
 /**
  * Get CPU information
  */
 export function getCpuInfo(): CpuInfo {
-  const cpus = os.cpus();
-  const firstCpu = cpus[0];
+  const cpus = os.cpus()
+  const firstCpu = cpus[0]
 
   return {
     model: firstCpu?.model ?? 'Unknown',
     cores: cpus.length,
     speed: firstCpu?.speed ?? 0,
-  };
+  }
 }
 
 /**
  * Get memory information
  */
 export function getMemoryInfo(): MemoryInfo {
-  const total = os.totalmem();
-  const free = os.freemem();
-  const used = total - free;
+  const total = os.totalmem()
+  const free = os.freemem()
+  const used = total - free
 
   return {
     total,
     free,
     used,
     usagePercent: Math.round((used / total) * 100 * 100) / 100,
-  };
+  }
 }
 
 /**
@@ -92,18 +88,16 @@ export function getMemoryInfo(): MemoryInfo {
  * @param includeInternal - Whether to include internal/loopback interfaces
  */
 export function getNetworkInfo(includeInternal = false): NetworkInterface[] {
-  const interfaces = os.networkInterfaces();
-  const result: NetworkInterface[] = [];
+  const interfaces = os.networkInterfaces()
+  const result: NetworkInterface[] = []
 
   for (const [name, addresses] of Object.entries(interfaces)) {
-    if (!addresses) continue;
+    if (!addresses) continue
 
     // Filter internal interfaces if not requested
-    const filteredAddresses = addresses.filter(
-      addr => includeInternal || !addr.internal
-    );
+    const filteredAddresses = addresses.filter((addr) => includeInternal || !addr.internal)
 
-    if (filteredAddresses.length === 0) continue;
+    if (filteredAddresses.length === 0) continue
 
     const networkInterface: NetworkInterface = {
       name,
@@ -111,20 +105,20 @@ export function getNetworkInfo(includeInternal = false): NetworkInterface[] {
       ipv4: [],
       ipv6: [],
       internal: filteredAddresses[0]?.internal ?? false,
-    };
+    }
 
     for (const addr of filteredAddresses) {
       if (addr.family === 'IPv4') {
-        networkInterface.ipv4.push(addr.address);
+        networkInterface.ipv4.push(addr.address)
       } else if (addr.family === 'IPv6') {
-        networkInterface.ipv6.push(addr.address);
+        networkInterface.ipv6.push(addr.address)
       }
     }
 
-    result.push(networkInterface);
+    result.push(networkInterface)
   }
 
-  return result;
+  return result
 }
 
 /**
@@ -149,14 +143,14 @@ export async function getSystemMerics(): Promise<SystemResource> {
       temperature: Math.round(cpuTemp.main || 40), // 某些主板可能读不到，给个默认值
     }
   } catch (error) {
-    getHardwareLogger().info(`[system-metrics] ${error}`);
+    getHardwareLogger().info(`[system-metrics] ${error}`)
     return {
       cpuUsage: 0,
       memUsed: 0,
       memTotal: 0,
       diskTotal: 0,
       diskUsed: 0,
-      temperature: NaN
+      temperature: NaN,
     }
   }
 }
@@ -168,15 +162,15 @@ export async function getSystemMerics(): Promise<SystemResource> {
 export async function getDisplayInfo(): Promise<DisplayInfo[]> {
   try {
     // Try to import Electron's screen module
-    const electron = await import('electron');
-    const screen = electron.screen;
+    const electron = await import('electron')
+    const screen = electron.screen
 
     if (!screen) {
-      return [];
+      return []
     }
 
-    const displays = screen.getAllDisplays();
-    const primaryDisplay = screen.getPrimaryDisplay();
+    const displays = screen.getAllDisplays()
+    const primaryDisplay = screen.getPrimaryDisplay()
 
     return displays.map((display, index) => ({
       id: display.id,
@@ -195,10 +189,10 @@ export async function getDisplayInfo(): Promise<DisplayInfo[]> {
       },
       scaleFactor: display.scaleFactor,
       primary: display.id === primaryDisplay.id,
-    }));
+    }))
   } catch {
     // Not in Electron environment or screen not available
-    return [];
+    return []
   }
 }
 
@@ -206,24 +200,22 @@ export async function getDisplayInfo(): Promise<DisplayInfo[]> {
  * Collect all hardware information
  * @param config - Optional configuration
  */
-export async function collectHardwareInfo(
-  config?: Partial<HardwareInfoConfig>
-): Promise<HardwareInfo> {
-  const mergedConfig = { ...DEFAULT_HARDWARE_INFO_CONFIG, ...config };
+export async function collectHardwareInfo(config?: Partial<HardwareInfoConfig>): Promise<HardwareInfo> {
+  const mergedConfig = { ...DEFAULT_HARDWARE_INFO_CONFIG, ...config }
 
   try {
-    const osInfo = getOsInfo();
-    const cpuInfo = getCpuInfo();
-    const memoryInfo = getMemoryInfo();
+    const osInfo = getOsInfo()
+    const cpuInfo = getCpuInfo()
+    const memoryInfo = getMemoryInfo()
 
-    let networkInfo: NetworkInterface[] = [];
+    let networkInfo: NetworkInterface[] = []
     if (mergedConfig.includeNetwork) {
-      networkInfo = getNetworkInfo(mergedConfig.includeInternalInterfaces);
+      networkInfo = getNetworkInfo(mergedConfig.includeInternalInterfaces)
     }
 
-    let displayInfo: DisplayInfo[] = [];
+    let displayInfo: DisplayInfo[] = []
     if (mergedConfig.includeDisplays) {
-      displayInfo = await getDisplayInfo();
+      displayInfo = await getDisplayInfo()
     }
 
     const hardwareInfo: HardwareInfo = {
@@ -233,13 +225,13 @@ export async function collectHardwareInfo(
       network: networkInfo,
       displays: displayInfo,
       collectedAt: new Date().toISOString(),
-    };
+    }
 
-    logInfo(LOG_MESSAGES.HARDWARE_INFO_COLLECTED);
-    return hardwareInfo;
+    logInfo(LOG_MESSAGES.HARDWARE_INFO_COLLECTED)
+    return hardwareInfo
   } catch {
-    logError(ERROR_MESSAGES.HARDWARE_INFO_FAILED);
-    throw new Error(ERROR_MESSAGES.HARDWARE_INFO_FAILED);
+    logError(ERROR_MESSAGES.HARDWARE_INFO_FAILED)
+    throw new Error(ERROR_MESSAGES.HARDWARE_INFO_FAILED)
   }
 }
 
@@ -247,43 +239,45 @@ export async function collectHardwareInfo(
  * Format bytes to human-readable string
  */
 export function formatBytes(bytes: number): string {
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  let value = bytes;
-  let unitIndex = 0;
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let value = bytes
+  let unitIndex = 0
 
   while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex++;
+    value /= 1024
+    unitIndex++
   }
 
-  return `${value.toFixed(2)} ${units[unitIndex]}`;
+  return `${value.toFixed(2)} ${units[unitIndex]}`
 }
 
 /**
  * Get a summary string of hardware info
  */
 export async function getHardwareSummary(): Promise<string> {
-  const info = await collectHardwareInfo();
+  const info = await collectHardwareInfo()
 
   const lines = [
     `OS: ${info.os.type} ${info.os.release} (${info.os.arch})`,
     `CPU: ${info.cpu.model} (${info.cpu.cores} cores @ ${info.cpu.speed}MHz)`,
     `Memory: ${formatBytes(info.memory.used)} / ${formatBytes(info.memory.total)} (${info.memory.usagePercent}%)`,
-  ];
+  ]
 
   if (info.network.length > 0) {
-    const primaryNetwork = info.network[0];
+    const primaryNetwork = info.network[0]
     if (primaryNetwork) {
-      lines.push(`Network: ${primaryNetwork.name} (${primaryNetwork.ipv4.join(', ') || 'No IPv4'})`);
+      lines.push(`Network: ${primaryNetwork.name} (${primaryNetwork.ipv4.join(', ') || 'No IPv4'})`)
     }
   }
 
   if (info.displays.length > 0) {
-    const primaryDisplay = info.displays.find(d => d.primary) || info.displays[0];
+    const primaryDisplay = info.displays.find((d) => d.primary) || info.displays[0]
     if (primaryDisplay) {
-      lines.push(`Display: ${primaryDisplay.bounds.width}x${primaryDisplay.bounds.height} @ ${primaryDisplay.scaleFactor}x`);
+      lines.push(
+        `Display: ${primaryDisplay.bounds.width}x${primaryDisplay.bounds.height} @ ${primaryDisplay.scaleFactor}x`,
+      )
     }
   }
 
-  return lines.join('\n');
+  return lines.join('\n')
 }

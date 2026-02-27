@@ -88,6 +88,9 @@ importers:
       '@kiosk/logger':
         specifier: workspace:*
         version: link:../logger
+      '@kiosk/shared':
+        specifier: workspace:*
+        version: link:../../shared/types
       systeminformation:
         specifier: ^5.31.1
         version: 5.31.1

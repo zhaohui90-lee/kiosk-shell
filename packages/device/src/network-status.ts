@@ -1,8 +1,8 @@
 import { performance } from 'perf_hooks'
 
-import {
+import type {
   BusinessNetworkStatus
-} from './types'
+} from '@kiosk/shared'
 
 export async function checkBusinessStatus(url: string): Promise<BusinessNetworkStatus> {
   const start = performance.now()

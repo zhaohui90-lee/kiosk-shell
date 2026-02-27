@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@kiosk/logger": "workspace:*",
+    "@kiosk/shared": "workspace:*",
     "systeminformation": "^5.31.1"
   },
   "devDependencies": {
