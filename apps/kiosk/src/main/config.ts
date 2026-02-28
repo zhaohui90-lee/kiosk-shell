@@ -3,64 +3,25 @@
  * Loads configuration from external file with fallback to defaults
  */
 
-import { app } from 'electron';
-import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from 'fs';
-import { dirname, join } from 'path';
-import { getLogger } from '@kiosk/logger';
+import { app } from 'electron'
+import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from 'fs'
+import { dirname, join } from 'path'
+import { getLogger } from '@kiosk/logger'
+import { type AppConfig, DEFAULT_CONFIG } from '@kiosk/shared'
 
-const logger = getLogger();
-
-/**
- * Application configuration interface
- */
-export interface AppConfig {
-  /** Enable kiosk mode (fullscreen, shortcuts blocked) */
-  kioskMode: boolean;
-  /** Enable DevTools access */
-  devMode: boolean;
-  /** Enable crash monitoring */
-  crashMonitoring: boolean;
-  /** Enable blank screen detection */
-  blankDetection: boolean;
-  /** Content URL to load (file:// or kiosk://) */
-  contentUrl: string;
-  /** Window width (ignored in kiosk mode) */
-  width: number;
-  /** Window height (ignored in kiosk mode) */
-  height: number;
-  /** Whitelist of allowed external domains for CSP */
-  whitelist: string[];
-  /** Admin panel password (optional, overrides default) */
-  adminPassword?: string;
-}
-
-/**
- * Default configuration
- * In production: kiosk mode ON, devMode OFF
- * In development: kiosk mode OFF, devMode ON
- */
-const DEFAULT_CONFIG: AppConfig = {
-  kioskMode: process.env['NODE_ENV'] === 'production',
-  devMode: process.env['NODE_ENV'] !== 'production',
-  crashMonitoring: true,
-  blankDetection: true,
-  contentUrl: 'kiosk://renderer/index.html',
-  width: 1920,
-  height: 1080,
-  whitelist: [],
-};
+const logger = getLogger()
 
 /**
  * Configuration file name
  */
-const CONFIG_FILE_NAME = 'kiosk.config.json';
+const CONFIG_FILE_NAME = 'kiosk.config.json'
 
 /**
  * Get the configuration file path for writing (user overrides)
  * Always writes to userData directory (user-writable)
  */
 function getUserConfigFilePath(): string {
-  return join(app.getPath('userData'), CONFIG_FILE_NAME);
+  return join(app.getPath('userData'), CONFIG_FILE_NAME)
 }
 
 /**
@@ -70,10 +31,10 @@ function getUserConfigFilePath(): string {
  */
 function getBundledConfigFilePath(): string {
   if (app.isPackaged) {
-    return join(process.resourcesPath, CONFIG_FILE_NAME);
+    return join(process.resourcesPath, CONFIG_FILE_NAME)
   }
   // Development: use project root
-  return join(app.getAppPath(), CONFIG_FILE_NAME);
+  return join(app.getAppPath(), CONFIG_FILE_NAME)
 }
 
 /**
@@ -84,12 +45,12 @@ function getBundledConfigFilePath(): string {
 function getConfigFilePath(): string {
   if (!app.isPackaged) {
     // Development: use project root
-    return join(app.getAppPath(), CONFIG_FILE_NAME);
+    return join(app.getAppPath(), CONFIG_FILE_NAME)
   }
 
   // Production: always read from userData
   // (ensureProdConfig has already synced resources → userData)
-  return getUserConfigFilePath();
+  return getUserConfigFilePath()
 }
 
 /**
@@ -97,33 +58,33 @@ function getConfigFilePath(): string {
  * Falls back to defaults if file doesn't exist or is invalid
  */
 export function loadConfig(): AppConfig {
-  const configPath = getConfigFilePath();
+  const configPath = getConfigFilePath()
 
   try {
     if (existsSync(configPath)) {
-      const content = readFileSync(configPath, 'utf-8');
-      const fileConfig = JSON.parse(content) as Partial<AppConfig>;
+      const content = readFileSync(configPath, 'utf-8')
+      const fileConfig = JSON.parse(content) as Partial<AppConfig>
 
       // Merge with defaults (file config takes precedence)
-      const mergedConfig = { ...DEFAULT_CONFIG, ...fileConfig };
+      const mergedConfig = { ...DEFAULT_CONFIG, ...fileConfig }
 
-      logger.info('[config] Configuration loaded from file', { path: configPath });
+      logger.info('[config] Configuration loaded from file', { path: configPath })
       logger.debug('[config] Configuration values', {
         kioskMode: mergedConfig.kioskMode,
         devMode: mergedConfig.devMode,
-      });
+      })
 
-      return mergedConfig;
+      return mergedConfig
     }
   } catch (error) {
     logger.warn('[config] Failed to load configuration file, using defaults', {
       path: configPath,
       error: String(error),
-    });
+    })
   }
 
-  logger.info('[config] Using default configuration');
-  return { ...DEFAULT_CONFIG };
+  logger.info('[config] Using default configuration')
+  return { ...DEFAULT_CONFIG }
 }
 
 /**
@@ -131,20 +92,20 @@ export function loadConfig(): AppConfig {
  * Always saves to userData directory (user-writable)
  */
 export function saveConfig(config: AppConfig): void {
-  const configPath = app.isPackaged ? getUserConfigFilePath() : join(app.getAppPath(), CONFIG_FILE_NAME);
+  const configPath = app.isPackaged ? getUserConfigFilePath() : join(app.getAppPath(), CONFIG_FILE_NAME)
 
   try {
-    const dir = dirname(configPath);
+    const dir = dirname(configPath)
     if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true });
+      mkdirSync(dir, { recursive: true })
     }
-    writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
-    logger.info('[config] Configuration saved', { path: configPath });
+    writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8')
+    logger.info('[config] Configuration saved', { path: configPath })
   } catch (error) {
     logger.error('[config] Failed to save configuration', {
       path: configPath,
       error: String(error),
-    });
+    })
   }
 }
 
@@ -156,31 +117,31 @@ export function saveConfig(config: AppConfig): void {
 export function ensureConfigFile(): void {
   try {
     if (!app.isPackaged) {
-      ensureDevConfig();
+      ensureDevConfig()
     } else {
-      ensureProdConfig();
+      ensureProdConfig()
     }
   } catch (error) {
     logger.error('[config] Fatal error ensuring config file', {
       error: String(error),
-    });
-    throw error;
+    })
+    throw error
   }
 }
 
 function ensureDevConfig(): void {
   // Development: create default config at project root if not present
-  const devConfigPath = join(app.getAppPath(), CONFIG_FILE_NAME);
+  const devConfigPath = join(app.getAppPath(), CONFIG_FILE_NAME)
 
   if (!existsSync(devConfigPath)) {
     // create the default config
-    saveConfig(DEFAULT_CONFIG);
+    saveConfig(DEFAULT_CONFIG)
     logger.info('[config] Created default configuration file', {
-      path: devConfigPath
-    });
+      path: devConfigPath,
+    })
   } else {
     // In dev mode, ensure new default fields are added to existing config
-    updateDevConfigFile(devConfigPath);
+    updateDevConfigFile(devConfigPath)
   }
 }
 
@@ -190,23 +151,23 @@ function ensureDevConfig(): void {
  */
 function updateDevConfigFile(configPath: string): void {
   try {
-    const content = readFileSync(configPath, 'utf-8');
-    const existingConfig = JSON.parse(content) as Partial<AppConfig>;
-    const mergedConfig = { ...DEFAULT_CONFIG, ...existingConfig };
+    const content = readFileSync(configPath, 'utf-8')
+    const existingConfig = JSON.parse(content) as Partial<AppConfig>
+    const mergedConfig = { ...DEFAULT_CONFIG, ...existingConfig }
 
     // Compare to avoid unnecessary writes
-    const currentContent = JSON.stringify(existingConfig);
-    const mergedContent = JSON.stringify(mergedConfig);
+    const currentContent = JSON.stringify(existingConfig)
+    const mergedContent = JSON.stringify(mergedConfig)
     if (currentContent !== mergedContent) {
-      saveConfig(mergedConfig);
-      logger.info('[config] Updated dev configuration file with new default fields', { path: configPath });
+      saveConfig(mergedConfig)
+      logger.info('[config] Updated dev configuration file with new default fields', { path: configPath })
     } else {
-      logger.debug('[config] Dev configuration is up to date', { path: configPath });
+      logger.debug('[config] Dev configuration is up to date', { path: configPath })
     }
   } catch (error) {
     logger.warn('[config] Failed to update dev config, keeping existing', {
       error: String(error),
-    });
+    })
   }
 }
 
@@ -217,37 +178,37 @@ function updateDevConfigFile(configPath: string): void {
  * - resources doesn't exist + userData exists → keep userData unchanged
  */
 function ensureProdConfig(): void {
-  const userConfigPath = getUserConfigFilePath();
-  const bundledConfigPath = getBundledConfigFilePath();
+  const userConfigPath = getUserConfigFilePath()
+  const bundledConfigPath = getBundledConfigFilePath()
 
   if (existsSync(bundledConfigPath)) {
     // Resources config is the master config — always overwrite userData
     try {
-      const dir = dirname(userConfigPath);
+      const dir = dirname(userConfigPath)
       if (!existsSync(dir)) {
-        mkdirSync(dir, { recursive: true });
+        mkdirSync(dir, { recursive: true })
       }
-      copyFileSync(bundledConfigPath, userConfigPath);
+      copyFileSync(bundledConfigPath, userConfigPath)
       logger.info('[config] Synced bundled config to userData (overwrite)', {
         from: bundledConfigPath,
         to: userConfigPath,
-      });
+      })
     } catch (error) {
       logger.error('[config] Failed to copy bundled config to userData', {
         error: String(error),
-      });
+      })
     }
   } else if (!existsSync(userConfigPath)) {
     // No bundled config and no userData config — create from defaults
-    saveConfig(DEFAULT_CONFIG);
+    saveConfig(DEFAULT_CONFIG)
     logger.info('[config] Created default configuration file', {
-      path: userConfigPath
-    });
+      path: userConfigPath,
+    })
   } else {
     // No bundled config but userData exists — keep as-is
     logger.debug('[config] No bundled config found, keeping existing userData config', {
       path: userConfigPath,
-    });
+    })
   }
 }
 
@@ -255,7 +216,7 @@ function ensureProdConfig(): void {
  * Get default configuration
  */
 export function getDefaultConfig(): AppConfig {
-  return { ...DEFAULT_CONFIG };
+  return { ...DEFAULT_CONFIG }
 }
 
 /**
@@ -265,11 +226,11 @@ export function getDefaultConfig(): AppConfig {
  */
 export function generateCSP(whitelist: string[] = []): string {
   // Base sources (always allowed)
-  const baseSources = ["'self'", 'kiosk:'];
+  const baseSources = ["'self'", 'kiosk:']
 
   // Add whitelist domains
-  const allSources = [...baseSources, ...whitelist];
-  const sourcesStr = allSources.join(' ');
+  const allSources = [...baseSources, ...whitelist]
+  const sourcesStr = allSources.join(' ')
 
   // Build CSP directives
   const directives = [
@@ -281,9 +242,9 @@ export function generateCSP(whitelist: string[] = []): string {
     `connect-src ${sourcesStr}`,
     `media-src ${sourcesStr}`,
     `frame-src ${sourcesStr}`,
-  ];
+  ]
 
-  return directives.join('; ') + ';';
+  return directives.join('; ') + ';'
 }
 
-export { DEFAULT_CONFIG };
+export { DEFAULT_CONFIG }

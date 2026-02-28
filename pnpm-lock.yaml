@@ -41,6 +41,9 @@ importers:
       '@kiosk/security':
         specifier: workspace:*
         version: link:../../packages/security
+      '@kiosk/shared':
+        specifier: workspace:*
+        version: link:../../shared/types
       '@kiosk/updater':
         specifier: workspace:*
         version: link:../../packages/updater
@@ -255,6 +258,9 @@ importers:
 
   shared/types:
     devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.30
       typescript:
         specifier: ^5.3.0
         version: 5.9.3
