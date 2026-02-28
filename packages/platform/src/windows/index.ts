@@ -14,6 +14,7 @@ import type {
   RestartOptions,
   ShortcutConfig,
 } from '../types';
+import { getLocalIp } from '../utils';
 
 const execAsync = promisify(exec);
 
@@ -34,6 +35,7 @@ export class WindowsAdapter implements PlatformAdapter {
       totalMemory: os.totalmem(),
       freeMemory: os.freemem(),
       cpuCount: os.cpus().length,
+      ip: getLocalIp(),
     };
   }
 
