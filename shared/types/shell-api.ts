@@ -5,6 +5,7 @@
 
 export interface DeviceInfo {
   uuid: string
+  deviceId: string
   platform: 'win32' | 'darwin'
   arch: string
   hostname: string
@@ -21,7 +22,7 @@ export interface SystemResource {
   /** % 0-100 */
   cpuUsage: number
   /** MB */
-  memUsed: number
+  memFree: number
   /** MB */
   memTotal: number
   /** GB */

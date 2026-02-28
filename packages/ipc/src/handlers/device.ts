@@ -33,6 +33,17 @@ async function getDeviceUuid(): Promise<string> {
   }
 }
 
+async function getDeviceId(): Promise<string> {
+  try {
+    // todo
+    return 'null'
+  } catch (error) {
+    const err = error as Error;
+    logger.error('[IPC:Device] Failed to get device id', { error: err.message });
+    return 'N/A'
+  }
+}
+
 /**
  * Handle get device info request
  */
@@ -46,9 +57,11 @@ async function handleGetDeviceInfo(
     const systemInfo = platform.getSystemInfo();
 
     const uuid = await getDeviceUuid();
+    const deviceId = await getDeviceId()
 
     const deviceInfo: DeviceInfoResult = {
       uuid,
+      deviceId,
       platform: systemInfo.platform,
       arch: systemInfo.arch,
       hostname: systemInfo.hostname,

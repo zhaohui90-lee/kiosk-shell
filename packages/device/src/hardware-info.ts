@@ -136,7 +136,7 @@ export async function getSystemMerics(): Promise<SystemResource> {
 
     return {
       cpuUsage: Math.round(cpuLoad.currentLoad),
-      memUsed: Math.round(mem.active / (1024 * 1024)), // 转为 MB
+      memFree: Math.round(mem.free / (1024 * 1024)), // 转为 MB
       memTotal: Math.round(mem.total / (1024 * 1024)),
       diskUsed: Math.round(fsSize[0]!.used / (1024 * 1024 * 1024)), // 主分区 GB
       diskTotal: Math.round(fsSize[0]!.size / (1024 * 1024 * 1024)),
@@ -146,7 +146,7 @@ export async function getSystemMerics(): Promise<SystemResource> {
     getHardwareLogger().info(`[system-metrics] ${error}`)
     return {
       cpuUsage: 0,
-      memUsed: 0,
+      memFree: 0,
       memTotal: 0,
       diskTotal: 0,
       diskUsed: 0,

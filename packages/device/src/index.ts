@@ -57,7 +57,5 @@ export {
   getSystemMerics
 } from './hardware-info';
 
-// Export business status
-export {
-  checkBusinessStatus
-} from './network-status'
+// Export app info
+export * from './app-info'

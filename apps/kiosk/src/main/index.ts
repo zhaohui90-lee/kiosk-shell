@@ -31,13 +31,13 @@ import { enableKioskMode } from '@kiosk/security'
 import { startCrashMonitoring, startBlankDetection } from '@kiosk/recovery'
 
 // Device
-import { initUuidManager, getDeviceUuidAsync } from '@kiosk/device'
+import { initUuidManager, getDeviceUuidAsync, loadConfig } from '@kiosk/device'
 
 // Platform
 import { getPlatformAdapter } from '@kiosk/platform'
 
 // Configuration
-import { loadConfig, ensureConfigFile, generateCSP } from './config'
+import { ensureConfigFile, generateCSP } from './config'
 
 import type { AppConfig } from '@kiosk/shared'
 

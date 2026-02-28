@@ -441,6 +441,10 @@
           <span class="info-label">Memory</span>
           <span class="info-value" id="info-memory">-</span>
         </div>
+        <div class="info-row">
+          <span class="info-label">ip address</span>
+          <span class="info-value" id="ip-address">-</span>
+        </div>
       </div>
 
       <!-- Actions -->
@@ -578,6 +582,7 @@
           document.getElementById('info-arch').textContent = d.arch || '-';
           document.getElementById('info-hostname').textContent = d.hostname || '-';
           document.getElementById('info-electron').textContent = d.electronVersion || '-';
+          document.getElementById('ip-address').textContent = d.ip || '-'
 
           if (d.totalMemory && d.freeMemory) {
             const totalGB = (d.totalMemory / (1024 * 1024 * 1024)).toFixed(1);

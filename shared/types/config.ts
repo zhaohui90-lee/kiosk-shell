@@ -20,6 +20,8 @@ export interface AppConfig {
   whitelist: string[]
   /** Admin panel password (optional, overrides default) */
   adminPassword?: string
+  /** Device number */
+  deviceNo: string
 }
 
 /**
@@ -36,4 +38,5 @@ export const DEFAULT_CONFIG: AppConfig = {
   width: 1920,
   height: 1080,
   whitelist: [],
+  deviceNo: 'KSK-001',
 }

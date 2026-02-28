@@ -270,6 +270,7 @@ async function handleAdminGetSystemInfo(
       totalMemory: systemInfo.totalMemory,
       freeMemory: systemInfo.freeMemory,
       cpuCount: systemInfo.cpuCount,
+      ip: systemInfo.ip,
       electronVersion: process.versions['electron'],
       nodeVersion: process.versions['node'],
       chromeVersion: process.versions['chrome'],
