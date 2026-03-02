@@ -11,7 +11,8 @@ import { randomBytes } from 'crypto'
 import { getLogger } from '@kiosk/logger'
 import { getPlatformAdapter } from '@kiosk/platform'
 import { getSystemMerics, checkBusinessStatus, loadConfig } from '@kiosk/device'
-import { IPC_CHANNELS, AdminNetworkTestResult, type AdminLoginResult, type AdminOperationResult } from '../types'
+import { getWindowManager } from '@kiosk/core'
+import { IPC_CHANNELS, AdminNetworkTestResult, type AdminLoginResult, type AdminOperationResult, AdminWindowCloseResult } from '../types'
 import { DEFAULT_ADMIN_PASSWORD, ERROR_MESSAGES } from '../constants'
 import { checkRateLimit } from '../rate-limiter'
 
@@ -72,6 +73,33 @@ function verifyToken(token: string): boolean {
 export function invalidateSession(): void {
   activeSessionToken = null
   logger.debug('[IPC:Admin] Session invalidated')
+}
+
+/**
+ * Handle admin window close
+ */
+async function handleAdminPanelClose(_event: Electron.IpcMainInvokeEvent): Promise<AdminWindowCloseResult> {
+  const channel = IPC_CHANNELS.ADMIN_WINDOW_CLOSE
+  if (!checkRateLimit(channel)) {
+    logger.warn('[IPC:Admin] Login request rate limited')
+    return { success: false, message: ERROR_MESSAGES.RATE_LIMITED }
+  }
+
+  logger.info('[IPC:Admin] Window close request')
+
+  // Hide admin panel and invalidate session so user must re-login next time
+  const windowManager = getWindowManager()
+  windowManager.hideAdminWindow()
+  invalidateSession()
+
+  // Restore focus to main business window
+  if (mainWindowRef && !mainWindowRef.isDestroyed()) {
+    mainWindowRef.focus()
+  }
+
+  logger.info('[IPC:Admin] Admin panel hidden, session invalidated')
+
+  return { success: true }
 }
 
 /**
@@ -440,6 +468,7 @@ function parsePingResult(output: string, host: string, platform: string): AdminN
 export function registerAdminHandlers(): void {
   logger.debug('[IPC:Admin] Registering admin handlers')
 
+  ipcMain.handle(IPC_CHANNELS.ADMIN_WINDOW_CLOSE, handleAdminPanelClose)
   ipcMain.handle(IPC_CHANNELS.ADMIN_LOGIN, handleAdminLogin)
   ipcMain.handle(IPC_CHANNELS.ADMIN_EXIT_APP, handleAdminExitApp)
   ipcMain.handle(IPC_CHANNELS.ADMIN_RESTART_APP, handleAdminRestartApp)
@@ -468,6 +497,7 @@ export function registerAdminHandlers(): void {
 export function unregisterAdminHandlers(): void {
   logger.debug('[IPC:Admin] Unregistering admin handlers')
 
+  ipcMain.removeHandler(IPC_CHANNELS.ADMIN_WINDOW_CLOSE)
   ipcMain.removeHandler(IPC_CHANNELS.ADMIN_LOGIN)
   ipcMain.removeHandler(IPC_CHANNELS.ADMIN_EXIT_APP)
   ipcMain.removeHandler(IPC_CHANNELS.ADMIN_RESTART_APP)

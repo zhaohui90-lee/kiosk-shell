@@ -415,6 +415,7 @@
           <input type="password" id="password-input" placeholder="Password" autocomplete="off" />
         </div>
         <button class="btn btn-primary" id="btn-login">Login</button>
+        <button class="btn btn-primary" id="btn-shut-down">Shut down</button>
         <div class="error-text" id="login-error"></div>
       </div>
 
@@ -539,6 +540,7 @@
       const operationsSection = document.getElementById('operations-section')
       const passwordInput = document.getElementById('password-input')
       const btnLogin = document.getElementById('btn-login')
+      const btnShutDown = document.getElementById('shut-down')
       const loginError = document.getElementById('login-error')
       const btnLogout = document.getElementById('btn-logout')
       const btnClose = document.getElementById('btn-close')
@@ -559,6 +561,14 @@
       passwordInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') doLogin()
       })
+      
+      // Shut down
+      btnShutDown.addEventListener('click', doShutdown)
+      async function doShutdown() {
+        console.log('trigger shut down btn...');
+        
+        await window.adminAPI.closeAdminWindow()
+      }
 
       async function doLogin() {
         const password = passwordInput.value

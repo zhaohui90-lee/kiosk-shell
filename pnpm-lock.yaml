@@ -69,6 +69,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@kiosk/device':
+        specifier: workspace:*
+        version: link:../device
       '@kiosk/logger':
         specifier: workspace:*
         version: link:../logger
@@ -113,6 +116,9 @@ importers:
 
   packages/ipc:
     dependencies:
+      '@kiosk/core':
+        specifier: workspace:*
+        version: link:../core
       '@kiosk/device':
         specifier: workspace:*
         version: link:../device

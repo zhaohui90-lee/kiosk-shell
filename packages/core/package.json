@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@kiosk/logger": "workspace:*",
-    "@kiosk/platform": "workspace:*"
+    "@kiosk/platform": "workspace:*",
+    "@kiosk/device": "workspace:*"
   },
   "devDependencies": {
     "electron": "^40.1.0",

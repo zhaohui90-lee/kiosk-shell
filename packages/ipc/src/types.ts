@@ -22,6 +22,7 @@ export const IPC_CHANNELS = {
   OPEN_DEV_TOOLS: 'shell:openDevTools',
 
   // Admin panel (requires session token)
+  ADMIN_WINDOW_CLOSE: 'shell:adminWindowClose',
   ADMIN_LOGIN: 'shell:adminLogin',
   ADMIN_EXIT_APP: 'shell:adminExitApp',
   ADMIN_RESTART_APP: 'shell:adminRestartApp',
@@ -61,6 +62,7 @@ export const RATE_LIMITS: Partial<Record<IpcChannel, RateLimitConfig>> = {
   [IPC_CHANNELS.SYSTEM_SHUTDOWN]: { maxCalls: 1, windowMs: 60000 },
   [IPC_CHANNELS.SYSTEM_RESTART]: { maxCalls: 1, windowMs: 60000 },
   [IPC_CHANNELS.OPEN_DEV_TOOLS]: { maxCalls: 3, windowMs: 60000 },
+  [IPC_CHANNELS.ADMIN_WINDOW_CLOSE]: { maxCalls: 1, windowMs: 60000 },
   [IPC_CHANNELS.ADMIN_LOGIN]: { maxCalls: 5, windowMs: 60000 },
   [IPC_CHANNELS.ADMIN_EXIT_APP]: { maxCalls: 1, windowMs: 60000 },
   [IPC_CHANNELS.ADMIN_RESTART_APP]: { maxCalls: 1, windowMs: 60000 },
@@ -105,6 +107,14 @@ export interface DeviceInfoResult extends DeviceInfo {}
 export interface UpdateResult extends UpdateInfo {}
 
 export interface DebugResult {
+  success: boolean
+  message?: string
+}
+
+/**
+ * Admin window result
+ */
+export interface AdminWindowCloseResult {
   success: boolean
   message?: string
 }

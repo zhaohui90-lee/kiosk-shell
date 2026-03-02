@@ -9,12 +9,14 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC_CHANNELS } from './types'
 import { ADMIN_API_NAMESPACE } from './constants'
-import type { AdminLoginResult, AdminOperationResult, AdminNetworkTestResult } from './types'
+import type { AdminWindowCloseResult, AdminLoginResult, AdminOperationResult, AdminNetworkTestResult } from './types'
 
 /**
  * Admin API interface (exposed to admin window renderer)
  */
 export interface AdminAPI {
+  /** Close the admin window */
+  closeAdminWindow(): Promise<AdminWindowCloseResult>
   /** Login with admin password, returns session token */
   login(password: string): Promise<AdminLoginResult>
   /** Exit the application */
@@ -39,6 +41,10 @@ export interface AdminAPI {
  * Admin API implementation
  */
 const adminAPI: AdminAPI = {
+  async closeAdminWindow(): Promise<AdminWindowCloseResult> {
+    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_WINDOW_CLOSE)
+  },
+
   async login(password: string): Promise<AdminLoginResult> {
     return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_LOGIN, password)
   },
