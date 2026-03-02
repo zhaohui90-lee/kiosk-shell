@@ -326,6 +326,19 @@ async function handleAdminReloadBusiness(
 
 const execAsync = promisify(exec)
 
+/**
+ * Validate hostname to prevent command injection.
+ * Only allows valid hostnames and IP addresses.
+ */
+function isValidHost(host: string): boolean {
+  // Allow valid hostnames (RFC 1123) and IPv4/IPv6 addresses
+  const hostnameRegex = /^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*$/
+  const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/
+  const ipv6Regex = /^[0-9a-fA-F:]+$/
+
+  return hostnameRegex.test(host) || ipv4Regex.test(host) || ipv6Regex.test(host)
+}
+
 async function handleAdminTestNetwork(
   _event: Electron.IpcMainInvokeEvent,
   token: string,
@@ -337,7 +350,12 @@ async function handleAdminTestNetwork(
     return { success: false, message: ERROR_MESSAGES.INVALID_TOKEN }
   }
 
-  logger.info('[IPC:Admin] Test network requested')
+  if (!host || !isValidHost(host)) {
+    logger.warn('[IPC:Admin] Test network rejected: invalid host', { host })
+    return { success: false, message: 'Invalid host parameter' }
+  }
+
+  logger.info('[IPC:Admin] Test network requested', { host })
 
   try {
     const platform = os.platform()
@@ -384,14 +402,18 @@ function parsePingResult(output: string, host: string, platform: string): AdminN
     }
   } else {
     // Linux/Mac 解析
-    const statsMatch = output.match(/(\d+) packets transmitted, (\d+) received, ([\d.]+)% packet loss/)
+    // Linux: "4 packets transmitted, 4 received, 0% packet loss"
+    // macOS: "4 packets transmitted, 4 packets received, 0.0% packet loss"
+    const statsMatch = output.match(/(\d+) packets transmitted, (\d+)(?: packets)? received, ([\d.]+)% packet loss/)
     if (statsMatch) {
       sent = parseInt(statsMatch[1]!)
       received = parseInt(statsMatch[2]!)
       packetLoss = parseFloat(statsMatch[3]!)
     }
 
-    const timeMatch = output.match(/min\/avg\/max\/stddev = ([\d.]+)\/([\d.]+)\/([\d.]+)/)
+    // Linux: "rtt min/avg/max/mdev = 0.380/0.405/0.431/0.026 ms"
+    // macOS: "round-trip min/avg/max/stddev = 0.380/0.405/0.431/0.026 ms"
+    const timeMatch = output.match(/min\/avg\/max\/(?:std|m)dev = ([\d.]+)\/([\d.]+)\/([\d.]+)/)
     if (timeMatch) {
       minTime = parseFloat(timeMatch[1]!)
       avgTime = parseFloat(timeMatch[2]!)
@@ -474,4 +496,6 @@ export {
   handleAdminGetSystemInfo,
   handleAdminReloadBusiness,
   handleAdminTestNetwork,
+  parsePingResult,
+  isValidHost,
 }
