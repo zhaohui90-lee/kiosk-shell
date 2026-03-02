@@ -62,7 +62,6 @@ export const RATE_LIMITS: Partial<Record<IpcChannel, RateLimitConfig>> = {
   [IPC_CHANNELS.SYSTEM_SHUTDOWN]: { maxCalls: 1, windowMs: 60000 },
   [IPC_CHANNELS.SYSTEM_RESTART]: { maxCalls: 1, windowMs: 60000 },
   [IPC_CHANNELS.OPEN_DEV_TOOLS]: { maxCalls: 3, windowMs: 60000 },
-  [IPC_CHANNELS.ADMIN_WINDOW_CLOSE]: { maxCalls: 1, windowMs: 60000 },
   [IPC_CHANNELS.ADMIN_LOGIN]: { maxCalls: 5, windowMs: 60000 },
   [IPC_CHANNELS.ADMIN_EXIT_APP]: { maxCalls: 1, windowMs: 60000 },
   [IPC_CHANNELS.ADMIN_RESTART_APP]: { maxCalls: 1, windowMs: 60000 },

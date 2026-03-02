@@ -114,4 +114,70 @@ function exposeShellAPI(): void {
 // Auto-expose when script loads (only in preload context)
 exposeShellAPI()
 
-export { shellAPI, exposeShellAPI }
+/**
+ * Admin trigger click zone configuration
+ */
+const CLICK_ZONE_CONFIG = {
+  /** Size of the invisible click zone in pixels */
+  size: 50,
+  /** Number of consecutive clicks required */
+  clickThreshold: 5,
+  /** Time window for consecutive clicks in milliseconds */
+  timeWindowMs: 2000,
+}
+
+/**
+ * Inject a hidden click zone at the bottom-left corner of the page.
+ * When tapped consecutively (5 times within 2 seconds), triggers the admin panel.
+ * This enables admin access on kiosk devices without an external keyboard.
+ */
+function injectAdminTriggerZone(): void {
+  if (!isPreloadContext()) return
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const clickTimestamps: number[] = []
+
+    const zone = document.createElement('div')
+    zone.id = '__kiosk_admin_trigger'
+    zone.style.cssText = [
+      'position: fixed',
+      'left: 0',
+      'bottom: 0',
+      `width: ${CLICK_ZONE_CONFIG.size}px`,
+      `height: ${CLICK_ZONE_CONFIG.size}px`,
+      'z-index: 2147483647',
+      'background: transparent',
+      'cursor: default',
+      '-webkit-tap-highlight-color: transparent',
+      'touch-action: manipulation',
+      'user-select: none',
+    ].join('; ')
+
+    zone.addEventListener('click', () => {
+      const now = Date.now()
+      clickTimestamps.push(now)
+
+      // Remove clicks outside time window
+      while (
+        clickTimestamps.length > 0 &&
+        now - clickTimestamps[0]! > CLICK_ZONE_CONFIG.timeWindowMs
+      ) {
+        clickTimestamps.shift()
+      }
+
+      if (clickTimestamps.length >= CLICK_ZONE_CONFIG.clickThreshold) {
+        clickTimestamps.length = 0
+        console.log('[Preload] Admin trigger activated via click zone')
+        ipcRenderer.send(IPC_CHANNELS.ADMIN_TRIGGER)
+      }
+    })
+
+    document.body.appendChild(zone)
+    console.log('[Preload] Admin trigger click zone injected')
+  })
+}
+
+// Inject click zone for admin trigger
+injectAdminTriggerZone()
+
+export { shellAPI, exposeShellAPI, injectAdminTriggerZone, CLICK_ZONE_CONFIG }

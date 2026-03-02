@@ -412,7 +412,7 @@ export class WindowManager {
     this.adminWindow.on('close', (event) => {
       if (this.adminWindow && !this.adminWindow.isDestroyed()) {
         event.preventDefault()
-        this.adminWindow.hide()
+        this.hideAdminWindow()
         logger.debug('Admin window hidden (close intercepted)')
       }
     })
@@ -433,6 +433,10 @@ export class WindowManager {
       logger.info('Showing admin window')
       this.adminWindow.show()
       this.adminWindow.focus()
+
+      // Open DevTools with admin panel (admin panel has devTools: true)
+      this.adminWindow.webContents.openDevTools({ mode: 'detach' })
+      logger.debug('Admin DevTools opened')
     }
   }
 
@@ -441,6 +445,12 @@ export class WindowManager {
    */
   hideAdminWindow(): void {
     if (!this.isAdminWindowValid()) return
+
+    // Close DevTools when admin panel hides
+    if (this.adminWindow!.webContents.isDevToolsOpened()) {
+      this.adminWindow!.webContents.closeDevTools()
+      logger.debug('Admin DevTools closed')
+    }
 
     logger.debug('Hiding admin window')
     this.adminWindow!.hide()

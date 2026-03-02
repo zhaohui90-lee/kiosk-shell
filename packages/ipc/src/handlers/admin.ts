@@ -79,11 +79,6 @@ export function invalidateSession(): void {
  * Handle admin window close
  */
 async function handleAdminPanelClose(_event: Electron.IpcMainInvokeEvent): Promise<AdminWindowCloseResult> {
-  const channel = IPC_CHANNELS.ADMIN_WINDOW_CLOSE
-  if (!checkRateLimit(channel)) {
-    logger.warn('[IPC:Admin] Login request rate limited')
-    return { success: false, message: ERROR_MESSAGES.RATE_LIMITED }
-  }
 
   logger.info('[IPC:Admin] Window close request')
 

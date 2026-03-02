@@ -56,6 +56,13 @@ vi.mock('@kiosk/logger', () => ({
   }),
 }));
 
+vi.mock('@kiosk/device', () => ({
+  loadConfig: vi.fn(() => ({
+    width: 480,
+    height: 768,
+  })),
+}));
+
 import { createWindowManager } from '../window';
 import type { WindowManager } from '../window';
 
@@ -77,7 +84,7 @@ describe('Admin Window Management', () => {
       expect(BrowserWindow).toHaveBeenCalledWith(
         expect.objectContaining({
           width: 480,
-          height: 600,
+          height: 768,
           show: false,
           frame: false,
           alwaysOnTop: true,
@@ -132,10 +139,18 @@ describe('Admin Window Management', () => {
       expect(mockAdminWindow.focus).toHaveBeenCalled();
     });
 
-    it('should not show if admin window is not valid', () => {
-      // No admin window created
+    it('should open DevTools when showing admin window', () => {
+      manager.createAdminWindow();
       manager.showAdminWindow();
-      expect(mockAdminWindow.show).not.toHaveBeenCalled();
+
+      expect(mockAdminWindow.webContents.openDevTools).toHaveBeenCalledWith({ mode: 'detach' });
+    });
+
+    it('should recreate and show admin window if not valid', () => {
+      // No admin window created, showAdminWindow auto-recreates
+      manager.showAdminWindow();
+      expect(mockAdminWindow.show).toHaveBeenCalled();
+      expect(mockAdminWindow.focus).toHaveBeenCalled();
     });
   });
 
@@ -144,6 +159,26 @@ describe('Admin Window Management', () => {
       manager.createAdminWindow();
       manager.hideAdminWindow();
 
+      expect(mockAdminWindow.hide).toHaveBeenCalled();
+    });
+
+    it('should close DevTools when hiding admin window if DevTools are open', () => {
+      manager.createAdminWindow();
+      mockAdminWindow.webContents.isDevToolsOpened.mockReturnValue(true);
+
+      manager.hideAdminWindow();
+
+      expect(mockAdminWindow.webContents.closeDevTools).toHaveBeenCalled();
+      expect(mockAdminWindow.hide).toHaveBeenCalled();
+    });
+
+    it('should not call closeDevTools if DevTools are not open', () => {
+      manager.createAdminWindow();
+      mockAdminWindow.webContents.isDevToolsOpened.mockReturnValue(false);
+
+      manager.hideAdminWindow();
+
+      expect(mockAdminWindow.webContents.closeDevTools).not.toHaveBeenCalled();
       expect(mockAdminWindow.hide).toHaveBeenCalled();
     });
   });
@@ -230,8 +265,9 @@ describe('Admin Window Management', () => {
   });
 
   describe('close intercept', () => {
-    it('should hide admin window on close instead of destroying', () => {
+    it('should hide admin window and close DevTools on close instead of destroying', () => {
       manager.createAdminWindow();
+      mockAdminWindow.webContents.isDevToolsOpened.mockReturnValue(true);
 
       // Get the close handler from on('close', handler)
       const closeCall = mockAdminWindow.on.mock.calls.find(
@@ -246,6 +282,7 @@ describe('Admin Window Management', () => {
       closeHandler(mockEvent);
 
       expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(mockAdminWindow.webContents.closeDevTools).toHaveBeenCalled();
       expect(mockAdminWindow.hide).toHaveBeenCalled();
     });
   });
