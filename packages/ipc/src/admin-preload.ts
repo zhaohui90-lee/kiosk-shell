@@ -6,31 +6,33 @@
  * All API methods must use ipcRenderer.invoke() to communicate with main process.
  */
 
-import { contextBridge, ipcRenderer } from 'electron';
-import { IPC_CHANNELS } from './types';
-import { ADMIN_API_NAMESPACE } from './constants';
-import type { AdminLoginResult, AdminOperationResult } from './types';
+import { contextBridge, ipcRenderer } from 'electron'
+import { IPC_CHANNELS } from './types'
+import { ADMIN_API_NAMESPACE } from './constants'
+import type { AdminLoginResult, AdminOperationResult, AdminNetworkTestResult } from './types'
 
 /**
  * Admin API interface (exposed to admin window renderer)
  */
 export interface AdminAPI {
   /** Login with admin password, returns session token */
-  login(password: string): Promise<AdminLoginResult>;
+  login(password: string): Promise<AdminLoginResult>
   /** Exit the application */
-  exitApp(token: string): Promise<AdminOperationResult>;
+  exitApp(token: string): Promise<AdminOperationResult>
   /** Restart the application */
-  restartApp(token: string): Promise<AdminOperationResult>;
+  restartApp(token: string): Promise<AdminOperationResult>
   /** Restart the operating system */
-  systemRestart(token: string): Promise<AdminOperationResult>;
+  systemRestart(token: string): Promise<AdminOperationResult>
   /** Shutdown the operating system */
-  systemShutdown(token: string): Promise<AdminOperationResult>;
+  systemShutdown(token: string): Promise<AdminOperationResult>
   /** Get current app config (read-only) */
-  getConfig(token: string): Promise<AdminOperationResult>;
+  getConfig(token: string): Promise<AdminOperationResult>
   /** Get system information */
-  getSystemInfo(token: string): Promise<AdminOperationResult>;
+  getSystemInfo(token: string): Promise<AdminOperationResult>
   /** Reload business page */
-  reloadBusiness(token: string): Promise<AdminOperationResult>;
+  reloadBusiness(token: string): Promise<AdminOperationResult>
+  /** Network test */
+  testNetwork(token: string, host: string): Promise<AdminNetworkTestResult>
 }
 
 /**
@@ -38,43 +40,47 @@ export interface AdminAPI {
  */
 const adminAPI: AdminAPI = {
   async login(password: string): Promise<AdminLoginResult> {
-    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_LOGIN, password);
+    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_LOGIN, password)
   },
 
   async exitApp(token: string): Promise<AdminOperationResult> {
-    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_EXIT_APP, token);
+    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_EXIT_APP, token)
   },
 
   async restartApp(token: string): Promise<AdminOperationResult> {
-    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_RESTART_APP, token);
+    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_RESTART_APP, token)
   },
 
   async systemRestart(token: string): Promise<AdminOperationResult> {
-    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_SYSTEM_RESTART, token);
+    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_SYSTEM_RESTART, token)
   },
 
   async systemShutdown(token: string): Promise<AdminOperationResult> {
-    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_SYSTEM_SHUTDOWN, token);
+    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_SYSTEM_SHUTDOWN, token)
   },
 
   async getConfig(token: string): Promise<AdminOperationResult> {
-    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_GET_CONFIG, token);
+    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_GET_CONFIG, token)
   },
 
   async getSystemInfo(token: string): Promise<AdminOperationResult> {
-    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_GET_SYSTEM_INFO, token);
+    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_GET_SYSTEM_INFO, token)
   },
 
   async reloadBusiness(token: string): Promise<AdminOperationResult> {
-    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_RELOAD_BUSINESS, token);
+    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_RELOAD_BUSINESS, token)
   },
-};
+
+  async testNetwork(token: string, host: string): Promise<AdminNetworkTestResult> {
+    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_NETWORK_TEST, token, host)
+  }
+}
 
 /**
  * Check if running in preload context
  */
 function isPreloadContext(): boolean {
-  return typeof contextBridge !== 'undefined' && contextBridge !== null;
+  return typeof contextBridge !== 'undefined' && contextBridge !== null
 }
 
 /**
@@ -82,18 +88,18 @@ function isPreloadContext(): boolean {
  */
 function exposeAdminAPI(): void {
   if (!isPreloadContext()) {
-    return;
+    return
   }
 
   try {
-    contextBridge.exposeInMainWorld(ADMIN_API_NAMESPACE, adminAPI);
-    console.log('[AdminPreload] adminAPI exposed successfully');
+    contextBridge.exposeInMainWorld(ADMIN_API_NAMESPACE, adminAPI)
+    console.log('[AdminPreload] adminAPI exposed successfully')
   } catch (error) {
-    console.error('[AdminPreload] Failed to expose adminAPI:', error);
+    console.error('[AdminPreload] Failed to expose adminAPI:', error)
   }
 }
 
 // Auto-expose when script loads
-exposeAdminAPI();
+exposeAdminAPI()
 
-export { adminAPI, exposeAdminAPI };
+export { adminAPI, exposeAdminAPI }

@@ -4,11 +4,14 @@
  */
 
 import { ipcMain, app, BrowserWindow } from 'electron'
+import os from 'os'
+import { exec } from 'child_process'
+import { promisify } from 'util'
 import { randomBytes } from 'crypto'
 import { getLogger } from '@kiosk/logger'
 import { getPlatformAdapter } from '@kiosk/platform'
-import { getSystemMerics, checkBusinessStatus } from '@kiosk/device'
-import { IPC_CHANNELS, type AdminLoginResult, type AdminOperationResult } from '../types'
+import { getSystemMerics, checkBusinessStatus, loadConfig } from '@kiosk/device'
+import { IPC_CHANNELS, AdminNetworkTestResult, type AdminLoginResult, type AdminOperationResult } from '../types'
 import { DEFAULT_ADMIN_PASSWORD, ERROR_MESSAGES } from '../constants'
 import { checkRateLimit } from '../rate-limiter'
 
@@ -228,12 +231,14 @@ async function handleAdminGetConfig(_event: Electron.IpcMainInvokeEvent, token: 
   logger.debug('[IPC:Admin] Get config requested')
 
   try {
+    const appConfig = loadConfig()
     // Return basic app info (not the actual config object to avoid exposing passwords)
     const data: Record<string, unknown> = {
       version: app.getVersion(),
       isPackaged: app.isPackaged,
       locale: app.getLocale(),
       appPath: app.getAppPath(),
+      deviceNo: appConfig.deviceNo,
     }
 
     return { success: true, data }
@@ -319,6 +324,94 @@ async function handleAdminReloadBusiness(
   }
 }
 
+const execAsync = promisify(exec)
+
+async function handleAdminTestNetwork(
+  _event: Electron.IpcMainInvokeEvent,
+  token: string,
+  host: string,
+  count = 4,
+): Promise<AdminNetworkTestResult> {
+  if (!verifyToken(token)) {
+    logger.warn('[IPC:Admin] Test network rejected: invalid token')
+    return { success: false, message: ERROR_MESSAGES.INVALID_TOKEN }
+  }
+
+  logger.info('[IPC:Admin] Test network requested')
+
+  try {
+    const platform = os.platform()
+    let command: string
+
+    if (platform === 'win32') {
+      // windows
+      command = `ping -n ${count} ${host}`
+    } else {
+      // linux/mac
+      command = `ping -c ${count} ${host}`
+    }
+
+    const { stdout } = await execAsync(command)
+
+    return parsePingResult(stdout, host, platform)
+  } catch (error) {
+    const err = error as Error
+    logger.error('[IPC:Admin] Test network failed', { error: err.message })
+    return { success: false, message: `${ERROR_MESSAGES.OPERATION_FAILED}: ${err.message}` }
+  }
+}
+
+function parsePingResult(output: string, host: string, platform: string): AdminNetworkTestResult {
+  let sent = 0, received = 0, packetLoss = 0
+  let minTime = 0, maxTime = 0, avgTime = 0
+
+  if (platform === 'win32') {
+    // Windows 解析
+    const sentMatch = output.match(/已发送 = (\d+)/)
+    const receivedMatch = output.match(/已接收 = (\d+)/)
+    const lossMatch = output.match(/丢失 = (\d+)/)
+
+    sent = sentMatch ? parseInt(sentMatch[1]!) : 0
+    received = receivedMatch ? parseInt(receivedMatch[1]!) : 0
+    const lost = lossMatch ? parseInt(lossMatch[1]!) : 0
+    packetLoss = sent > 0 ? (lost / sent) * 100 : 0
+
+    const timeMatch = output.match(/最短 = (\d+)ms，最长 = (\d+)ms，平均 = (\d+)ms/)
+    if (timeMatch) {
+      minTime = parseInt(timeMatch[1]!)
+      maxTime = parseInt(timeMatch[2]!)
+      avgTime = parseInt(timeMatch[3]!)
+    }
+  } else {
+    // Linux/Mac 解析
+    const statsMatch = output.match(/(\d+) packets transmitted, (\d+) received, ([\d.]+)% packet loss/)
+    if (statsMatch) {
+      sent = parseInt(statsMatch[1]!)
+      received = parseInt(statsMatch[2]!)
+      packetLoss = parseFloat(statsMatch[3]!)
+    }
+
+    const timeMatch = output.match(/min\/avg\/max\/stddev = ([\d.]+)\/([\d.]+)\/([\d.]+)/)
+    if (timeMatch) {
+      minTime = parseFloat(timeMatch[1]!)
+      avgTime = parseFloat(timeMatch[2]!)
+      maxTime = parseFloat(timeMatch[3]!)
+    }
+  }
+
+  return {
+    success: true,
+    host,
+    sent,
+    received,
+    packetLoss,
+    minTime,
+    maxTime,
+    avgTime,
+    timestamp: Date.now(),
+  }
+}
+
 /**
  * Register admin IPC handlers
  */
@@ -333,6 +426,7 @@ export function registerAdminHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.ADMIN_GET_CONFIG, handleAdminGetConfig)
   ipcMain.handle(IPC_CHANNELS.ADMIN_GET_SYSTEM_INFO, handleAdminGetSystemInfo)
   ipcMain.handle(IPC_CHANNELS.ADMIN_RELOAD_BUSINESS, handleAdminReloadBusiness)
+  ipcMain.handle(IPC_CHANNELS.ADMIN_NETWORK_TEST, handleAdminTestNetwork)
   ipcMain.handle(IPC_CHANNELS.ADMIN_SYSTEM_METRICS, async () => {
     return await getSystemMerics()
   })
@@ -360,6 +454,9 @@ export function unregisterAdminHandlers(): void {
   ipcMain.removeHandler(IPC_CHANNELS.ADMIN_GET_CONFIG)
   ipcMain.removeHandler(IPC_CHANNELS.ADMIN_GET_SYSTEM_INFO)
   ipcMain.removeHandler(IPC_CHANNELS.ADMIN_RELOAD_BUSINESS)
+  ipcMain.removeHandler(IPC_CHANNELS.ADMIN_NETWORK_TEST)
+  ipcMain.removeHandler(IPC_CHANNELS.ADMIN_SYSTEM_METRICS)
+  ipcMain.removeHandler(IPC_CHANNELS.ADMIN_BUSINESS_STATUS)
 
   // Invalidate any active session
   invalidateSession()
@@ -376,4 +473,5 @@ export {
   handleAdminGetConfig,
   handleAdminGetSystemInfo,
   handleAdminReloadBusiness,
+  handleAdminTestNetwork,
 }
