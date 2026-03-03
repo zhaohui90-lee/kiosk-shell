@@ -12,6 +12,10 @@
     "./preload": {
       "types": "./dist/preload.d.ts",
       "default": "./dist/preload.js"
+    },
+    "./admin-preload": {
+      "types": "./dist/admin-preload.d.ts",
+      "default": "./dist/admin-preload.js"
     }
   },
   "scripts": {
@@ -21,6 +25,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@kiosk/core": "workspace:*",
     "@kiosk/device": "workspace:*",
     "@kiosk/logger": "workspace:*",
     "@kiosk/platform": "workspace:*",

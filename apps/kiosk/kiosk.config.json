@@ -6,6 +6,7 @@
   "contentUrl": "kiosk://renderer/index.html",
   "width": 1080,
   "height": 1920,
-  "whitelist": [
-  ]
+  "whitelist": [],
+  "deviceNo": "KSK-001",
+  "adminPassword": "12345678"
 }

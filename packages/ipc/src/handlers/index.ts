@@ -22,3 +22,19 @@ export {
   handleOpenDevTools,
   setDebugPassword,
 } from './debug';
+
+export {
+  registerAdminHandlers,
+  unregisterAdminHandlers,
+  handleAdminLogin,
+  handleAdminExitApp,
+  handleAdminRestartApp,
+  handleAdminSystemRestart,
+  handleAdminSystemShutdown,
+  handleAdminGetConfig,
+  handleAdminGetSystemInfo,
+  handleAdminReloadBusiness,
+  setAdminPassword,
+  setMainWindowRef,
+  invalidateSession,
+} from './admin';

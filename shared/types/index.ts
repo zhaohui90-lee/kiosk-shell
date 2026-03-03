@@ -5,3 +5,4 @@
 
 export * from './shell-api';
 export * from './update';
+export * from './config'

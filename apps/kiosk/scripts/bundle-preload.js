@@ -48,17 +48,30 @@ const resolveWorkspacePlugin = {
 
 const { build } = require('esbuild');
 
-build({
-  entryPoints: [path.join(distDir, 'preload', 'index.js')],
+const commonOptions = {
   bundle: true,
   platform: 'node',
   format: 'cjs',
   external: ['electron'],
-  outfile: path.join(distDir, 'preload', 'index.js'),
   allowOverwrite: true,
   plugins: [resolveWorkspacePlugin],
-}).then(() => {
-  console.log('[bundle-preload] Preload script bundled successfully');
+};
+
+Promise.all([
+  // Bundle main preload script
+  build({
+    ...commonOptions,
+    entryPoints: [path.join(distDir, 'preload', 'index.js')],
+    outfile: path.join(distDir, 'preload', 'index.js'),
+  }),
+  // Bundle admin preload script
+  build({
+    ...commonOptions,
+    entryPoints: [path.join(distDir, 'preload', 'admin.js')],
+    outfile: path.join(distDir, 'preload', 'admin.js'),
+  }),
+]).then(() => {
+  console.log('[bundle-preload] Preload scripts bundled successfully');
 }).catch((err) => {
   console.error('[bundle-preload] Failed:', err.message);
   process.exit(1);

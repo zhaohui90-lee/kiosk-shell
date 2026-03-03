@@ -2,7 +2,7 @@
  * @kiosk/ipc type definitions
  */
 
-import type { DeviceInfo, UpdateInfo } from '@kiosk/shared';
+import type { DeviceInfo, UpdateInfo } from '@kiosk/shared'
 
 /**
  * IPC Channel names (whitelist)
@@ -20,18 +20,39 @@ export const IPC_CHANNELS = {
 
   // Debug (requires password)
   OPEN_DEV_TOOLS: 'shell:openDevTools',
-} as const;
 
-export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];
+  // Admin panel (requires session token)
+  ADMIN_WINDOW_CLOSE: 'shell:adminWindowClose',
+  ADMIN_LOGIN: 'shell:adminLogin',
+  ADMIN_EXIT_APP: 'shell:adminExitApp',
+  ADMIN_RESTART_APP: 'shell:adminRestartApp',
+  ADMIN_SYSTEM_RESTART: 'shell:adminSystemRestart',
+  ADMIN_SYSTEM_SHUTDOWN: 'shell:adminSystemShutdown',
+  ADMIN_GET_CONFIG: 'shell:adminGetConfig',
+  ADMIN_GET_SYSTEM_INFO: 'shell:adminGetSystemInfo',
+  ADMIN_RELOAD_BUSINESS: 'shell:adminReloadBusiness',
+
+  // Admin trigger (from renderer click zone)
+  ADMIN_TRIGGER: 'shell:adminTrigger',
+
+  // System metrics
+  ADMIN_SYSTEM_METRICS: 'admin:getSystemMetrics',
+  ADMIN_BUSINESS_STATUS: 'admin:getBusinessStatus',
+
+  // Network test
+  ADMIN_NETWORK_TEST: 'admin:networkTest'
+} as const
+
+export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]
 
 /**
  * Rate limit configuration
  */
 export interface RateLimitConfig {
   /** Maximum number of calls allowed in the window */
-  maxCalls: number;
+  maxCalls: number
   /** Time window in milliseconds */
-  windowMs: number;
+  windowMs: number
 }
 
 /**
@@ -41,7 +62,13 @@ export const RATE_LIMITS: Partial<Record<IpcChannel, RateLimitConfig>> = {
   [IPC_CHANNELS.SYSTEM_SHUTDOWN]: { maxCalls: 1, windowMs: 60000 },
   [IPC_CHANNELS.SYSTEM_RESTART]: { maxCalls: 1, windowMs: 60000 },
   [IPC_CHANNELS.OPEN_DEV_TOOLS]: { maxCalls: 3, windowMs: 60000 },
-};
+  [IPC_CHANNELS.ADMIN_LOGIN]: { maxCalls: 5, windowMs: 60000 },
+  [IPC_CHANNELS.ADMIN_EXIT_APP]: { maxCalls: 1, windowMs: 60000 },
+  [IPC_CHANNELS.ADMIN_RESTART_APP]: { maxCalls: 1, windowMs: 60000 },
+  [IPC_CHANNELS.ADMIN_SYSTEM_RESTART]: { maxCalls: 1, windowMs: 60000 },
+  [IPC_CHANNELS.ADMIN_SYSTEM_SHUTDOWN]: { maxCalls: 1, windowMs: 60000 },
+  [IPC_CHANNELS.ADMIN_RELOAD_BUSINESS]: { maxCalls: 3, windowMs: 60000 },
+}
 
 /**
  * IPC handler function type
@@ -49,29 +76,29 @@ export const RATE_LIMITS: Partial<Record<IpcChannel, RateLimitConfig>> = {
 export type IpcHandler<TArgs = unknown, TResult = unknown> = (
   event: Electron.IpcMainInvokeEvent,
   ...args: TArgs[]
-) => Promise<TResult> | TResult;
+) => Promise<TResult> | TResult
 
 /**
  * IPC handler registration options
  */
 export interface HandlerOptions {
   /** Enable rate limiting for this handler */
-  rateLimit?: RateLimitConfig;
+  rateLimit?: RateLimitConfig
   /** Require password verification */
-  requirePassword?: boolean;
+  requirePassword?: boolean
 }
 
 /**
  * Handler result types
  */
 export interface SystemShutdownResult {
-  success: boolean;
-  message?: string;
+  success: boolean
+  message?: string
 }
 
 export interface SystemRestartResult {
-  success: boolean;
-  message?: string;
+  success: boolean
+  message?: string
 }
 
 export interface DeviceInfoResult extends DeviceInfo {}
@@ -79,27 +106,69 @@ export interface DeviceInfoResult extends DeviceInfo {}
 export interface UpdateResult extends UpdateInfo {}
 
 export interface DebugResult {
-  success: boolean;
-  message?: string;
+  success: boolean
+  message?: string
+}
+
+/**
+ * Admin window result
+ */
+export interface AdminWindowCloseResult {
+  success: boolean
+  message?: string
+}
+
+/**
+ * Admin login result
+ */
+export interface AdminLoginResult {
+  success: boolean
+  token?: string
+  message?: string
+}
+
+/**
+ * Admin operation result
+ */
+export interface AdminOperationResult {
+  success: boolean
+  message?: string
+  data?: Record<string, unknown>
+}
+
+/**
+ * 网络连通性测试
+ */
+export interface AdminNetworkTestResult {
+  success: boolean
+  message?: string
+  host?: string;
+  sent?: number;
+  received?: number;
+  packetLoss?: number;
+  minTime?: number;
+  maxTime?: number;
+  avgTime?: number;
+  timestamp?: number;
 }
 
 /**
  * Rate limiter state
  */
 export interface RateLimiterState {
-  calls: number[];
-  channel: IpcChannel;
+  calls: number[]
+  channel: IpcChannel
 }
 
 /**
  * Password verification result
  */
 export interface PasswordVerifyResult {
-  valid: boolean;
-  message?: string;
+  valid: boolean
+  message?: string
 }
 
 /**
  * Re-export shared types
  */
-export type { DeviceInfo, UpdateInfo };
+export type { DeviceInfo, UpdateInfo }

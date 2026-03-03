@@ -25,7 +25,8 @@
     "@kiosk/recovery": "workspace:*",
     "@kiosk/security": "workspace:*",
     "@kiosk/updater": "workspace:*",
-    "@kiosk/watchdog": "workspace:*"
+    "@kiosk/watchdog": "workspace:*",
+    "@kiosk/shared": "workspace:*"
   },
   "devDependencies": {
     "electron": "^40.1.0",

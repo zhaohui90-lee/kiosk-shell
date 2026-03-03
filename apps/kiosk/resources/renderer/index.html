@@ -26,6 +26,7 @@
     .container {
       text-align: center;
       padding: 40px;
+      width: 100%;
     }
 
     .logo {
@@ -194,6 +195,14 @@
           if (deviceInfo.version) {
             document.getElementById('version').textContent = deviceInfo.version;
           }
+          // 系统指标
+          const systemMertics = await window.shellAPI.getSystemMertics()
+          console.log('systemMertics', systemMertics);
+          // 业务网络状态
+          const url = 'https://www.google.com'
+          const businessStatus = await window.shellAPI.checkBusinessStatus(url)
+          console.log('businessStatus', businessStatus);
+          
         } else {
           console.warn('shellAPI not available');
           document.getElementById('device-uuid').textContent = 'Unavailable';

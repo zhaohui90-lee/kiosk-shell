@@ -6,12 +6,22 @@
  * Default debug password (should be overridden in production)
  * In production, this should be loaded from secure configuration
  */
-export const DEFAULT_DEBUG_PASSWORD = 'kiosk-debug-2024';
+export const DEFAULT_DEBUG_PASSWORD = 'debug'
+
+/**
+ * Default admin password (should be overridden in production)
+ */
+export const DEFAULT_ADMIN_PASSWORD = 'admin'
 
 /**
  * API namespace for contextBridge
  */
-export const SHELL_API_NAMESPACE = 'shellAPI';
+export const SHELL_API_NAMESPACE = 'shellAPI'
+
+/**
+ * Admin API namespace for contextBridge (admin window only)
+ */
+export const ADMIN_API_NAMESPACE = 'adminAPI'
 
 /**
  * Preload script context isolation settings
@@ -23,7 +33,7 @@ export const PRELOAD_CONFIG = {
   nodeIntegration: false,
   /** Sandbox mode recommended */
   sandbox: true,
-} as const;
+} as const
 
 /**
  * Error messages
@@ -34,4 +44,6 @@ export const ERROR_MESSAGES = {
   INVALID_PASSWORD: 'Invalid password.',
   OPERATION_FAILED: 'Operation failed.',
   NOT_INITIALIZED: 'IPC handlers not initialized.',
-} as const;
+  INVALID_TOKEN: 'Invalid or expired session token.',
+  ADMIN_NOT_AUTHENTICATED: 'Admin authentication required.',
+} as const
