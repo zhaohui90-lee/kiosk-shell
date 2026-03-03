@@ -5,4 +5,4 @@ node_modules
 *.tsbuildinfo
 docs/issues
 release
-renderer
+apps/kiosk/resources/renderer/
