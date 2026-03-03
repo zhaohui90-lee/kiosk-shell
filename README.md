@@ -5,6 +5,14 @@
 采用 **Monorepo + 模块化** 设计，将核心能力抽离为独立模块（packages），便于复用和扩展。
 ```text
 kiosk-shell/
+├── apps/                              # 客户端启动模块
+│   ├── kiosk/                         # 自助机
+│   │   ├── build/                     # 构建产物
+│   │   ├── resources/                 # 资源模块
+│   │   │   ├── admin                  # 存放控制面板文件 `admin-panel`
+│   │   ├── src/
+│   │   │   ├── main/                  # 启动入口
+│   │   │   ├── preload/               # 对外暴露API
 ├── packages/                          # 📦 核心能力模块（可作为 submodule 管理）
 │   ├── core/                          # 壳核心模块
 │   │   ├── src/
