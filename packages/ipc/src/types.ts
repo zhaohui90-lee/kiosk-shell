@@ -4,6 +4,28 @@
 
 import type { DeviceInfo, UpdateInfo } from '@kiosk/shared'
 
+export interface ShellAPI {
+  /** Get device information */
+  getDeviceInfo(): Promise<DeviceInfo>
+
+  /** Request update check */
+  requestUpdate(): Promise<UpdateInfo>
+
+  /** System shutdown (requires password in kiosk mode) */
+  systemShutdown(password?: string): Promise<void>
+
+  /** System restart (requires password in kiosk mode) */
+  systemRestart(password?: string): Promise<void>
+
+  /** Open DevTools (requires password) */
+  openDevTools(password: string): Promise<boolean>
+
+  /** Trigger admin panel (fires IPC event to main process) */
+  triggerAdmin(): void
+
+  checkBusinessStatus(token: string, url: string): Promise<AdminBusinessNetworkStatus>
+}
+
 /**
  * IPC Channel names (whitelist)
  */
@@ -35,12 +57,11 @@ export const IPC_CHANNELS = {
   // Admin trigger (from renderer click zone)
   ADMIN_TRIGGER: 'shell:adminTrigger',
 
-  // System metrics
-  ADMIN_SYSTEM_METRICS: 'admin:getSystemMetrics',
+  // Business status
   ADMIN_BUSINESS_STATUS: 'admin:getBusinessStatus',
 
   // Network test
-  ADMIN_NETWORK_TEST: 'admin:networkTest'
+  ADMIN_NETWORK_TEST: 'admin:networkTest',
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]
@@ -67,7 +88,6 @@ export const RATE_LIMITS: Partial<Record<IpcChannel, RateLimitConfig>> = {
   [IPC_CHANNELS.ADMIN_RESTART_APP]: { maxCalls: 1, windowMs: 60000 },
   [IPC_CHANNELS.ADMIN_SYSTEM_RESTART]: { maxCalls: 1, windowMs: 60000 },
   [IPC_CHANNELS.ADMIN_SYSTEM_SHUTDOWN]: { maxCalls: 1, windowMs: 60000 },
-  [IPC_CHANNELS.ADMIN_RELOAD_BUSINESS]: { maxCalls: 3, windowMs: 60000 },
 }
 
 /**
@@ -142,14 +162,25 @@ export interface AdminOperationResult {
 export interface AdminNetworkTestResult {
   success: boolean
   message?: string
-  host?: string;
-  sent?: number;
-  received?: number;
-  packetLoss?: number;
-  minTime?: number;
-  maxTime?: number;
-  avgTime?: number;
-  timestamp?: number;
+  host?: string
+  sent?: number
+  received?: number
+  packetLoss?: number
+  minTime?: number
+  maxTime?: number
+  avgTime?: number
+  timestamp?: number
+}
+
+/**
+ * 业务网络状态
+ */
+export interface AdminBusinessNetworkStatus {
+  success: boolean
+  message?: string
+  latency?: number
+  isOnline?: boolean
+  statusCode?: number
 }
 
 /**

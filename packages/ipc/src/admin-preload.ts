@@ -9,7 +9,13 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC_CHANNELS } from './types'
 import { ADMIN_API_NAMESPACE } from './constants'
-import type { AdminWindowCloseResult, AdminLoginResult, AdminOperationResult, AdminNetworkTestResult } from './types'
+import type {
+  AdminWindowCloseResult,
+  AdminLoginResult,
+  AdminOperationResult,
+  AdminNetworkTestResult,
+  AdminBusinessNetworkStatus,
+} from './types'
 
 /**
  * Admin API interface (exposed to admin window renderer)
@@ -35,6 +41,8 @@ export interface AdminAPI {
   reloadBusiness(token: string): Promise<AdminOperationResult>
   /** Network test */
   testNetwork(token: string, host: string): Promise<AdminNetworkTestResult>
+  /** 获取业务网络状态 */
+  checkBusinessStatus(token: string, url: string): Promise<AdminBusinessNetworkStatus>
 }
 
 /**
@@ -79,7 +87,11 @@ const adminAPI: AdminAPI = {
 
   async testNetwork(token: string, host: string): Promise<AdminNetworkTestResult> {
     return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_NETWORK_TEST, token, host)
-  }
+  },
+
+  async checkBusinessStatus(token: string, url: string): Promise<AdminBusinessNetworkStatus> {
+    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_BUSINESS_STATUS, token, url)
+  },
 }
 
 /**

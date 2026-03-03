@@ -7,9 +7,9 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron'
-import { IPC_CHANNELS } from './types'
+import { IPC_CHANNELS, AdminBusinessNetworkStatus, ShellAPI } from './types'
 import { SHELL_API_NAMESPACE } from './constants'
-import type { ShellAPI, DeviceInfo, UpdateInfo, SystemResource, BusinessNetworkStatus } from '@kiosk/shared'
+import type { DeviceInfo, UpdateInfo } from '@kiosk/shared'
 
 /**
  * Shell API implementation
@@ -70,18 +70,12 @@ const shellAPI: ShellAPI = {
   },
 
   /**
-   * 获取系统指标
-   */
-  async getSystemMertics(): Promise<SystemResource> {
-    return await ipcRenderer.invoke(IPC_CHANNELS.ADMIN_SYSTEM_METRICS)
-  },
-
-  /**
    * 获取业务网络状态
+   * @param token 管理员token
    * @param url 业务地址
    */
-  async checkBusinessStatus(url: string): Promise<BusinessNetworkStatus> {
-    return await ipcRenderer.invoke(IPC_CHANNELS.ADMIN_BUSINESS_STATUS, url)
+  async checkBusinessStatus(token: string, url: string): Promise<AdminBusinessNetworkStatus> {
+    return await ipcRenderer.invoke(IPC_CHANNELS.ADMIN_BUSINESS_STATUS, token, url)
   },
 }
 
@@ -158,10 +152,7 @@ function injectAdminTriggerZone(): void {
       clickTimestamps.push(now)
 
       // Remove clicks outside time window
-      while (
-        clickTimestamps.length > 0 &&
-        now - clickTimestamps[0]! > CLICK_ZONE_CONFIG.timeWindowMs
-      ) {
+      while (clickTimestamps.length > 0 && now - clickTimestamps[0]! > CLICK_ZONE_CONFIG.timeWindowMs) {
         clickTimestamps.shift()
       }
 
