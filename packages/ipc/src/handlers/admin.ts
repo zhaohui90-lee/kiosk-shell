@@ -8,11 +8,19 @@ import os from 'os'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import { randomBytes } from 'crypto'
+import { performance } from 'perf_hooks'
 import { getLogger } from '@kiosk/logger'
 import { getPlatformAdapter } from '@kiosk/platform'
-import { getSystemMerics, checkBusinessStatus, loadConfig } from '@kiosk/device'
+import { loadConfig } from '@kiosk/device'
 import { getWindowManager } from '@kiosk/core'
-import { IPC_CHANNELS, AdminNetworkTestResult, type AdminLoginResult, type AdminOperationResult, AdminWindowCloseResult } from '../types'
+import {
+  IPC_CHANNELS,
+  AdminNetworkTestResult,
+  type AdminLoginResult,
+  type AdminOperationResult,
+  AdminWindowCloseResult,
+  AdminBusinessNetworkStatus,
+} from '../types'
 import { DEFAULT_ADMIN_PASSWORD, ERROR_MESSAGES } from '../constants'
 import { checkRateLimit } from '../rate-limiter'
 
@@ -79,7 +87,6 @@ export function invalidateSession(): void {
  * Handle admin window close
  */
 async function handleAdminPanelClose(_event: Electron.IpcMainInvokeEvent): Promise<AdminWindowCloseResult> {
-
   logger.info('[IPC:Admin] Window close request')
 
   // Hide admin panel and invalidate session so user must re-login next time
@@ -403,8 +410,12 @@ async function handleAdminTestNetwork(
 }
 
 function parsePingResult(output: string, host: string, platform: string): AdminNetworkTestResult {
-  let sent = 0, received = 0, packetLoss = 0
-  let minTime = 0, maxTime = 0, avgTime = 0
+  let sent = 0,
+    received = 0,
+    packetLoss = 0
+  let minTime = 0,
+    maxTime = 0,
+    avgTime = 0
 
   if (platform === 'win32') {
     // Windows 解析
@@ -457,6 +468,46 @@ function parsePingResult(output: string, host: string, platform: string): AdminN
   }
 }
 
+async function checkBusinessStatus(
+  _event: Electron.IpcMainInvokeEvent,
+  token: string,
+  url: string,
+): Promise<AdminBusinessNetworkStatus> {
+  if (!verifyToken(token)) {
+    logger.warn('[IPC:Admin] Test network rejected: invalid token')
+    return { success: false, message: ERROR_MESSAGES.INVALID_TOKEN }
+  }
+
+  const start = performance.now()
+
+  try {
+    // 使用 fetch 发送一个轻量级的 HEAD 请求，避免拉取大量数据
+    const response = await fetch(url, {
+      method: 'HEAD',
+      // 设置超时时间，例如 3 秒
+      signal: AbortSignal.timeout(3000),
+    })
+
+    const end = performance.now()
+
+    return {
+      success: true,
+      latency: Math.round(end - start),
+      isOnline: response.ok,
+      statusCode: response.status,
+    }
+  } catch (error) {
+    // 捕获超时、DNS 错误、断网等异常
+    return {
+      success: false,
+      message: 'Network error',
+      latency: 9999, // 代表超时或不可达
+      isOnline: false,
+      statusCode: 0,
+    }
+  }
+}
+
 /**
  * Register admin IPC handlers
  */
@@ -473,15 +524,7 @@ export function registerAdminHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.ADMIN_GET_SYSTEM_INFO, handleAdminGetSystemInfo)
   ipcMain.handle(IPC_CHANNELS.ADMIN_RELOAD_BUSINESS, handleAdminReloadBusiness)
   ipcMain.handle(IPC_CHANNELS.ADMIN_NETWORK_TEST, handleAdminTestNetwork)
-  ipcMain.handle(IPC_CHANNELS.ADMIN_SYSTEM_METRICS, async () => {
-    return await getSystemMerics()
-  })
-  ipcMain.handle(IPC_CHANNELS.ADMIN_BUSINESS_STATUS, async (_, targetUrl: string) => {
-    if (!targetUrl) {
-      throw new Error('未提供交易地址')
-    }
-    return await checkBusinessStatus(targetUrl)
-  })
+  ipcMain.handle(IPC_CHANNELS.ADMIN_BUSINESS_STATUS, checkBusinessStatus)
 
   logger.debug('[IPC:Admin] Admin handlers registered')
 }
@@ -502,7 +545,6 @@ export function unregisterAdminHandlers(): void {
   ipcMain.removeHandler(IPC_CHANNELS.ADMIN_GET_SYSTEM_INFO)
   ipcMain.removeHandler(IPC_CHANNELS.ADMIN_RELOAD_BUSINESS)
   ipcMain.removeHandler(IPC_CHANNELS.ADMIN_NETWORK_TEST)
-  ipcMain.removeHandler(IPC_CHANNELS.ADMIN_SYSTEM_METRICS)
   ipcMain.removeHandler(IPC_CHANNELS.ADMIN_BUSINESS_STATUS)
 
   // Invalidate any active session
