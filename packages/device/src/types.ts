@@ -6,27 +6,27 @@
 /**
  * UUID storage location options
  */
-export type UuidStorageLocation = 'userData' | 'appData' | 'custom';
+export type UuidStorageLocation = 'userData' | 'appData' | 'custom'
 
 /**
  * UUID generation method
  */
-export type UuidGenerationMethod = 'random' | 'hardware-based';
+export type UuidGenerationMethod = 'random' | 'hardware-based'
 
 /**
  * UUID manager configuration
  */
 export interface UuidManagerConfig {
   /** Storage location for the UUID file */
-  storageLocation: UuidStorageLocation;
+  storageLocation: UuidStorageLocation
   /** Custom storage path (only used when storageLocation is 'custom') */
-  customPath?: string;
+  customPath?: string
   /** UUID file name */
-  fileName: string;
+  fileName: string
   /** UUID generation method */
-  generationMethod: UuidGenerationMethod;
+  generationMethod: UuidGenerationMethod
   /** Whether to cache UUID in memory after first read */
-  cacheInMemory: boolean;
+  cacheInMemory: boolean
 }
 
 /**
@@ -34,13 +34,13 @@ export interface UuidManagerConfig {
  */
 export interface UuidData {
   /** The device UUID */
-  uuid: string;
+  uuid: string
   /** When the UUID was created (ISO string) */
-  createdAt: string;
+  createdAt: string
   /** UUID generation method used */
-  generationMethod: UuidGenerationMethod;
+  generationMethod: UuidGenerationMethod
   /** Application version when UUID was generated */
-  appVersion?: string;
+  appVersion?: string
 }
 
 /**
@@ -48,11 +48,11 @@ export interface UuidData {
  */
 export interface UuidManagerState {
   /** Whether the UUID manager is initialized */
-  initialized: boolean;
+  initialized: boolean
   /** Current UUID (cached) */
-  cachedUuid: string | null;
+  cachedUuid: string | null
   /** Storage file path */
-  storagePath: string | null;
+  storagePath: string | null
 }
 
 /**
@@ -60,17 +60,17 @@ export interface UuidManagerState {
  */
 export interface OsInfo {
   /** Platform identifier (win32, darwin, linux) */
-  platform: NodeJS.Platform;
+  platform: string
   /** OS release version */
-  release: string;
+  release: string
   /** OS architecture (x64, arm64, etc) */
-  arch: string;
+  arch: string
   /** OS hostname */
-  hostname: string;
+  hostname: string
   /** OS type (Windows_NT, Darwin, Linux) */
-  type: string;
+  type: string
   /** OS version string */
-  version: string;
+  version: string
 }
 
 /**
@@ -78,11 +78,11 @@ export interface OsInfo {
  */
 export interface CpuInfo {
   /** CPU model name */
-  model: string;
+  model: string
   /** Number of CPU cores */
-  cores: number;
+  cores: number
   /** CPU speed in MHz */
-  speed: number;
+  speed: number
 }
 
 /**
@@ -90,13 +90,13 @@ export interface CpuInfo {
  */
 export interface MemoryInfo {
   /** Total memory in bytes */
-  total: number;
+  total: number
   /** Free memory in bytes */
-  free: number;
+  free: number
   /** Used memory in bytes */
-  used: number;
+  used: number
   /** Memory usage percentage (0-100) */
-  usagePercent: number;
+  usagePercent: number
 }
 
 /**
@@ -104,15 +104,17 @@ export interface MemoryInfo {
  */
 export interface NetworkInterface {
   /** Interface name */
-  name: string;
+  name: string
   /** MAC address */
-  mac: string;
+  mac: string
   /** IPv4 addresses */
-  ipv4: string[];
+  ipv4: string[]
   /** IPv6 addresses */
-  ipv6: string[];
+  ipv6: string[]
   /** Whether this is an internal interface */
-  internal: boolean;
+  internal: boolean
+  /** Gateway address */
+  gateway: string
 }
 
 /**
@@ -120,27 +122,27 @@ export interface NetworkInterface {
  */
 export interface DisplayInfo {
   /** Display ID */
-  id: number;
+  id: number
   /** Display label */
-  label: string;
+  label: string
   /** Display bounds (x, y, width, height) */
   bounds: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
+    x: number
+    y: number
+    width: number
+    height: number
+  }
   /** Work area bounds (excluding taskbar, dock, etc) */
   workArea: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
+    x: number
+    y: number
+    width: number
+    height: number
+  }
   /** Scale factor */
-  scaleFactor: number;
+  scaleFactor: number
   /** Whether this is the primary display */
-  primary: boolean;
+  primary: boolean
 }
 
 /**
@@ -148,17 +150,17 @@ export interface DisplayInfo {
  */
 export interface HardwareInfo {
   /** Operating system info */
-  os: OsInfo;
+  os: OsInfo
   /** CPU information */
-  cpu: CpuInfo;
+  cpu: CpuInfo
   /** Memory information */
-  memory: MemoryInfo;
+  memory: MemoryInfo
   /** Network interfaces */
-  network: NetworkInterface[];
+  network: NetworkInterface[]
   /** Display information */
-  displays: DisplayInfo[];
+  displays: DisplayInfo[]
   /** Collection timestamp */
-  collectedAt: string;
+  collectedAt: string
 }
 
 /**
@@ -166,11 +168,11 @@ export interface HardwareInfo {
  */
 export interface HardwareInfoConfig {
   /** Whether to include network information */
-  includeNetwork: boolean;
+  includeNetwork: boolean
   /** Whether to include display information */
-  includeDisplays: boolean;
+  includeDisplays: boolean
   /** Whether to include internal network interfaces */
-  includeInternalInterfaces: boolean;
+  includeInternalInterfaces: boolean
 }
 
 /**
@@ -178,7 +180,7 @@ export interface HardwareInfoConfig {
  */
 export interface DeviceIdentification {
   /** Device UUID */
-  uuid: string;
+  uuid: string
   /** Hardware information */
-  hardware: HardwareInfo;
+  hardware: HardwareInfo
 }

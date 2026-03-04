@@ -54,7 +54,7 @@ export {
   collectHardwareInfo,
   formatBytes,
   getHardwareSummary,
-  getSystemMerics
+  getSystemMetrics,
 } from './hardware-info';
 
 // Export app info

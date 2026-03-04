@@ -2,14 +2,14 @@
  * Hardware Info unit tests
  */
 
-import { describe, it, expect, vi } from 'vitest';
-import * as os from 'os';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   getOsInfo,
   getCpuInfo,
   getMemoryInfo,
   getNetworkInfo,
   getDisplayInfo,
+  getSystemMetrics,
   collectHardwareInfo,
   formatBytes,
   getHardwareSummary,
@@ -25,137 +25,351 @@ vi.mock('@kiosk/logger', () => ({
   }),
 }));
 
+// Mock systeminformation
+const mockSi = {
+  osInfo: vi.fn(),
+  cpu: vi.fn(),
+  mem: vi.fn(),
+  networkInterfaces: vi.fn(),
+  networkGatewayDefault: vi.fn(),
+  graphics: vi.fn(),
+  currentLoad: vi.fn(),
+  fsSize: vi.fn(),
+  cpuTemperature: vi.fn(),
+};
+
+vi.mock('systeminformation', () => ({
+  default: {
+    osInfo: (...args: unknown[]) => mockSi.osInfo(...args),
+    cpu: (...args: unknown[]) => mockSi.cpu(...args),
+    mem: (...args: unknown[]) => mockSi.mem(...args),
+    networkInterfaces: (...args: unknown[]) => mockSi.networkInterfaces(...args),
+    networkGatewayDefault: (...args: unknown[]) => mockSi.networkGatewayDefault(...args),
+    graphics: (...args: unknown[]) => mockSi.graphics(...args),
+    currentLoad: (...args: unknown[]) => mockSi.currentLoad(...args),
+    fsSize: (...args: unknown[]) => mockSi.fsSize(...args),
+    cpuTemperature: (...args: unknown[]) => mockSi.cpuTemperature(...args),
+  },
+}));
+
+// Mock electron (always fail to import — not in Electron env)
+vi.mock('electron', () => {
+  throw new Error('Not in Electron');
+});
+
 describe('Hardware Info', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   describe('getOsInfo', () => {
-    it('should return valid OS information', () => {
-      const osInfo = getOsInfo();
+    it('should return OS info from systeminformation', async () => {
+      mockSi.osInfo.mockResolvedValue({
+        platform: 'Darwin',
+        release: '24.6.0',
+        arch: 'arm64',
+        hostname: 'test-host',
+        kernel: '24.6.0',
+      });
 
-      expect(osInfo.platform).toBe(os.platform());
-      expect(osInfo.release).toBe(os.release());
-      expect(osInfo.arch).toBe(os.arch());
-      expect(osInfo.hostname).toBe(os.hostname());
-      expect(osInfo.type).toBe(os.type());
-      expect(typeof osInfo.version).toBe('string');
+      const osInfo = await getOsInfo();
+
+      expect(osInfo.platform).toBe('darwin');
+      expect(osInfo.release).toBe('24.6.0');
+      expect(osInfo.arch).toBe('arm64');
+      expect(osInfo.hostname).toBe('test-host');
+      expect(osInfo.type).toBe('Darwin');
+      expect(osInfo.version).toBe('24.6.0');
     });
 
-    it('should have correct platform type', () => {
-      const osInfo = getOsInfo();
-      expect(['win32', 'darwin', 'linux', 'freebsd', 'openbsd', 'sunos', 'aix']).toContain(osInfo.platform);
+    it('should map Windows platform correctly', async () => {
+      mockSi.osInfo.mockResolvedValue({
+        platform: 'Windows',
+        release: '10.0.19045',
+        arch: 'x64',
+        hostname: 'win-host',
+        kernel: '10.0.19045',
+      });
+
+      const osInfo = await getOsInfo();
+      expect(osInfo.platform).toBe('win32');
     });
 
-    it('should have correct arch type', () => {
-      const osInfo = getOsInfo();
-      expect(['arm', 'arm64', 'ia32', 'loong64', 'mips', 'mipsel', 'ppc', 'ppc64', 'riscv64', 's390', 's390x', 'x64']).toContain(osInfo.arch);
+    it('should map Linux platform correctly', async () => {
+      mockSi.osInfo.mockResolvedValue({
+        platform: 'Linux',
+        release: '6.1.0',
+        arch: 'x64',
+        hostname: 'linux-host',
+        kernel: '6.1.0',
+      });
+
+      const osInfo = await getOsInfo();
+      expect(osInfo.platform).toBe('linux');
+    });
+
+    it('should return fallback on error', async () => {
+      mockSi.osInfo.mockRejectedValue(new Error('si failed'));
+
+      const osInfo = await getOsInfo();
+
+      expect(osInfo.platform).toBe(process.platform);
+      expect(osInfo.arch).toBe(process.arch);
+      expect(osInfo.release).toBe('');
     });
   });
 
   describe('getCpuInfo', () => {
-    it('should return valid CPU information', () => {
-      const cpuInfo = getCpuInfo();
+    it('should return CPU info from systeminformation', async () => {
+      mockSi.cpu.mockResolvedValue({
+        brand: 'Apple M1 Pro',
+        manufacturer: 'Apple',
+        cores: 10,
+        speed: 3.2,
+      });
 
-      expect(typeof cpuInfo.model).toBe('string');
-      expect(typeof cpuInfo.cores).toBe('number');
-      expect(typeof cpuInfo.speed).toBe('number');
+      const cpuInfo = await getCpuInfo();
+
+      expect(cpuInfo.model).toBe('Apple M1 Pro');
+      expect(cpuInfo.cores).toBe(10);
+      expect(cpuInfo.speed).toBe(3200); // GHz → MHz
     });
 
-    it('should have at least 1 core', () => {
-      const cpuInfo = getCpuInfo();
-      expect(cpuInfo.cores).toBeGreaterThanOrEqual(1);
+    it('should fall back to manufacturer if brand is empty', async () => {
+      mockSi.cpu.mockResolvedValue({
+        brand: '',
+        manufacturer: 'Intel',
+        cores: 8,
+        speed: 2.5,
+      });
+
+      const cpuInfo = await getCpuInfo();
+      expect(cpuInfo.model).toBe('Intel');
     });
 
-    it('should have non-negative speed', () => {
-      const cpuInfo = getCpuInfo();
-      expect(cpuInfo.speed).toBeGreaterThanOrEqual(0);
-    });
+    it('should return fallback on error', async () => {
+      mockSi.cpu.mockRejectedValue(new Error('si failed'));
 
-    it('should match os.cpus() length', () => {
-      const cpuInfo = getCpuInfo();
-      expect(cpuInfo.cores).toBe(os.cpus().length);
+      const cpuInfo = await getCpuInfo();
+
+      expect(cpuInfo.model).toBe('Unknown');
+      expect(cpuInfo.cores).toBe(1);
+      expect(cpuInfo.speed).toBe(0);
     });
   });
 
   describe('getMemoryInfo', () => {
-    it('should return valid memory information', () => {
-      const memoryInfo = getMemoryInfo();
+    it('should return memory info from systeminformation', async () => {
+      mockSi.mem.mockResolvedValue({
+        total: 16 * 1024 * 1024 * 1024,
+        free: 4 * 1024 * 1024 * 1024,
+        used: 12 * 1024 * 1024 * 1024,
+      });
 
-      expect(typeof memoryInfo.total).toBe('number');
-      expect(typeof memoryInfo.free).toBe('number');
-      expect(typeof memoryInfo.used).toBe('number');
-      expect(typeof memoryInfo.usagePercent).toBe('number');
+      const memInfo = await getMemoryInfo();
+
+      expect(memInfo.total).toBe(16 * 1024 * 1024 * 1024);
+      expect(memInfo.free).toBe(4 * 1024 * 1024 * 1024);
+      expect(memInfo.used).toBe(12 * 1024 * 1024 * 1024);
+      expect(memInfo.usagePercent).toBe(75);
     });
 
-    it('should have total >= free', () => {
-      const memoryInfo = getMemoryInfo();
-      expect(memoryInfo.total).toBeGreaterThanOrEqual(memoryInfo.free);
+    it('should handle zero total memory gracefully', async () => {
+      mockSi.mem.mockResolvedValue({
+        total: 0,
+        free: 0,
+        used: 0,
+      });
+
+      const memInfo = await getMemoryInfo();
+      expect(memInfo.usagePercent).toBe(0);
     });
 
-    it('should have used = total - free', () => {
-      const memoryInfo = getMemoryInfo();
-      expect(memoryInfo.used).toBe(memoryInfo.total - memoryInfo.free);
-    });
+    it('should return fallback on error', async () => {
+      mockSi.mem.mockRejectedValue(new Error('si failed'));
 
-    it('should have usagePercent between 0 and 100', () => {
-      const memoryInfo = getMemoryInfo();
-      expect(memoryInfo.usagePercent).toBeGreaterThanOrEqual(0);
-      expect(memoryInfo.usagePercent).toBeLessThanOrEqual(100);
-    });
+      const memInfo = await getMemoryInfo();
 
-    it('should match os.totalmem() and os.freemem()', () => {
-      const memoryInfo = getMemoryInfo();
-      expect(memoryInfo.total).toBe(os.totalmem());
-      // Free memory can change rapidly, so we just check it's close
-      expect(Math.abs(memoryInfo.free - os.freemem())).toBeLessThan(100 * 1024 * 1024); // within 100MB
+      expect(memInfo.total).toBe(0);
+      expect(memInfo.free).toBe(0);
+      expect(memInfo.used).toBe(0);
+      expect(memInfo.usagePercent).toBe(0);
     });
   });
 
   describe('getNetworkInfo', () => {
-    it('should return array of network interfaces', () => {
-      const networkInfo = getNetworkInfo();
-      expect(Array.isArray(networkInfo)).toBe(true);
+    const mockInterfaces = [
+      {
+        iface: 'en0',
+        mac: 'aa:bb:cc:dd:ee:ff',
+        ip4: '192.168.1.100',
+        ip6: 'fe80::1',
+        internal: false,
+        default: true,
+      },
+      {
+        iface: 'lo0',
+        mac: '00:00:00:00:00:00',
+        ip4: '127.0.0.1',
+        ip6: '::1',
+        internal: true,
+        default: false,
+      },
+    ];
+
+    it('should return network interfaces from systeminformation', async () => {
+      mockSi.networkInterfaces.mockResolvedValue(mockInterfaces);
+      mockSi.networkGatewayDefault.mockResolvedValue('192.168.1.1');
+
+      const networkInfo = await getNetworkInfo();
+
+      expect(networkInfo).toHaveLength(1); // excludes internal by default
+      expect(networkInfo[0]!.name).toBe('en0');
+      expect(networkInfo[0]!.mac).toBe('aa:bb:cc:dd:ee:ff');
+      expect(networkInfo[0]!.ipv4).toEqual(['192.168.1.100']);
+      expect(networkInfo[0]!.ipv6).toEqual(['fe80::1']);
+      expect(networkInfo[0]!.gateway).toBe('192.168.1.1');
     });
 
-    it('should exclude internal interfaces by default', () => {
-      const networkInfo = getNetworkInfo();
-      const hasInternal = networkInfo.some(iface => iface.internal);
-      // May or may not have internal interfaces depending on filtering
-      expect(typeof hasInternal).toBe('boolean');
+    it('should include internal interfaces when requested', async () => {
+      mockSi.networkInterfaces.mockResolvedValue(mockInterfaces);
+      mockSi.networkGatewayDefault.mockResolvedValue('192.168.1.1');
+
+      const networkInfo = await getNetworkInfo(true);
+
+      expect(networkInfo).toHaveLength(2);
+      const loopback = networkInfo.find(i => i.name === 'lo0');
+      expect(loopback).toBeDefined();
+      expect(loopback!.internal).toBe(true);
     });
 
-    it('should include internal interfaces when requested', () => {
-      const networkInfo = getNetworkInfo(true);
-      // Should have at least loopback interface
-      expect(networkInfo.length).toBeGreaterThanOrEqual(0);
+    it('should handle single interface object (not array)', async () => {
+      mockSi.networkInterfaces.mockResolvedValue(mockInterfaces[0]);
+      mockSi.networkGatewayDefault.mockResolvedValue('192.168.1.1');
+
+      const networkInfo = await getNetworkInfo();
+
+      expect(networkInfo).toHaveLength(1);
+      expect(networkInfo[0]!.name).toBe('en0');
     });
 
-    it('should have correct interface structure', () => {
-      const networkInfo = getNetworkInfo(true);
-      if (networkInfo.length > 0) {
-        const iface = networkInfo[0]!;
-        expect(typeof iface.name).toBe('string');
-        expect(typeof iface.mac).toBe('string');
-        expect(Array.isArray(iface.ipv4)).toBe(true);
-        expect(Array.isArray(iface.ipv6)).toBe(true);
-        expect(typeof iface.internal).toBe('boolean');
-      }
+    it('should only set gateway on default interface', async () => {
+      mockSi.networkInterfaces.mockResolvedValue([
+        { ...mockInterfaces[0], default: true },
+        { iface: 'en1', mac: '11:22:33:44:55:66', ip4: '10.0.0.1', ip6: '', internal: false, default: false },
+      ]);
+      mockSi.networkGatewayDefault.mockResolvedValue('192.168.1.1');
+
+      const networkInfo = await getNetworkInfo();
+
+      const defaultIface = networkInfo.find(i => i.name === 'en0');
+      const otherIface = networkInfo.find(i => i.name === 'en1');
+      expect(defaultIface!.gateway).toBe('192.168.1.1');
+      expect(otherIface!.gateway).toBe('');
     });
 
-    it('should have valid MAC address format', () => {
-      const networkInfo = getNetworkInfo(true);
-      for (const iface of networkInfo) {
-        expect(iface.mac).toMatch(/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/);
-      }
+    it('should return empty array on error', async () => {
+      mockSi.networkInterfaces.mockRejectedValue(new Error('si failed'));
+
+      const networkInfo = await getNetworkInfo();
+      expect(networkInfo).toEqual([]);
     });
   });
 
   describe('getDisplayInfo', () => {
-    it('should return empty array when not in Electron', async () => {
+    it('should fall back to si.graphics() when not in Electron', async () => {
+      mockSi.graphics.mockResolvedValue({
+        displays: [
+          {
+            model: 'Built-in Display',
+            positionX: 0,
+            positionY: 0,
+            resolutionX: 2560,
+            resolutionY: 1600,
+            main: true,
+          },
+        ],
+      });
+
       const displayInfo = await getDisplayInfo();
-      // In Node.js environment, should return empty array
-      expect(Array.isArray(displayInfo)).toBe(true);
+
+      expect(displayInfo).toHaveLength(1);
+      expect(displayInfo[0]!.label).toBe('Built-in Display');
+      expect(displayInfo[0]!.bounds.width).toBe(2560);
+      expect(displayInfo[0]!.bounds.height).toBe(1600);
+      expect(displayInfo[0]!.scaleFactor).toBe(1);
+      expect(displayInfo[0]!.primary).toBe(true);
+    });
+
+    it('should return empty array when both Electron and si.graphics() fail', async () => {
+      mockSi.graphics.mockRejectedValue(new Error('si failed'));
+
+      const displayInfo = await getDisplayInfo();
+      expect(displayInfo).toEqual([]);
+    });
+
+    it('should return empty array when si.graphics() has no displays', async () => {
+      mockSi.graphics.mockResolvedValue({ displays: [] });
+
+      const displayInfo = await getDisplayInfo();
+      expect(displayInfo).toEqual([]);
+    });
+  });
+
+  describe('getSystemMetrics', () => {
+    it('should return system metrics from systeminformation', async () => {
+      mockSi.currentLoad.mockResolvedValue({ currentLoad: 45.6 });
+      mockSi.mem.mockResolvedValue({ free: 4 * 1024 * 1024 * 1024, total: 16 * 1024 * 1024 * 1024 });
+      mockSi.fsSize.mockResolvedValue([{ used: 100 * 1024 * 1024 * 1024, size: 500 * 1024 * 1024 * 1024 }]);
+      mockSi.cpuTemperature.mockResolvedValue({ main: 55 });
+
+      const metrics = await getSystemMetrics();
+
+      expect(metrics.cpuUsage).toBe(46);
+      expect(metrics.memFree).toBe(4096);
+      expect(metrics.memTotal).toBe(16384);
+      expect(metrics.diskUsed).toBe(100);
+      expect(metrics.diskTotal).toBe(500);
+      expect(metrics.temperature).toBe(55);
+    });
+
+    it('should return fallback on error', async () => {
+      mockSi.currentLoad.mockRejectedValue(new Error('si failed'));
+
+      const metrics = await getSystemMetrics();
+
+      expect(metrics.cpuUsage).toBe(0);
+      expect(metrics.memFree).toBe(0);
+      expect(metrics.memTotal).toBe(0);
     });
   });
 
   describe('collectHardwareInfo', () => {
+    beforeEach(() => {
+      // Set up default mocks for all si calls
+      mockSi.osInfo.mockResolvedValue({
+        platform: 'Darwin',
+        release: '24.6.0',
+        arch: 'arm64',
+        hostname: 'test-host',
+        kernel: '24.6.0',
+      });
+      mockSi.cpu.mockResolvedValue({
+        brand: 'Apple M1',
+        manufacturer: 'Apple',
+        cores: 8,
+        speed: 3.2,
+      });
+      mockSi.mem.mockResolvedValue({
+        total: 16 * 1024 * 1024 * 1024,
+        free: 4 * 1024 * 1024 * 1024,
+        used: 12 * 1024 * 1024 * 1024,
+      });
+      mockSi.networkInterfaces.mockResolvedValue([]);
+      mockSi.networkGatewayDefault.mockResolvedValue('');
+      mockSi.graphics.mockResolvedValue({ displays: [] });
+    });
+
     it('should collect all hardware information', async () => {
       const hardwareInfo = await collectHardwareInfo();
 
@@ -182,6 +396,8 @@ describe('Hardware Info', () => {
       });
 
       expect(hardwareInfo.network).toEqual([]);
+      // networkInterfaces should not have been called
+      expect(mockSi.networkInterfaces).not.toHaveBeenCalled();
     });
 
     it('should exclude displays when configured', async () => {
@@ -193,12 +409,53 @@ describe('Hardware Info', () => {
     });
 
     it('should include internal interfaces when configured', async () => {
+      const internalIface = {
+        iface: 'lo0',
+        mac: '00:00:00:00:00:00',
+        ip4: '127.0.0.1',
+        ip6: '::1',
+        internal: true,
+        default: false,
+      };
+      mockSi.networkInterfaces.mockResolvedValue([internalIface]);
+
       const hardwareInfo = await collectHardwareInfo({
         includeInternalInterfaces: true,
       });
 
-      // Should have collected network info with internal interfaces
       expect(Array.isArray(hardwareInfo.network)).toBe(true);
+    });
+
+    it('should use Promise.all for parallel execution', async () => {
+      // All si calls should be initiated before any resolves
+      let osResolved = false;
+      let cpuResolved = false;
+
+      mockSi.osInfo.mockImplementation(() => {
+        return new Promise(resolve => {
+          setTimeout(() => {
+            osResolved = true;
+            resolve({
+              platform: 'Darwin', release: '24.6.0', arch: 'arm64',
+              hostname: 'test-host', kernel: '24.6.0',
+            });
+          }, 10);
+        });
+      });
+
+      mockSi.cpu.mockImplementation(() => {
+        // CPU call should start before OS resolves (parallel)
+        expect(osResolved).toBe(false);
+        cpuResolved = true;
+        return Promise.resolve({
+          brand: 'Apple M1', manufacturer: 'Apple', cores: 8, speed: 3.2,
+        });
+      });
+
+      await collectHardwareInfo({ includeNetwork: false, includeDisplays: false });
+
+      expect(osResolved).toBe(true);
+      expect(cpuResolved).toBe(true);
     });
   });
 
@@ -228,9 +485,34 @@ describe('Hardware Info', () => {
   });
 
   describe('getHardwareSummary', () => {
+    beforeEach(() => {
+      mockSi.osInfo.mockResolvedValue({
+        platform: 'Darwin',
+        release: '24.6.0',
+        arch: 'arm64',
+        hostname: 'test-host',
+        kernel: '24.6.0',
+      });
+      mockSi.cpu.mockResolvedValue({
+        brand: 'Apple M1',
+        manufacturer: 'Apple',
+        cores: 8,
+        speed: 3.2,
+      });
+      mockSi.mem.mockResolvedValue({
+        total: 16 * 1024 * 1024 * 1024,
+        free: 4 * 1024 * 1024 * 1024,
+        used: 12 * 1024 * 1024 * 1024,
+      });
+      mockSi.networkInterfaces.mockResolvedValue([
+        { iface: 'en0', mac: 'aa:bb:cc:dd:ee:ff', ip4: '192.168.1.100', ip6: '', internal: false, default: true },
+      ]);
+      mockSi.networkGatewayDefault.mockResolvedValue('192.168.1.1');
+      mockSi.graphics.mockResolvedValue({ displays: [] });
+    });
+
     it('should return formatted string', async () => {
       const summary = await getHardwareSummary();
-
       expect(typeof summary).toBe('string');
       expect(summary.length).toBeGreaterThan(0);
     });
