@@ -127,12 +127,14 @@ describe('Hardware Info', () => {
         cores: 10,
         speed: 3.2,
       });
+      mockSi.currentLoad.mockResolvedValue({ currentLoad: 42.56 });
 
       const cpuInfo = await getCpuInfo();
 
       expect(cpuInfo.model).toBe('Apple M1 Pro');
       expect(cpuInfo.cores).toBe(10);
       expect(cpuInfo.speed).toBe(3200); // GHz → MHz
+      expect(cpuInfo.usage).toBe(42.56);
     });
 
     it('should fall back to manufacturer if brand is empty', async () => {
@@ -142,6 +144,7 @@ describe('Hardware Info', () => {
         cores: 8,
         speed: 2.5,
       });
+      mockSi.currentLoad.mockResolvedValue({ currentLoad: 10 });
 
       const cpuInfo = await getCpuInfo();
       expect(cpuInfo.model).toBe('Intel');
@@ -155,6 +158,7 @@ describe('Hardware Info', () => {
       expect(cpuInfo.model).toBe('Unknown');
       expect(cpuInfo.cores).toBe(1);
       expect(cpuInfo.speed).toBe(0);
+      expect(cpuInfo.usage).toBe(0);
     });
   });
 
@@ -365,6 +369,7 @@ describe('Hardware Info', () => {
         free: 4 * 1024 * 1024 * 1024,
         used: 12 * 1024 * 1024 * 1024,
       });
+      mockSi.currentLoad.mockResolvedValue({ currentLoad: 25 });
       mockSi.networkInterfaces.mockResolvedValue([]);
       mockSi.networkGatewayDefault.mockResolvedValue('');
       mockSi.graphics.mockResolvedValue({ displays: [] });
@@ -451,6 +456,7 @@ describe('Hardware Info', () => {
           brand: 'Apple M1', manufacturer: 'Apple', cores: 8, speed: 3.2,
         });
       });
+      mockSi.currentLoad.mockResolvedValue({ currentLoad: 20 });
 
       await collectHardwareInfo({ includeNetwork: false, includeDisplays: false });
 
@@ -504,6 +510,7 @@ describe('Hardware Info', () => {
         free: 4 * 1024 * 1024 * 1024,
         used: 12 * 1024 * 1024 * 1024,
       });
+      mockSi.currentLoad.mockResolvedValue({ currentLoad: 30 });
       mockSi.networkInterfaces.mockResolvedValue([
         { iface: 'en0', mac: 'aa:bb:cc:dd:ee:ff', ip4: '192.168.1.100', ip6: '', internal: false, default: true },
       ]);

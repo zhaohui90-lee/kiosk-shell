@@ -83,6 +83,8 @@ export interface CpuInfo {
   cores: number
   /** CPU speed in MHz */
   speed: number
+  /** CPU usage percentage (0-100) */
+  usage: number
 }
 
 /**

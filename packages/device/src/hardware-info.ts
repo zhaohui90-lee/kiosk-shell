@@ -82,11 +82,12 @@ export async function getOsInfo(): Promise<OsInfo> {
  */
 export async function getCpuInfo(): Promise<CpuInfo> {
   try {
-    const info = await si.cpu()
+    const [info, load] = await Promise.all([si.cpu(), si.currentLoad()])
     return {
       model: info.brand || info.manufacturer || 'Unknown',
       cores: info.cores || 1,
       speed: Math.round(info.speed * 1000), // GHz → MHz
+      usage: Math.round(load.currentLoad * 100) / 100,
     }
   } catch (error) {
     logError(`Failed to get CPU info: ${error}`)
@@ -94,6 +95,7 @@ export async function getCpuInfo(): Promise<CpuInfo> {
       model: 'Unknown',
       cores: 1,
       speed: 0,
+      usage: 0,
     }
   }
 }
@@ -131,10 +133,7 @@ export async function getMemoryInfo(): Promise<MemoryInfo> {
  */
 export async function getNetworkInfo(includeInternal = false): Promise<NetworkInterface[]> {
   try {
-    const [interfaces, defaultGateway] = await Promise.all([
-      si.networkInterfaces(),
-      si.networkGatewayDefault(),
-    ])
+    const [interfaces, defaultGateway] = await Promise.all([si.networkInterfaces(), si.networkGatewayDefault()])
 
     // si.networkInterfaces() can return a single object or an array
     const ifaceArray = Array.isArray(interfaces) ? interfaces : [interfaces]
