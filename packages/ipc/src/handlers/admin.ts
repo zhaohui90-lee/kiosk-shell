@@ -11,7 +11,7 @@ import { randomBytes } from 'crypto'
 import { performance } from 'perf_hooks'
 import { getLogger } from '@kiosk/logger'
 import { getPlatformAdapter } from '@kiosk/platform'
-import { loadConfig } from '@kiosk/device'
+import { loadConfig, collectHardwareInfo as handleCollectHardwareInfo, type HardwareInfoConfig } from '@kiosk/device'
 import { getWindowManager } from '@kiosk/core'
 import {
   IPC_CHANNELS,
@@ -525,6 +525,9 @@ export function registerAdminHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.ADMIN_RELOAD_BUSINESS, handleAdminReloadBusiness)
   ipcMain.handle(IPC_CHANNELS.ADMIN_NETWORK_TEST, handleAdminTestNetwork)
   ipcMain.handle(IPC_CHANNELS.ADMIN_BUSINESS_STATUS, checkBusinessStatus)
+  ipcMain.handle(IPC_CHANNELS.ADMIN_COLLECT_HARDWARE_INFO, async (_, config?: Partial<HardwareInfoConfig>) => {
+    return handleCollectHardwareInfo(config)
+  })
 
   logger.debug('[IPC:Admin] Admin handlers registered')
 }

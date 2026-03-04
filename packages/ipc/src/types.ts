@@ -62,6 +62,9 @@ export const IPC_CHANNELS = {
 
   // Network test
   ADMIN_NETWORK_TEST: 'admin:networkTest',
+
+  // Hardware info
+  ADMIN_COLLECT_HARDWARE_INFO: 'admin:collectHardwareInfo',
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]

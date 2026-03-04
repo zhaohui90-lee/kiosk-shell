@@ -16,6 +16,7 @@ import type {
   AdminNetworkTestResult,
   AdminBusinessNetworkStatus,
 } from './types'
+import { HardwareInfo, HardwareInfoConfig } from '@kiosk/device'
 
 /**
  * Admin API interface (exposed to admin window renderer)
@@ -43,6 +44,8 @@ export interface AdminAPI {
   testNetwork(token: string, host: string): Promise<AdminNetworkTestResult>
   /** 获取业务网络状态 */
   checkBusinessStatus(token: string, url: string): Promise<AdminBusinessNetworkStatus>
+  /** 获取硬件信息 */
+  collectHardwareInfo(config?: Partial<HardwareInfoConfig>): Promise<HardwareInfo>
 }
 
 /**
@@ -91,6 +94,10 @@ const adminAPI: AdminAPI = {
 
   async checkBusinessStatus(token: string, url: string): Promise<AdminBusinessNetworkStatus> {
     return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_BUSINESS_STATUS, token, url)
+  },
+
+  async collectHardwareInfo(config?: Partial<HardwareInfoConfig>): Promise<HardwareInfo> {
+    return ipcRenderer.invoke(IPC_CHANNELS.ADMIN_COLLECT_HARDWARE_INFO, config)
   },
 }
 

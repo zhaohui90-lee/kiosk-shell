@@ -1,9 +1,8 @@
 /**
  * Hardware Info Collector
- * Collects hardware and system information
+ * Collects hardware and system information using systeminformation
  */
 
-import * as os from 'os'
 import si from 'systeminformation'
 import { getLogger } from '@kiosk/logger'
 import type {
@@ -40,46 +39,89 @@ function logError(msg: string): void {
 }
 
 /**
+ * Map si.osInfo().platform to Node.js process.platform convention
+ */
+function mapPlatform(siPlatform: string): string {
+  const platformMap: Record<string, string> = {
+    Windows: 'win32',
+    Darwin: 'darwin',
+    Linux: 'linux',
+  }
+  return platformMap[siPlatform] ?? siPlatform.toLowerCase()
+}
+
+/**
  * Get operating system information
  */
-export function getOsInfo(): OsInfo {
-  return {
-    platform: os.platform(),
-    release: os.release(),
-    arch: os.arch(),
-    hostname: os.hostname(),
-    type: os.type(),
-    version: os.version(),
+export async function getOsInfo(): Promise<OsInfo> {
+  try {
+    const info = await si.osInfo()
+    return {
+      platform: mapPlatform(info.platform),
+      release: info.release,
+      arch: info.arch,
+      hostname: info.hostname,
+      type: info.platform, // si.platform returns 'Windows', 'Darwin', 'Linux' — same as os.type()
+      version: info.kernel,
+    }
+  } catch (error) {
+    logError(`Failed to get OS info: ${error}`)
+    return {
+      platform: process.platform,
+      release: '',
+      arch: process.arch,
+      hostname: '',
+      type: '',
+      version: '',
+    }
   }
 }
 
 /**
  * Get CPU information
  */
-export function getCpuInfo(): CpuInfo {
-  const cpus = os.cpus()
-  const firstCpu = cpus[0]
-
-  return {
-    model: firstCpu?.model ?? 'Unknown',
-    cores: cpus.length,
-    speed: firstCpu?.speed ?? 0,
+export async function getCpuInfo(): Promise<CpuInfo> {
+  try {
+    const info = await si.cpu()
+    return {
+      model: info.brand || info.manufacturer || 'Unknown',
+      cores: info.cores || 1,
+      speed: Math.round(info.speed * 1000), // GHz → MHz
+    }
+  } catch (error) {
+    logError(`Failed to get CPU info: ${error}`)
+    return {
+      model: 'Unknown',
+      cores: 1,
+      speed: 0,
+    }
   }
 }
 
 /**
  * Get memory information
  */
-export function getMemoryInfo(): MemoryInfo {
-  const total = os.totalmem()
-  const free = os.freemem()
-  const used = total - free
+export async function getMemoryInfo(): Promise<MemoryInfo> {
+  try {
+    const info = await si.mem()
+    const total = info.total
+    const free = info.free
+    const used = info.used
 
-  return {
-    total,
-    free,
-    used,
-    usagePercent: Math.round((used / total) * 100 * 100) / 100,
+    return {
+      total,
+      free,
+      used,
+      usagePercent: total > 0 ? Math.round((used / total) * 100 * 100) / 100 : 0,
+    }
+  } catch (error) {
+    logError(`Failed to get memory info: ${error}`)
+    return {
+      total: 0,
+      free: 0,
+      used: 0,
+      usagePercent: 0,
+    }
   }
 }
 
@@ -87,46 +129,122 @@ export function getMemoryInfo(): MemoryInfo {
  * Get network interfaces information
  * @param includeInternal - Whether to include internal/loopback interfaces
  */
-export function getNetworkInfo(includeInternal = false): NetworkInterface[] {
-  const interfaces = os.networkInterfaces()
-  const result: NetworkInterface[] = []
+export async function getNetworkInfo(includeInternal = false): Promise<NetworkInterface[]> {
+  try {
+    const [interfaces, defaultGateway] = await Promise.all([
+      si.networkInterfaces(),
+      si.networkGatewayDefault(),
+    ])
 
-  for (const [name, addresses] of Object.entries(interfaces)) {
-    if (!addresses) continue
+    // si.networkInterfaces() can return a single object or an array
+    const ifaceArray = Array.isArray(interfaces) ? interfaces : [interfaces]
 
-    // Filter internal interfaces if not requested
-    const filteredAddresses = addresses.filter((addr) => includeInternal || !addr.internal)
+    const result: NetworkInterface[] = []
 
-    if (filteredAddresses.length === 0) continue
+    for (const iface of ifaceArray) {
+      // Filter internal interfaces if not requested
+      if (!includeInternal && iface.internal) continue
 
-    const networkInterface: NetworkInterface = {
-      name,
-      mac: filteredAddresses[0]?.mac ?? '00:00:00:00:00:00',
-      ipv4: [],
-      ipv6: [],
-      internal: filteredAddresses[0]?.internal ?? false,
+      const ipv4: string[] = []
+      const ipv6: string[] = []
+
+      if (iface.ip4) ipv4.push(iface.ip4)
+      if (iface.ip6) ipv6.push(iface.ip6)
+
+      // Only include interfaces that have addresses (or are explicitly internal)
+      if (ipv4.length === 0 && ipv6.length === 0 && !iface.internal) continue
+
+      const isDefault = iface.default === true
+
+      result.push({
+        name: iface.iface,
+        mac: iface.mac || '00:00:00:00:00:00',
+        ipv4,
+        ipv6,
+        internal: iface.internal,
+        gateway: isDefault ? defaultGateway : '',
+      })
     }
 
-    for (const addr of filteredAddresses) {
-      if (addr.family === 'IPv4') {
-        networkInterface.ipv4.push(addr.address)
-      } else if (addr.family === 'IPv6') {
-        networkInterface.ipv6.push(addr.address)
-      }
-    }
+    return result
+  } catch (error) {
+    logError(`Failed to get network info: ${error}`)
+    return []
+  }
+}
 
-    result.push(networkInterface)
+/**
+ * Get display information
+ * Tries Electron screen first, falls back to si.graphics(), then empty array
+ */
+export async function getDisplayInfo(): Promise<DisplayInfo[]> {
+  // Try Electron screen module first
+  try {
+    const electron = await import('electron')
+    const screen = electron.screen
+
+    if (screen) {
+      const displays = screen.getAllDisplays()
+      const primaryDisplay = screen.getPrimaryDisplay()
+
+      return displays.map((display, index) => ({
+        id: display.id,
+        label: `Display ${index + 1}`,
+        bounds: {
+          x: display.bounds.x,
+          y: display.bounds.y,
+          width: display.bounds.width,
+          height: display.bounds.height,
+        },
+        workArea: {
+          x: display.workArea.x,
+          y: display.workArea.y,
+          width: display.workArea.width,
+          height: display.workArea.height,
+        },
+        scaleFactor: display.scaleFactor,
+        primary: display.id === primaryDisplay.id,
+      }))
+    }
+  } catch {
+    // Not in Electron environment, try si.graphics() fallback
   }
 
-  return result
+  // Fallback to systeminformation graphics
+  try {
+    const graphics = await si.graphics()
+    if (graphics.displays && graphics.displays.length > 0) {
+      return graphics.displays.map((display, index) => ({
+        id: index,
+        label: display.model || `Display ${index + 1}`,
+        bounds: {
+          x: display.positionX ?? 0,
+          y: display.positionY ?? 0,
+          width: display.resolutionX ?? 0,
+          height: display.resolutionY ?? 0,
+        },
+        workArea: {
+          x: display.positionX ?? 0,
+          y: display.positionY ?? 0,
+          width: display.resolutionX ?? 0,
+          height: display.resolutionY ?? 0,
+        },
+        scaleFactor: 1,
+        primary: display.main ?? index === 0,
+      }))
+    }
+  } catch {
+    // si.graphics() not available either
+  }
+
+  return []
 }
 
 /**
  * 获取系统运行状态
  */
-export async function getSystemMerics(): Promise<SystemResource> {
+export async function getSystemMetrics(): Promise<SystemResource> {
   try {
-    // 并发获取 CPU、内存、磁盘、温度等信息
     const [cpuLoad, mem, fsSize, cpuTemp] = await Promise.all([
       si.currentLoad(),
       si.mem(),
@@ -136,11 +254,11 @@ export async function getSystemMerics(): Promise<SystemResource> {
 
     return {
       cpuUsage: Math.round(cpuLoad.currentLoad),
-      memFree: Math.round(mem.free / (1024 * 1024)), // 转为 MB
+      memFree: Math.round(mem.free / (1024 * 1024)),
       memTotal: Math.round(mem.total / (1024 * 1024)),
-      diskUsed: Math.round(fsSize[0]!.used / (1024 * 1024 * 1024)), // 主分区 GB
+      diskUsed: Math.round(fsSize[0]!.used / (1024 * 1024 * 1024)),
       diskTotal: Math.round(fsSize[0]!.size / (1024 * 1024 * 1024)),
-      temperature: Math.round(cpuTemp.main || 40), // 某些主板可能读不到，给个默认值
+      temperature: Math.round(cpuTemp.main || 40),
     }
   } catch (error) {
     getHardwareLogger().info(`[system-metrics] ${error}`)
@@ -156,47 +274,6 @@ export async function getSystemMerics(): Promise<SystemResource> {
 }
 
 /**
- * Get display information (requires Electron)
- * Returns empty array if not in Electron environment
- */
-export async function getDisplayInfo(): Promise<DisplayInfo[]> {
-  try {
-    // Try to import Electron's screen module
-    const electron = await import('electron')
-    const screen = electron.screen
-
-    if (!screen) {
-      return []
-    }
-
-    const displays = screen.getAllDisplays()
-    const primaryDisplay = screen.getPrimaryDisplay()
-
-    return displays.map((display, index) => ({
-      id: display.id,
-      label: `Display ${index + 1}`,
-      bounds: {
-        x: display.bounds.x,
-        y: display.bounds.y,
-        width: display.bounds.width,
-        height: display.bounds.height,
-      },
-      workArea: {
-        x: display.workArea.x,
-        y: display.workArea.y,
-        width: display.workArea.width,
-        height: display.workArea.height,
-      },
-      scaleFactor: display.scaleFactor,
-      primary: display.id === primaryDisplay.id,
-    }))
-  } catch {
-    // Not in Electron environment or screen not available
-    return []
-  }
-}
-
-/**
  * Collect all hardware information
  * @param config - Optional configuration
  */
@@ -204,19 +281,14 @@ export async function collectHardwareInfo(config?: Partial<HardwareInfoConfig>):
   const mergedConfig = { ...DEFAULT_HARDWARE_INFO_CONFIG, ...config }
 
   try {
-    const osInfo = getOsInfo()
-    const cpuInfo = getCpuInfo()
-    const memoryInfo = getMemoryInfo()
-
-    let networkInfo: NetworkInterface[] = []
-    if (mergedConfig.includeNetwork) {
-      networkInfo = getNetworkInfo(mergedConfig.includeInternalInterfaces)
-    }
-
-    let displayInfo: DisplayInfo[] = []
-    if (mergedConfig.includeDisplays) {
-      displayInfo = await getDisplayInfo()
-    }
+    // Run all queries in parallel
+    const [osInfo, cpuInfo, memoryInfo, networkInfo, displayInfo] = await Promise.all([
+      getOsInfo(),
+      getCpuInfo(),
+      getMemoryInfo(),
+      mergedConfig.includeNetwork ? getNetworkInfo(mergedConfig.includeInternalInterfaces) : Promise.resolve([]),
+      mergedConfig.includeDisplays ? getDisplayInfo() : Promise.resolve([]),
+    ])
 
     const hardwareInfo: HardwareInfo = {
       os: osInfo,
