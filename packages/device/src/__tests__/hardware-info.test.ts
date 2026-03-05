@@ -9,7 +9,6 @@ import {
   getMemoryInfo,
   getNetworkInfo,
   getDisplayInfo,
-  getSystemMetrics,
   collectHardwareInfo,
   formatBytes,
   getHardwareSummary,
