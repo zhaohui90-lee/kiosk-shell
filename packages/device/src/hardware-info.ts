@@ -13,6 +13,7 @@ import type {
   MemoryInfo,
   NetworkInterface,
   DisplayInfo,
+  DiskInfo,
 } from './types'
 import type { SystemResource } from '@kiosk/shared'
 import { DEFAULT_HARDWARE_INFO_CONFIG, ERROR_MESSAGES, LOG_MESSAGES } from './constants'
@@ -82,12 +83,13 @@ export async function getOsInfo(): Promise<OsInfo> {
  */
 export async function getCpuInfo(): Promise<CpuInfo> {
   try {
-    const [info, load] = await Promise.all([si.cpu(), si.currentLoad()])
+    const [info, load, cpuTemp] = await Promise.all([si.cpu(), si.currentLoad(), si.cpuTemperature()])
     return {
       model: info.brand || info.manufacturer || 'Unknown',
       cores: info.cores || 1,
       speed: Math.round(info.speed * 1000), // GHz → MHz
       usage: Math.round(load.currentLoad * 100) / 100,
+      temperature: Math.round(cpuTemp.main || 40), // 某些主板可能读不到，给个默认值
     }
   } catch (error) {
     logError(`Failed to get CPU info: ${error}`)
@@ -96,6 +98,7 @@ export async function getCpuInfo(): Promise<CpuInfo> {
       cores: 1,
       speed: 0,
       usage: 0,
+      temperature: 0,
     }
   }
 }
@@ -106,9 +109,9 @@ export async function getCpuInfo(): Promise<CpuInfo> {
 export async function getMemoryInfo(): Promise<MemoryInfo> {
   try {
     const info = await si.mem()
-    const total = info.total
-    const free = info.free
-    const used = info.used
+    const total = Math.round(info.total / (1024 * 1024)) // -> 转化为MB
+    const free = Math.round(info.free / (1024 * 1024))
+    const used = Math.round(info.used / (1024 * 1024))
 
     return {
       total,
@@ -124,6 +127,39 @@ export async function getMemoryInfo(): Promise<MemoryInfo> {
       used: 0,
       usagePercent: 0,
     }
+  }
+}
+
+/**
+ * Get disk information
+ */
+export async function getDiskInfo(): Promise<DiskInfo[]> {
+  try {
+    const fileSystems = await si.fsSize() // 文件系统信息 (挂载点、总空间、已用空间)
+
+    const result: DiskInfo[] = []
+
+    fileSystems.forEach((fs) => {
+      let total = Math.round(fs.size / (1024 * 1024)) // MB
+      let used = Math.round(fs.use / (1024 * 1024)) // MB
+      let free = Math.round(fs.available / (1024 * 1024)) // MB
+
+      result.push({
+        total,
+        used,
+        free,
+        usagePercent: total > 0 ? Math.round((used / total) * 100 * 100) / 100 : 0,
+      })
+    })
+
+    return result
+  } catch (error) {
+    return [{
+      total: 0,
+      free: 0,
+      used: 0,
+      usagePercent: 0,
+    }]
   }
 }
 
@@ -281,10 +317,11 @@ export async function collectHardwareInfo(config?: Partial<HardwareInfoConfig>):
 
   try {
     // Run all queries in parallel
-    const [osInfo, cpuInfo, memoryInfo, networkInfo, displayInfo] = await Promise.all([
+    const [osInfo, cpuInfo, memoryInfo, diskInfo, networkInfo, displayInfo] = await Promise.all([
       getOsInfo(),
       getCpuInfo(),
       getMemoryInfo(),
+      getDiskInfo(),
       mergedConfig.includeNetwork ? getNetworkInfo(mergedConfig.includeInternalInterfaces) : Promise.resolve([]),
       mergedConfig.includeDisplays ? getDisplayInfo() : Promise.resolve([]),
     ])
@@ -293,6 +330,7 @@ export async function collectHardwareInfo(config?: Partial<HardwareInfoConfig>):
       os: osInfo,
       cpu: cpuInfo,
       memory: memoryInfo,
+      disk: diskInfo,
       network: networkInfo,
       displays: displayInfo,
       collectedAt: new Date().toISOString(),
@@ -324,9 +362,10 @@ export function formatBytes(bytes: number): string {
 
 /**
  * Get a summary string of hardware info
+ * @param token auth token
  */
-export async function getHardwareSummary(): Promise<string> {
-  const info = await collectHardwareInfo()
+export async function getHardwareSummary(config?: Partial<HardwareInfoConfig>): Promise<string> {
+  const info = await collectHardwareInfo(config)
 
   const lines = [
     `OS: ${info.os.type} ${info.os.release} (${info.os.arch})`,
