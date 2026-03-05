@@ -100,9 +100,9 @@ export async function getCpuInfo(): Promise<CpuInfo> {
 export async function getMemoryInfo(): Promise<MemoryInfo> {
   try {
     const info = await si.mem()
-    const total = formatBytes(info.total, ByteUnit.MB)
-    const free = formatBytes(info.free, ByteUnit.MB)
-    const used = formatBytes(info.used, ByteUnit.MB)
+    const total = formatBytes(info.total, ByteUnit.GB)
+    const free = formatBytes(info.free, ByteUnit.GB)
+    const used = formatBytes(info.used, ByteUnit.GB)
 
     return {
       total,
@@ -131,9 +131,9 @@ export async function getDiskInfo(): Promise<DiskInfo[]> {
     const result: DiskInfo[] = []
 
     fileSystems.forEach((fs) => {
-      let total = formatBytes(fs.size, ByteUnit.MB) // MB
-      let used = formatBytes(fs.used, ByteUnit.MB)
-      let free = formatBytes(fs.available, ByteUnit.MB) // MB
+      let total = formatBytes(fs.size, ByteUnit.GB) // GB
+      let used = formatBytes(fs.used, ByteUnit.GB) // GB
+      let free = formatBytes(fs.available, ByteUnit.GB) // GB
 
       result.push({
         total,
