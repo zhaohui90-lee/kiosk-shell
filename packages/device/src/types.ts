@@ -93,9 +93,13 @@ export interface CpuInfo {
  * Memory information
  */
 export interface MemoryInfo {
-  total: string
-  free: string
-  used: string
+  /** Total memory in bytes */
+  total: number
+  /** Free memory in bytes */
+  free: number
+  /** Used memory in bytes */
+  used: number
+  /** Memory usage percentage (0-100) */
   usagePercent: number
 }
 
