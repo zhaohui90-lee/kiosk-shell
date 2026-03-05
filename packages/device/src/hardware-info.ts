@@ -5,17 +5,9 @@
 
 import si from 'systeminformation'
 import { getLogger } from '@kiosk/logger'
-import type {
-  HardwareInfo,
-  HardwareInfoConfig,
-  OsInfo,
-  CpuInfo,
-  MemoryInfo,
-  NetworkInterface,
-  DisplayInfo,
-  DiskInfo,
-} from './types'
+import type { HardwareInfo, HardwareInfoConfig, OsInfo, CpuInfo, MemoryInfo, NetworkInterface, DiskInfo } from './types'
 import { DEFAULT_HARDWARE_INFO_CONFIG, ERROR_MESSAGES, LOG_MESSAGES } from './constants'
+import { ByteUnit, formatBytes } from '@kiosk/shared'
 
 /**
  * Get logger instance
@@ -108,22 +100,22 @@ export async function getCpuInfo(): Promise<CpuInfo> {
 export async function getMemoryInfo(): Promise<MemoryInfo> {
   try {
     const info = await si.mem()
-    const total = Math.round(info.total / (1024 * 1024)) // -> 转化为MB
-    const free = Math.round(info.free / (1024 * 1024))
-    const used = Math.round(info.used / (1024 * 1024))
+    const total = formatBytes(info.total, ByteUnit.MB)
+    const free = formatBytes(info.free, ByteUnit.MB)
+    const used = formatBytes(info.used, ByteUnit.MB)
 
     return {
       total,
       free,
       used,
-      usagePercent: total > 0 ? Math.round((used / total) * 100 * 100) / 100 : 0,
+      usagePercent: info.total > 0 ? Math.round((info.used / info.total) * 100 * 100) / 100 : 0,
     }
   } catch (error) {
     logError(`Failed to get memory info: ${error}`)
     return {
-      total: 0,
-      free: 0,
-      used: 0,
+      total: '0',
+      free: '0',
+      used: '0',
       usagePercent: 0,
     }
   }
@@ -139,26 +131,28 @@ export async function getDiskInfo(): Promise<DiskInfo[]> {
     const result: DiskInfo[] = []
 
     fileSystems.forEach((fs) => {
-      let total = Math.round(fs.size / (1024 * 1024)) // MB
-      let used = Math.round(fs.use / (1024 * 1024)) // MB
-      let free = Math.round(fs.available / (1024 * 1024)) // MB
+      let total = formatBytes(fs.size, ByteUnit.MB) // MB
+      let used = formatBytes(fs.used, ByteUnit.MB)
+      let free = formatBytes(fs.available, ByteUnit.MB) // MB
 
       result.push({
         total,
         used,
         free,
-        usagePercent: total > 0 ? Math.round((used / total) * 100 * 100) / 100 : 0,
+        usagePercent: fs.used > 0 ? Math.round((fs.used / fs.size) * 100 * 100) / 100 : 0,
       })
     })
 
     return result
   } catch (error) {
-    return [{
-      total: 0,
-      free: 0,
-      used: 0,
-      usagePercent: 0,
-    }]
+    return [
+      {
+        total: '0',
+        free: '0',
+        used: '0',
+        usagePercent: 0,
+      },
+    ]
   }
 }
 
@@ -208,73 +202,6 @@ export async function getNetworkInfo(includeInternal = false): Promise<NetworkIn
 }
 
 /**
- * Get display information
- * Tries Electron screen first, falls back to si.graphics(), then empty array
- */
-export async function getDisplayInfo(): Promise<DisplayInfo[]> {
-  // Try Electron screen module first
-  try {
-    const electron = await import('electron')
-    const screen = electron.screen
-
-    if (screen) {
-      const displays = screen.getAllDisplays()
-      const primaryDisplay = screen.getPrimaryDisplay()
-
-      return displays.map((display, index) => ({
-        id: display.id,
-        label: `Display ${index + 1}`,
-        bounds: {
-          x: display.bounds.x,
-          y: display.bounds.y,
-          width: display.bounds.width,
-          height: display.bounds.height,
-        },
-        workArea: {
-          x: display.workArea.x,
-          y: display.workArea.y,
-          width: display.workArea.width,
-          height: display.workArea.height,
-        },
-        scaleFactor: display.scaleFactor,
-        primary: display.id === primaryDisplay.id,
-      }))
-    }
-  } catch {
-    // Not in Electron environment, try si.graphics() fallback
-  }
-
-  // Fallback to systeminformation graphics
-  try {
-    const graphics = await si.graphics()
-    if (graphics.displays && graphics.displays.length > 0) {
-      return graphics.displays.map((display, index) => ({
-        id: index,
-        label: display.model || `Display ${index + 1}`,
-        bounds: {
-          x: display.positionX ?? 0,
-          y: display.positionY ?? 0,
-          width: display.resolutionX ?? 0,
-          height: display.resolutionY ?? 0,
-        },
-        workArea: {
-          x: display.positionX ?? 0,
-          y: display.positionY ?? 0,
-          width: display.resolutionX ?? 0,
-          height: display.resolutionY ?? 0,
-        },
-        scaleFactor: 1,
-        primary: display.main ?? index === 0,
-      }))
-    }
-  } catch {
-    // si.graphics() not available either
-  }
-
-  return []
-}
-
-/**
  * Collect all hardware information
  * @param config - Optional configuration
  */
@@ -283,13 +210,12 @@ export async function collectHardwareInfo(config?: Partial<HardwareInfoConfig>):
 
   try {
     // Run all queries in parallel
-    const [osInfo, cpuInfo, memoryInfo, diskInfo, networkInfo, displayInfo] = await Promise.all([
+    const [osInfo, cpuInfo, memoryInfo, diskInfo, networkInfo] = await Promise.all([
       getOsInfo(),
       getCpuInfo(),
       getMemoryInfo(),
       getDiskInfo(),
       mergedConfig.includeNetwork ? getNetworkInfo(mergedConfig.includeInternalInterfaces) : Promise.resolve([]),
-      mergedConfig.includeDisplays ? getDisplayInfo() : Promise.resolve([]),
     ])
 
     const hardwareInfo: HardwareInfo = {
@@ -298,7 +224,6 @@ export async function collectHardwareInfo(config?: Partial<HardwareInfoConfig>):
       memory: memoryInfo,
       disk: diskInfo,
       network: networkInfo,
-      displays: displayInfo,
       collectedAt: new Date().toISOString(),
     }
 
@@ -308,52 +233,4 @@ export async function collectHardwareInfo(config?: Partial<HardwareInfoConfig>):
     logError(ERROR_MESSAGES.HARDWARE_INFO_FAILED)
     throw new Error(ERROR_MESSAGES.HARDWARE_INFO_FAILED)
   }
-}
-
-/**
- * Format bytes to human-readable string
- */
-export function formatBytes(bytes: number): string {
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  let value = bytes
-  let unitIndex = 0
-
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024
-    unitIndex++
-  }
-
-  return `${value.toFixed(2)} ${units[unitIndex]}`
-}
-
-/**
- * Get a summary string of hardware info
- * @param token auth token
- */
-export async function getHardwareSummary(config?: Partial<HardwareInfoConfig>): Promise<string> {
-  const info = await collectHardwareInfo(config)
-
-  const lines = [
-    `OS: ${info.os.type} ${info.os.release} (${info.os.arch})`,
-    `CPU: ${info.cpu.model} (${info.cpu.cores} cores @ ${info.cpu.speed}MHz)`,
-    `Memory: ${formatBytes(info.memory.used)} / ${formatBytes(info.memory.total)} (${info.memory.usagePercent}%)`,
-  ]
-
-  if (info.network.length > 0) {
-    const primaryNetwork = info.network[0]
-    if (primaryNetwork) {
-      lines.push(`Network: ${primaryNetwork.name} (${primaryNetwork.ipv4.join(', ') || 'No IPv4'})`)
-    }
-  }
-
-  if (info.displays.length > 0) {
-    const primaryDisplay = info.displays.find((d) => d.primary) || info.displays[0]
-    if (primaryDisplay) {
-      lines.push(
-        `Display: ${primaryDisplay.bounds.width}x${primaryDisplay.bounds.height} @ ${primaryDisplay.scaleFactor}x`,
-      )
-    }
-  }
-
-  return lines.join('\n')
 }

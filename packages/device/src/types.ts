@@ -93,13 +93,9 @@ export interface CpuInfo {
  * Memory information
  */
 export interface MemoryInfo {
-  /** Total memory in bytes */
-  total: number
-  /** Free memory in bytes */
-  free: number
-  /** Used memory in bytes */
-  used: number
-  /** Memory usage percentage (0-100) */
+  total: string
+  free: string
+  used: string
   usagePercent: number
 }
 
@@ -107,13 +103,9 @@ export interface MemoryInfo {
  * Disk information
  */
 export interface DiskInfo {
-  /** Total memory in bytes */
-  total: number
-  /** Free memory in bytes */
-  free: number
-  /** Used memory in bytes */
-  used: number
-  /** Memory usage percentage (0-100) */
+  total: string
+  free: string
+  used: string
   usagePercent: number
 }
 
@@ -136,34 +128,6 @@ export interface NetworkInterface {
 }
 
 /**
- * Display/Monitor information
- */
-export interface DisplayInfo {
-  /** Display ID */
-  id: number
-  /** Display label */
-  label: string
-  /** Display bounds (x, y, width, height) */
-  bounds: {
-    x: number
-    y: number
-    width: number
-    height: number
-  }
-  /** Work area bounds (excluding taskbar, dock, etc) */
-  workArea: {
-    x: number
-    y: number
-    width: number
-    height: number
-  }
-  /** Scale factor */
-  scaleFactor: number
-  /** Whether this is the primary display */
-  primary: boolean
-}
-
-/**
  * Complete hardware information
  */
 export interface HardwareInfo {
@@ -172,7 +136,6 @@ export interface HardwareInfo {
   memory: MemoryInfo
   disk: DiskInfo[]
   network: NetworkInterface[]
-  displays: DisplayInfo[]
   collectedAt: string
 }
 
