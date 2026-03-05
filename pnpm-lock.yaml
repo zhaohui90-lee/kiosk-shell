@@ -43,7 +43,7 @@ importers:
         version: link:../../packages/security
       '@kiosk/shared':
         specifier: workspace:*
-        version: link:../../shared/types
+        version: link:../../packages/shared
       '@kiosk/updater':
         specifier: workspace:*
         version: link:../../packages/updater
@@ -96,7 +96,7 @@ importers:
         version: link:../logger
       '@kiosk/shared':
         specifier: workspace:*
-        version: link:../../shared/types
+        version: link:../shared
       systeminformation:
         specifier: ^5.31.1
         version: 5.31.1
@@ -130,7 +130,7 @@ importers:
         version: link:../platform
       '@kiosk/shared':
         specifier: workspace:*
-        version: link:../../shared/types
+        version: link:../shared
     devDependencies:
       electron:
         specifier: ^40.1.0
@@ -215,6 +215,15 @@ importers:
         specifier: ^1.0.0
         version: 1.6.1(@types/node@24.10.9)
 
+  packages/shared:
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.30
+      typescript:
+        specifier: ^5.3.0
+        version: 5.9.3
+
   packages/updater:
     dependencies:
       '@kiosk/logger':
@@ -261,15 +270,6 @@ importers:
       vitest:
         specifier: ^1.0.0
         version: 1.6.1(@types/node@20.19.30)
-
-  shared/types:
-    devDependencies:
-      '@types/node':
-        specifier: ^20.0.0
-        version: 20.19.30
-      typescript:
-        specifier: ^5.3.0
-        version: 5.9.3
 
 packages:
 
