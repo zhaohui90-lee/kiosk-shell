@@ -50,7 +50,6 @@ export {
   getMemoryInfo,
   getNetworkInfo,
   collectHardwareInfo,
-  formatBytes,
 } from './hardware-info';
 
 // Export app info
