@@ -85,12 +85,28 @@ export interface CpuInfo {
   speed: number
   /** CPU usage percentage (0-100) */
   usage: number
+  /** CPU temperature */
+  temperature: number
 }
 
 /**
  * Memory information
  */
 export interface MemoryInfo {
+  /** Total memory in bytes */
+  total: number
+  /** Free memory in bytes */
+  free: number
+  /** Used memory in bytes */
+  used: number
+  /** Memory usage percentage (0-100) */
+  usagePercent: number
+}
+
+/**
+ * Disk information
+ */
+export interface DiskInfo {
   /** Total memory in bytes */
   total: number
   /** Free memory in bytes */
@@ -151,17 +167,12 @@ export interface DisplayInfo {
  * Complete hardware information
  */
 export interface HardwareInfo {
-  /** Operating system info */
   os: OsInfo
-  /** CPU information */
   cpu: CpuInfo
-  /** Memory information */
   memory: MemoryInfo
-  /** Network interfaces */
+  disk: DiskInfo[]
   network: NetworkInterface[]
-  /** Display information */
   displays: DisplayInfo[]
-  /** Collection timestamp */
   collectedAt: string
 }
 
