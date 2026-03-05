@@ -9,7 +9,6 @@ import {
   getMemoryInfo,
   getNetworkInfo,
   getDisplayInfo,
-  getSystemMetrics,
   collectHardwareInfo,
   formatBytes,
   getHardwareSummary,
@@ -317,34 +316,6 @@ describe('Hardware Info', () => {
 
       const displayInfo = await getDisplayInfo();
       expect(displayInfo).toEqual([]);
-    });
-  });
-
-  describe('getSystemMetrics', () => {
-    it('should return system metrics from systeminformation', async () => {
-      mockSi.currentLoad.mockResolvedValue({ currentLoad: 45.6 });
-      mockSi.mem.mockResolvedValue({ free: 4 * 1024 * 1024 * 1024, total: 16 * 1024 * 1024 * 1024 });
-      mockSi.fsSize.mockResolvedValue([{ used: 100 * 1024 * 1024 * 1024, size: 500 * 1024 * 1024 * 1024 }]);
-      mockSi.cpuTemperature.mockResolvedValue({ main: 55 });
-
-      const metrics = await getSystemMetrics();
-
-      expect(metrics.cpuUsage).toBe(46);
-      expect(metrics.memFree).toBe(4096);
-      expect(metrics.memTotal).toBe(16384);
-      expect(metrics.diskUsed).toBe(100);
-      expect(metrics.diskTotal).toBe(500);
-      expect(metrics.temperature).toBe(55);
-    });
-
-    it('should return fallback on error', async () => {
-      mockSi.currentLoad.mockRejectedValue(new Error('si failed'));
-
-      const metrics = await getSystemMetrics();
-
-      expect(metrics.cpuUsage).toBe(0);
-      expect(metrics.memFree).toBe(0);
-      expect(metrics.memTotal).toBe(0);
     });
   });
 

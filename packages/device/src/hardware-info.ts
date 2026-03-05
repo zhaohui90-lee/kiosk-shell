@@ -15,7 +15,6 @@ import type {
   DisplayInfo,
   DiskInfo,
 } from './types'
-import type { SystemResource } from '@kiosk/shared'
 import { DEFAULT_HARDWARE_INFO_CONFIG, ERROR_MESSAGES, LOG_MESSAGES } from './constants'
 
 /**
@@ -273,39 +272,6 @@ export async function getDisplayInfo(): Promise<DisplayInfo[]> {
   }
 
   return []
-}
-
-/**
- * 获取系统运行状态
- */
-export async function getSystemMetrics(): Promise<SystemResource> {
-  try {
-    const [cpuLoad, mem, fsSize, cpuTemp] = await Promise.all([
-      si.currentLoad(),
-      si.mem(),
-      si.fsSize(),
-      si.cpuTemperature(),
-    ])
-
-    return {
-      cpuUsage: Math.round(cpuLoad.currentLoad),
-      memFree: Math.round(mem.free / (1024 * 1024)),
-      memTotal: Math.round(mem.total / (1024 * 1024)),
-      diskUsed: Math.round(fsSize[0]!.used / (1024 * 1024 * 1024)),
-      diskTotal: Math.round(fsSize[0]!.size / (1024 * 1024 * 1024)),
-      temperature: Math.round(cpuTemp.main || 40),
-    }
-  } catch (error) {
-    getHardwareLogger().info(`[system-metrics] ${error}`)
-    return {
-      cpuUsage: 0,
-      memFree: 0,
-      memTotal: 0,
-      diskTotal: 0,
-      diskUsed: 0,
-      temperature: NaN,
-    }
-  }
 }
 
 /**
