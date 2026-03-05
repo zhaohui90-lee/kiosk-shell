@@ -14,7 +14,6 @@ export type {
   CpuInfo,
   MemoryInfo,
   NetworkInterface,
-  DisplayInfo,
   HardwareInfo,
   HardwareInfoConfig,
   DeviceIdentification,
@@ -50,10 +49,8 @@ export {
   getCpuInfo,
   getMemoryInfo,
   getNetworkInfo,
-  getDisplayInfo,
   collectHardwareInfo,
   formatBytes,
-  getHardwareSummary,
 } from './hardware-info';
 
 // Export app info

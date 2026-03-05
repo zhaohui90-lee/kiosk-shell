@@ -5,4 +5,5 @@
 
 export * from './shell-api';
 export * from './update';
-export * from './config'
+export * from './app-config'
+export * from './utils';
