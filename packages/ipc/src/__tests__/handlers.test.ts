@@ -35,6 +35,10 @@ vi.mock('@kiosk/device', () => ({
   getDeviceUuidAsync: vi.fn().mockResolvedValue(mockDeviceUuid),
   isUuidManagerInitialized: vi.fn().mockReturnValue(true),
   initUuidManager: vi.fn().mockResolvedValue(undefined),
+  loadConfig: vi.fn(() => ({
+    deviceNo: 'KSK-001',
+  })),
+  collectHardwareInfo: vi.fn().mockResolvedValue({}),
 }));
 
 // Mock @kiosk/platform
@@ -66,9 +70,14 @@ vi.mock('@kiosk/platform', () => ({
 }));
 
 describe('IPC Handlers', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     resetAllRateLimits();
     vi.clearAllMocks();
+
+    const { getDeviceUuidAsync, isUuidManagerInitialized, initUuidManager } = await import('@kiosk/device');
+    (getDeviceUuidAsync as ReturnType<typeof vi.fn>).mockResolvedValue(mockDeviceUuid);
+    (isUuidManagerInitialized as ReturnType<typeof vi.fn>).mockReturnValue(true);
+    (initUuidManager as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -76,11 +85,33 @@ describe('IPC Handlers', () => {
   });
 
   describe('System Handlers', () => {
-    it('should handle shutdown request', async () => {
+    async function getValidAdminToken(): Promise<string> {
+      const { handleAdminLogin } = await import('../handlers/admin');
+      const { DEFAULT_ADMIN_PASSWORD } = await import('../constants');
+      const mockEvent = {} as Electron.IpcMainInvokeEvent;
+      const loginResult = await handleAdminLogin(mockEvent, DEFAULT_ADMIN_PASSWORD);
+      expect(loginResult.success).toBe(true);
+      expect(loginResult.token).toBeDefined();
+      return loginResult.token!;
+    }
+
+    it('should reject shutdown request with invalid token', async () => {
       const { handleSystemShutdown } = await import('../handlers/system');
 
       const mockEvent = {} as Electron.IpcMainInvokeEvent;
-      const result = await handleSystemShutdown(mockEvent);
+      const result = await handleSystemShutdown(mockEvent, 'wrong-password');
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Invalid or expired session token');
+      expect(mockPlatformAdapter.shutdown).not.toHaveBeenCalled();
+    });
+
+    it('should handle shutdown request', async () => {
+      const { handleSystemShutdown } = await import('../handlers/system');
+      const validToken = await getValidAdminToken();
+
+      const mockEvent = {} as Electron.IpcMainInvokeEvent;
+      const result = await handleSystemShutdown(mockEvent, validToken);
 
       expect(result.success).toBe(true);
       expect(mockPlatformAdapter.shutdown).toHaveBeenCalledWith({
@@ -91,9 +122,10 @@ describe('IPC Handlers', () => {
 
     it('should handle restart request', async () => {
       const { handleSystemRestart } = await import('../handlers/system');
+      const validToken = await getValidAdminToken();
 
       const mockEvent = {} as Electron.IpcMainInvokeEvent;
-      const result = await handleSystemRestart(mockEvent);
+      const result = await handleSystemRestart(mockEvent, validToken);
 
       expect(result.success).toBe(true);
       expect(mockPlatformAdapter.restart).toHaveBeenCalledWith({
@@ -104,30 +136,32 @@ describe('IPC Handlers', () => {
 
     it('should rate limit shutdown requests', async () => {
       const { handleSystemShutdown } = await import('../handlers/system');
+      const validToken = await getValidAdminToken();
 
       const mockEvent = {} as Electron.IpcMainInvokeEvent;
 
       // First call should succeed
-      const result1 = await handleSystemShutdown(mockEvent);
+      const result1 = await handleSystemShutdown(mockEvent, validToken);
       expect(result1.success).toBe(true);
 
       // Second call should be rate limited
-      const result2 = await handleSystemShutdown(mockEvent);
+      const result2 = await handleSystemShutdown(mockEvent, validToken);
       expect(result2.success).toBe(false);
       expect(result2.message).toContain('rate limited');
     });
 
     it('should rate limit restart requests', async () => {
       const { handleSystemRestart } = await import('../handlers/system');
+      const validToken = await getValidAdminToken();
 
       const mockEvent = {} as Electron.IpcMainInvokeEvent;
 
       // First call should succeed
-      const result1 = await handleSystemRestart(mockEvent);
+      const result1 = await handleSystemRestart(mockEvent, validToken);
       expect(result1.success).toBe(true);
 
       // Second call should be rate limited
-      const result2 = await handleSystemRestart(mockEvent);
+      const result2 = await handleSystemRestart(mockEvent, validToken);
       expect(result2.success).toBe(false);
       expect(result2.message).toContain('rate limited');
     });
@@ -136,9 +170,10 @@ describe('IPC Handlers', () => {
       mockPlatformAdapter.shutdown.mockRejectedValueOnce(new Error('Test error'));
 
       const { handleSystemShutdown } = await import('../handlers/system');
+      const validToken = await getValidAdminToken();
 
       const mockEvent = {} as Electron.IpcMainInvokeEvent;
-      const result = await handleSystemShutdown(mockEvent);
+      const result = await handleSystemShutdown(mockEvent, validToken);
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('Test error');

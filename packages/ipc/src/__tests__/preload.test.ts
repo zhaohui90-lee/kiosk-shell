@@ -156,7 +156,7 @@ describe('Preload Script', () => {
 
       const { shellAPI } = await import('../preload');
 
-      await expect(shellAPI.systemShutdown()).rejects.toThrow('Shutdown denied');
+      await expect(shellAPI.systemShutdown('session-token')).rejects.toThrow('Shutdown denied');
     });
 
     it('should throw error when systemRestart fails', async () => {
@@ -176,7 +176,7 @@ describe('Preload Script', () => {
 
       const { shellAPI } = await import('../preload');
 
-      await expect(shellAPI.systemRestart()).rejects.toThrow('Restart denied');
+      await expect(shellAPI.systemRestart('session-token')).rejects.toThrow('Restart denied');
     });
   });
 });

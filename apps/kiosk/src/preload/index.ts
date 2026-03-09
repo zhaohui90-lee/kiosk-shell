@@ -22,8 +22,8 @@ import '@kiosk/ipc/preload';
  * Available methods:
  * - getDeviceInfo(): Promise<DeviceInfo> - Get device information
  * - requestUpdate(): Promise<UpdateInfo> - Request update check
- * - systemShutdown(password?: string): Promise<void> - System shutdown
- * - systemRestart(password?: string): Promise<void> - System restart
+ * - systemShutdown(token: string): Promise<void> - System shutdown
+ * - systemRestart(token: string): Promise<void> - System restart
  * - openDevTools(password: string): Promise<boolean> - Open DevTools
  *
  * Usage in renderer:
@@ -31,8 +31,8 @@ import '@kiosk/ipc/preload';
  * // Get device info
  * const deviceInfo = await window.shellAPI.getDeviceInfo();
  *
- * // Request system restart (requires password in kiosk mode)
- * await window.shellAPI.systemRestart('admin123');
+ * // Request system restart (requires admin session token)
+ * await window.shellAPI.systemRestart(sessionToken);
  *
  * // Open DevTools for debugging
  * const success = await window.shellAPI.openDevTools('debug_password');

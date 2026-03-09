@@ -11,6 +11,7 @@ import { randomBytes } from 'crypto'
 import { performance } from 'perf_hooks'
 import { getLogger } from '@kiosk/logger'
 import { getPlatformAdapter } from '@kiosk/platform'
+import { isSecurePasswordOverride, verifyPassword } from '@kiosk/shared'
 import { loadConfig, collectHardwareInfo as handleCollectHardwareInfo, type HardwareInfoConfig } from '@kiosk/device'
 import { getWindowManager } from '@kiosk/core'
 import {
@@ -45,7 +46,7 @@ let mainWindowRef: BrowserWindow | null = null
  * Set custom admin password
  */
 export function setAdminPassword(password: string): void {
-  if (password && password.length >= 8) {
+  if (isSecurePasswordOverride(password)) {
     adminPassword = password
     logger.info('[IPC:Admin] Admin password updated')
   } else {
@@ -73,6 +74,13 @@ function generateToken(): string {
  */
 function verifyToken(token: string): boolean {
   return !!activeSessionToken && token === activeSessionToken
+}
+
+/**
+ * Verify admin session token for external handler reuse.
+ */
+export function verifyAdminSessionToken(token: string | undefined): boolean {
+  return typeof token === 'string' && verifyToken(token)
 }
 
 /**
@@ -117,7 +125,7 @@ async function handleAdminLogin(_event: Electron.IpcMainInvokeEvent, password: s
 
   logger.info('[IPC:Admin] Processing login request')
 
-  if (password !== adminPassword) {
+  if (!verifyPassword(password, adminPassword)) {
     logger.warn('[IPC:Admin] Invalid password attempt')
     return { success: false, message: ERROR_MESSAGES.INVALID_PASSWORD }
   }
