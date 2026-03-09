@@ -56,6 +56,7 @@ export {
   setAdminPassword,
   setMainWindowRef,
   invalidateSession,
+  verifyAdminSessionToken,
 } from './handlers';
 
 // Export preload (for use in preload script)

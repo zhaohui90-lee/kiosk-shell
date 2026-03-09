@@ -6,6 +6,7 @@
 import { ipcMain } from 'electron';
 import { getLogger } from '@kiosk/logger';
 import { getPlatformAdapter } from '@kiosk/platform';
+import { verifyAdminSessionToken } from './admin';
 import { IPC_CHANNELS, type SystemShutdownResult, type SystemRestartResult } from '../types';
 import { ERROR_MESSAGES } from '../constants';
 import { checkRateLimit } from '../rate-limiter';
@@ -17,7 +18,7 @@ const logger = getLogger();
  */
 async function handleSystemShutdown(
   _event: Electron.IpcMainInvokeEvent,
-  _password?: string
+  token?: string
 ): Promise<SystemShutdownResult> {
   const channel = IPC_CHANNELS.SYSTEM_SHUTDOWN;
 
@@ -32,12 +33,16 @@ async function handleSystemShutdown(
 
   logger.info('[IPC:System] Processing shutdown request');
 
+  if (!verifyAdminSessionToken(token)) {
+    logger.warn('[IPC:System] Shutdown request rejected: invalid token');
+    return {
+      success: false,
+      message: ERROR_MESSAGES.INVALID_TOKEN,
+    };
+  }
+
   try {
     const platform = getPlatformAdapter();
-
-    // In kiosk mode, password verification would be required
-    // This is handled by @kiosk/security module (to be implemented)
-
     await platform.shutdown({ force: false, delay: 5 });
 
     logger.info('[IPC:System] Shutdown initiated successfully');
@@ -60,7 +65,7 @@ async function handleSystemShutdown(
  */
 async function handleSystemRestart(
   _event: Electron.IpcMainInvokeEvent,
-  _password?: string
+  token?: string
 ): Promise<SystemRestartResult> {
   const channel = IPC_CHANNELS.SYSTEM_RESTART;
 
@@ -75,12 +80,16 @@ async function handleSystemRestart(
 
   logger.info('[IPC:System] Processing restart request');
 
+  if (!verifyAdminSessionToken(token)) {
+    logger.warn('[IPC:System] Restart request rejected: invalid token');
+    return {
+      success: false,
+      message: ERROR_MESSAGES.INVALID_TOKEN,
+    };
+  }
+
   try {
     const platform = getPlatformAdapter();
-
-    // In kiosk mode, password verification would be required
-    // This is handled by @kiosk/security module (to be implemented)
-
     await platform.restart({ force: false, delay: 5 });
 
     logger.info('[IPC:System] Restart initiated successfully');

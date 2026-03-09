@@ -11,11 +11,11 @@ export interface ShellAPI {
   /** Request update check */
   requestUpdate(): Promise<UpdateInfo>
 
-  /** System shutdown (requires password in kiosk mode) */
-  systemShutdown(password?: string): Promise<void>
+  /** System shutdown (requires admin session token) */
+  systemShutdown(token: string): Promise<void>
 
-  /** System restart (requires password in kiosk mode) */
-  systemRestart(password?: string): Promise<void>
+  /** System restart (requires admin session token) */
+  systemRestart(token: string): Promise<void>
 
   /** Open DevTools (requires password) */
   openDevTools(password: string): Promise<boolean>

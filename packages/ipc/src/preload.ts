@@ -32,10 +32,10 @@ const shellAPI: ShellAPI = {
 
   /**
    * System shutdown
-   * @param password - Optional password for kiosk mode
+   * @param token - Admin session token
    */
-  async systemShutdown(password?: string): Promise<void> {
-    const result = await ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_SHUTDOWN, password)
+  async systemShutdown(token: string): Promise<void> {
+    const result = await ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_SHUTDOWN, token)
     if (!result.success) {
       throw new Error(result.message || 'Shutdown failed')
     }
@@ -43,10 +43,10 @@ const shellAPI: ShellAPI = {
 
   /**
    * System restart
-   * @param password - Optional password for kiosk mode
+   * @param token - Admin session token
    */
-  async systemRestart(password?: string): Promise<void> {
-    const result = await ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_RESTART, password)
+  async systemRestart(token: string): Promise<void> {
+    const result = await ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_RESTART, token)
     if (!result.success) {
       throw new Error(result.message || 'Restart failed')
     }

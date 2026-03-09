@@ -5,6 +5,7 @@
 
 import { ipcMain, BrowserWindow } from 'electron';
 import { getLogger } from '@kiosk/logger';
+import { isSecurePasswordOverride, verifyPassword as verifySharedPassword } from '@kiosk/shared';
 import { IPC_CHANNELS, type DebugResult } from '../types';
 import { DEFAULT_DEBUG_PASSWORD, ERROR_MESSAGES } from '../constants';
 import { checkRateLimit } from '../rate-limiter';
@@ -21,7 +22,7 @@ let debugPassword = DEFAULT_DEBUG_PASSWORD;
  * Should be called during app initialization with a secure password
  */
 export function setDebugPassword(password: string): void {
-  if (password && password.length >= 8) {
+  if (isSecurePasswordOverride(password)) {
     debugPassword = password;
     logger.info('[IPC:Debug] Debug password updated');
   } else {
@@ -33,7 +34,7 @@ export function setDebugPassword(password: string): void {
  * Verify debug password
  */
 function verifyPassword(password: string): boolean {
-  return password === debugPassword;
+  return verifySharedPassword(password, debugPassword);
 }
 
 /**

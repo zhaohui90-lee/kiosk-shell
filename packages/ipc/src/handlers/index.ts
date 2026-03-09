@@ -37,4 +37,5 @@ export {
   setAdminPassword,
   setMainWindowRef,
   invalidateSession,
+  verifyAdminSessionToken,
 } from './admin';
