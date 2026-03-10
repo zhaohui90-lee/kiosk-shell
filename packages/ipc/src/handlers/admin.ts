@@ -20,7 +20,7 @@ import {
   type AdminLoginResult,
   type AdminOperationResult,
   AdminWindowCloseResult,
-  AdminBusinessNetworkStatus,
+  IpcChannel,
 } from '../types'
 import { DEFAULT_ADMIN_PASSWORD, ERROR_MESSAGES } from '../constants'
 import { checkRateLimit } from '../rate-limiter'
@@ -41,6 +41,13 @@ let activeSessionToken: string | null = null
  * Reference to main business window (set externally)
  */
 let mainWindowRef: BrowserWindow | null = null
+
+/**
+ * Type definition for admin handler functions
+ * T - tuple of argument types (excluding event)
+ * R - return type
+ */
+type AdminHandlerFunction<T extends any[], R> = (event: Electron.IpcMainInvokeEvent, ...args: T) => Promise<R>
 
 /**
  * Set custom admin password
@@ -140,18 +147,7 @@ async function handleAdminLogin(_event: Electron.IpcMainInvokeEvent, password: s
 /**
  * Handle exit app request
  */
-async function handleAdminExitApp(_event: Electron.IpcMainInvokeEvent, token: string): Promise<AdminOperationResult> {
-  const channel = IPC_CHANNELS.ADMIN_EXIT_APP
-
-  if (!checkRateLimit(channel)) {
-    return { success: false, message: ERROR_MESSAGES.RATE_LIMITED }
-  }
-
-  if (!verifyToken(token)) {
-    logger.warn('[IPC:Admin] Exit app rejected: invalid token')
-    return { success: false, message: ERROR_MESSAGES.INVALID_TOKEN }
-  }
-
+const handleAdminExitApp = createAdminAction(IPC_CHANNELS.ADMIN_EXIT_APP, async () => {
   logger.info('[IPC:Admin] Exit app requested')
 
   try {
@@ -162,26 +158,12 @@ async function handleAdminExitApp(_event: Electron.IpcMainInvokeEvent, token: st
     logger.error('[IPC:Admin] Exit app failed', { error: err.message })
     return { success: false, message: `${ERROR_MESSAGES.OPERATION_FAILED}: ${err.message}` }
   }
-}
+})
 
 /**
  * Handle restart app request
  */
-async function handleAdminRestartApp(
-  _event: Electron.IpcMainInvokeEvent,
-  token: string,
-): Promise<AdminOperationResult> {
-  const channel = IPC_CHANNELS.ADMIN_RESTART_APP
-
-  if (!checkRateLimit(channel)) {
-    return { success: false, message: ERROR_MESSAGES.RATE_LIMITED }
-  }
-
-  if (!verifyToken(token)) {
-    logger.warn('[IPC:Admin] Restart app rejected: invalid token')
-    return { success: false, message: ERROR_MESSAGES.INVALID_TOKEN }
-  }
-
+const handleAdminRestartApp = createAdminAction(IPC_CHANNELS.ADMIN_RESTART_APP, async () => {
   logger.info('[IPC:Admin] Restart app requested')
 
   try {
@@ -193,26 +175,12 @@ async function handleAdminRestartApp(
     logger.error('[IPC:Admin] Restart app failed', { error: err.message })
     return { success: false, message: `${ERROR_MESSAGES.OPERATION_FAILED}: ${err.message}` }
   }
-}
+})
 
 /**
  * Handle system restart request
  */
-async function handleAdminSystemRestart(
-  _event: Electron.IpcMainInvokeEvent,
-  token: string,
-): Promise<AdminOperationResult> {
-  const channel = IPC_CHANNELS.ADMIN_SYSTEM_RESTART
-
-  if (!checkRateLimit(channel)) {
-    return { success: false, message: ERROR_MESSAGES.RATE_LIMITED }
-  }
-
-  if (!verifyToken(token)) {
-    logger.warn('[IPC:Admin] System restart rejected: invalid token')
-    return { success: false, message: ERROR_MESSAGES.INVALID_TOKEN }
-  }
-
+const handleAdminSystemRestart = createAdminAction(IPC_CHANNELS.ADMIN_SYSTEM_RESTART, async () => {
   logger.info('[IPC:Admin] System restart requested')
 
   try {
@@ -224,26 +192,12 @@ async function handleAdminSystemRestart(
     logger.error('[IPC:Admin] System restart failed', { error: err.message })
     return { success: false, message: `${ERROR_MESSAGES.OPERATION_FAILED}: ${err.message}` }
   }
-}
+})
 
 /**
  * Handle system shutdown request
  */
-async function handleAdminSystemShutdown(
-  _event: Electron.IpcMainInvokeEvent,
-  token: string,
-): Promise<AdminOperationResult> {
-  const channel = IPC_CHANNELS.ADMIN_SYSTEM_SHUTDOWN
-
-  if (!checkRateLimit(channel)) {
-    return { success: false, message: ERROR_MESSAGES.RATE_LIMITED }
-  }
-
-  if (!verifyToken(token)) {
-    logger.warn('[IPC:Admin] System shutdown rejected: invalid token')
-    return { success: false, message: ERROR_MESSAGES.INVALID_TOKEN }
-  }
-
+const handleAdminSystemShutdown = createAdminAction(IPC_CHANNELS.ADMIN_SYSTEM_SHUTDOWN, async () => {
   logger.info('[IPC:Admin] System shutdown requested')
 
   try {
@@ -255,22 +209,17 @@ async function handleAdminSystemShutdown(
     logger.error('[IPC:Admin] System shutdown failed', { error: err.message })
     return { success: false, message: `${ERROR_MESSAGES.OPERATION_FAILED}: ${err.message}` }
   }
-}
+})
 
 /**
  * Handle get config request (read-only)
  */
-async function handleAdminGetConfig(_event: Electron.IpcMainInvokeEvent, token: string): Promise<AdminOperationResult> {
-  if (!verifyToken(token)) {
-    logger.warn('[IPC:Admin] Get config rejected: invalid token')
-    return { success: false, message: ERROR_MESSAGES.INVALID_TOKEN }
-  }
-
+const handleAdminGetConfig = createAdminAction(IPC_CHANNELS.ADMIN_GET_CONFIG, async () => {
   logger.debug('[IPC:Admin] Get config requested')
 
   try {
     const appConfig = loadConfig()
-    // Return basic app info (not the actual config object to avoid exposing passwords)
+    // Return basic app info (not the actual config object to avoid exposing sensitive data)
     const data: Record<string, unknown> = {
       version: app.getVersion(),
       isPackaged: app.isPackaged,
@@ -285,20 +234,12 @@ async function handleAdminGetConfig(_event: Electron.IpcMainInvokeEvent, token: 
     logger.error('[IPC:Admin] Get config failed', { error: err.message })
     return { success: false, message: `${ERROR_MESSAGES.OPERATION_FAILED}: ${err.message}` }
   }
-}
+})
 
 /**
  * Handle get system info request
  */
-async function handleAdminGetSystemInfo(
-  _event: Electron.IpcMainInvokeEvent,
-  token: string,
-): Promise<AdminOperationResult> {
-  if (!verifyToken(token)) {
-    logger.warn('[IPC:Admin] Get system info rejected: invalid token')
-    return { success: false, message: ERROR_MESSAGES.INVALID_TOKEN }
-  }
-
+const handleAdminGetSystemInfo = createAdminAction(IPC_CHANNELS.ADMIN_GET_SYSTEM_INFO, async () => {
   logger.debug('[IPC:Admin] Get system info requested')
 
   try {
@@ -326,26 +267,12 @@ async function handleAdminGetSystemInfo(
     logger.error('[IPC:Admin] Get system info failed', { error: err.message })
     return { success: false, message: `${ERROR_MESSAGES.OPERATION_FAILED}: ${err.message}` }
   }
-}
+})
 
 /**
  * Handle reload business page request
  */
-async function handleAdminReloadBusiness(
-  _event: Electron.IpcMainInvokeEvent,
-  token: string,
-): Promise<AdminOperationResult> {
-  const channel = IPC_CHANNELS.ADMIN_RELOAD_BUSINESS
-
-  if (!checkRateLimit(channel)) {
-    return { success: false, message: ERROR_MESSAGES.RATE_LIMITED }
-  }
-
-  if (!verifyToken(token)) {
-    logger.warn('[IPC:Admin] Reload business rejected: invalid token')
-    return { success: false, message: ERROR_MESSAGES.INVALID_TOKEN }
-  }
-
+const handleAdminReloadBusiness = createAdminAction(IPC_CHANNELS.ADMIN_RELOAD_BUSINESS, async () => {
   logger.info('[IPC:Admin] Reload business page requested')
 
   try {
@@ -360,7 +287,7 @@ async function handleAdminReloadBusiness(
     logger.error('[IPC:Admin] Reload business failed', { error: err.message })
     return { success: false, message: `${ERROR_MESSAGES.OPERATION_FAILED}: ${err.message}` }
   }
-}
+})
 
 const execAsync = promisify(exec)
 
@@ -377,45 +304,38 @@ function isValidHost(host: string): boolean {
   return hostnameRegex.test(host) || ipv4Regex.test(host) || ipv6Regex.test(host)
 }
 
-async function handleAdminTestNetwork(
-  _event: Electron.IpcMainInvokeEvent,
-  token: string,
-  host: string,
-  count = 4,
-): Promise<AdminNetworkTestResult> {
-  if (!verifyToken(token)) {
-    logger.warn('[IPC:Admin] Test network rejected: invalid token')
-    return { success: false, message: ERROR_MESSAGES.INVALID_TOKEN }
-  }
+const handleAdminTestNetwork = createAdminAction(
+  IPC_CHANNELS.ADMIN_NETWORK_TEST,
+  async (_event, host: string, count = 4) => {
+    logger.info('[IPC:Admin] Test network requested', { host })
 
-  if (!host || !isValidHost(host)) {
-    logger.warn('[IPC:Admin] Test network rejected: invalid host', { host })
-    return { success: false, message: 'Invalid host parameter' }
-  }
-
-  logger.info('[IPC:Admin] Test network requested', { host })
-
-  try {
-    const platform = os.platform()
-    let command: string
-
-    if (platform === 'win32') {
-      // windows
-      command = `ping -n ${count} ${host}`
-    } else {
-      // linux/mac
-      command = `ping -c ${count} ${host}`
+    if (!isValidHost(host)) {
+      logger.warn('[IPC:Admin] Test network rejected: invalid host', { host })
+      return { success: false, message: 'Invalid host parameter' }
     }
 
-    const { stdout } = await execAsync(command)
+    try {
+      const platform = os.platform()
+      let command: string
 
-    return parsePingResult(stdout, host, platform)
-  } catch (error) {
-    const err = error as Error
-    logger.error('[IPC:Admin] Test network failed', { error: err.message })
-    return { success: false, message: `${ERROR_MESSAGES.OPERATION_FAILED}: ${err.message}` }
-  }
-}
+      if (platform === 'win32') {
+        // windows
+        command = `ping -n ${count} ${host}`
+      } else {
+        // linux/mac
+        command = `ping -c ${count} ${host}`
+      }
+
+      const { stdout } = await execAsync(command)
+
+      return parsePingResult(stdout, host, platform)
+    } catch (error) {
+      const err = error as Error
+      logger.error('[IPC:Admin] Test network failed', { error: err.message })
+      return { success: false, message: `${ERROR_MESSAGES.OPERATION_FAILED}: ${err.message}` }
+    }
+  },
+)
 
 function parsePingResult(output: string, host: string, platform: string): AdminNetworkTestResult {
   let sent = 0,
@@ -476,42 +396,66 @@ function parsePingResult(output: string, host: string, platform: string): AdminN
   }
 }
 
-async function checkBusinessStatus(
-  _event: Electron.IpcMainInvokeEvent,
-  token: string,
-  url: string,
-): Promise<AdminBusinessNetworkStatus> {
-  if (!verifyToken(token)) {
-    logger.warn('[IPC:Admin] Test network rejected: invalid token')
-    return { success: false, message: ERROR_MESSAGES.INVALID_TOKEN }
-  }
+const checkBusinessStatus = createAdminAction(
+  IPC_CHANNELS.ADMIN_BUSINESS_STATUS,
+  async (_event, url: string) => {
+    logger.info('[IPC:Admin] Check business network status requested', { url })
 
-  const start = performance.now()
-
-  try {
-    // 使用 fetch 发送一个轻量级的 HEAD 请求，避免拉取大量数据
-    const response = await fetch(url, {
-      method: 'HEAD',
-      // 设置超时时间，例如 3 秒
-      signal: AbortSignal.timeout(3000),
-    })
-
-    const end = performance.now()
-
-    return {
-      success: true,
-      latency: Math.round(end - start),
-      isOnline: response.ok,
-      statusCode: response.status,
+    if (!isValidHost(url)) {
+      logger.warn('[IPC:Admin] Check business status rejected: invalid URL', { url })
+      return { success: false, message: 'Invalid URL parameter' }
     }
-  } catch (error) {
-    // 捕获超时、DNS 错误、断网等异常
-    return {
-      success: false,
-      message: 'Network error',
-      latency: 9999, // 代表超时或不可达
-      isOnline: false,
-      statusCode: 0,
+
+    try {
+      const start = performance.now()
+
+      // 使用 fetch 发送一个轻量级的 HEAD 请求，避免拉取大量数据
+      const response = await fetch(url, {
+        method: 'HEAD',
+        // 设置超时时间，例如 3 秒
+        signal: AbortSignal.timeout(3000),
+      })
+
+      const end = performance.now()
+
+      return {
+        success: true,
+        latency: Math.round(end - start),
+        isOnline: response.ok,
+        statusCode: response.status,
+      }
+    } catch (error) {
+      // 捕获超时、DNS 错误、断网等异常
+      return {
+        success: false,
+        message: 'Network error',
+        latency: 9999, // 代表超时或不可达
+        isOnline: false,
+        statusCode: 0,
+      }
+    }
+  },
+)
+
+function createAdminAction<T extends any[], R>(channel: IpcChannel, action: AdminHandlerFunction<T, R>) {
+  return async (event: Electron.IpcMainInvokeEvent, token: string, ...args: T): Promise<AdminOperationResult | R> => {
+    // 1. 速率限制
+    if (!checkRateLimit(channel)) {
+      return { success: false, message: ERROR_MESSAGES.RATE_LIMITED }
+    }
+
+    // 2. 验证令牌
+    if (!verifyToken(token)) {
+      return { success: false, message: ERROR_MESSAGES.INVALID_TOKEN }
+    }
+
+    // 3. 执行操作
+    try {
+      return await action(event, ...args)
+    } catch (error) {
+      const err = error as Error
+      logger.error(`[IPC:Admin] Operation failed on channel ${channel}`, { error: err.message })
+      return { success: false, message: `${ERROR_MESSAGES.OPERATION_FAILED}: ${err.message}` }
     }
   }
 }
