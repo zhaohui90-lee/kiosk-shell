@@ -91,6 +91,19 @@ export const RATE_LIMITS: Partial<Record<IpcChannel, RateLimitConfig>> = {
   [IPC_CHANNELS.ADMIN_RESTART_APP]: { maxCalls: 1, windowMs: 60000 },
   [IPC_CHANNELS.ADMIN_SYSTEM_RESTART]: { maxCalls: 1, windowMs: 60000 },
   [IPC_CHANNELS.ADMIN_SYSTEM_SHUTDOWN]: { maxCalls: 1, windowMs: 60000 },
+  [IPC_CHANNELS.ADMIN_RELOAD_BUSINESS]: { maxCalls: 3, windowMs: 10000 },
+}
+
+/**
+ * Structured result from RateLimiter.check()
+ */
+export interface RateLimitResult {
+  /** Whether the request is allowed */
+  allowed: boolean
+  /** Remaining calls in the current window, or -1 if no limit */
+  remaining: number
+  /** Milliseconds until the caller can retry (0 if allowed) */
+  retryAfterMs: number
 }
 
 /**
@@ -184,14 +197,6 @@ export interface AdminBusinessNetworkStatus {
   latency?: number
   isOnline?: boolean
   statusCode?: number
-}
-
-/**
- * Rate limiter state
- */
-export interface RateLimiterState {
-  calls: number[]
-  channel: IpcChannel
 }
 
 /**

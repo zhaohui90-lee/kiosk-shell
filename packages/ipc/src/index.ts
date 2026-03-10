@@ -7,6 +7,7 @@
 export type {
   IpcChannel,
   RateLimitConfig,
+  RateLimitResult,
   IpcHandler,
   HandlerOptions,
   SystemShutdownResult,
@@ -16,7 +17,6 @@ export type {
   DebugResult,
   AdminLoginResult,
   AdminOperationResult,
-  RateLimiterState,
   PasswordVerifyResult,
   DeviceInfo,
   UpdateInfo,
@@ -35,6 +35,7 @@ export {
 
 // Export rate limiter
 export {
+  RateLimiter,
   checkRateLimit,
   resetRateLimit,
   resetAllRateLimits,
