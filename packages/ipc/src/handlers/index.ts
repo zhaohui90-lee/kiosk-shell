@@ -3,25 +3,9 @@
  * Exports all handler registration functions
  */
 
-export {
-  registerSystemHandlers,
-  unregisterSystemHandlers,
-  handleSystemShutdown,
-  handleSystemRestart,
-} from './system';
+export { registerSystemHandlers, unregisterSystemHandlers, handleSystemShutdown, handleSystemRestart } from './system'
 
-export {
-  registerDeviceHandlers,
-  unregisterDeviceHandlers,
-  handleGetDeviceInfo,
-} from './device';
-
-export {
-  registerDebugHandlers,
-  unregisterDebugHandlers,
-  handleOpenDevTools,
-  setDebugPassword,
-} from './debug';
+export { registerDebugHandlers, unregisterDebugHandlers, handleOpenDevTools, setDebugPassword } from './debug'
 
 export {
   registerAdminHandlers,
@@ -38,4 +22,4 @@ export {
   setMainWindowRef,
   invalidateSession,
   verifyAdminSessionToken,
-} from './admin';
+} from './admin'
