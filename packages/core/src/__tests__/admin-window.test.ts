@@ -76,9 +76,9 @@ describe('Admin Window Management', () => {
     manager = createWindowManager();
   });
 
-  describe('createAdminWindow', () => {
+  describe('create', () => {
     it('should create admin window with default config', () => {
-      const adminWin = manager.createAdminWindow();
+      const adminWin = manager.adminWindow.create();
 
       expect(adminWin).toBeDefined();
       expect(BrowserWindow).toHaveBeenCalledWith(
@@ -94,7 +94,7 @@ describe('Admin Window Management', () => {
     });
 
     it('should create admin window with custom size', () => {
-      manager.createAdminWindow({ width: 600, height: 800 });
+      manager.adminWindow.create({ width: 600, height: 800 });
 
       expect(BrowserWindow).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -105,7 +105,7 @@ describe('Admin Window Management', () => {
     });
 
     it('should create admin window with preload script', () => {
-      manager.createAdminWindow({ preload: '/path/to/admin-preload.js' });
+      manager.adminWindow.create({ preload: '/path/to/admin-preload.js' });
 
       expect(BrowserWindow).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -119,143 +119,143 @@ describe('Admin Window Management', () => {
     });
 
     it('should return existing admin window if already created', () => {
-      const win1 = manager.createAdminWindow();
-      const win2 = manager.createAdminWindow();
+      const win1 = manager.adminWindow.create();
+      const win2 = manager.adminWindow.create();
       expect(win1).toBe(win2);
     });
 
     it('should setup close intercept event', () => {
-      manager.createAdminWindow();
+      manager.adminWindow.create();
       expect(mockAdminWindow.on).toHaveBeenCalledWith('close', expect.any(Function));
     });
   });
 
-  describe('showAdminWindow', () => {
+  describe('show', () => {
     it('should show and focus admin window', () => {
-      manager.createAdminWindow();
-      manager.showAdminWindow();
+      manager.adminWindow.create();
+      manager.adminWindow.show();
 
       expect(mockAdminWindow.show).toHaveBeenCalled();
       expect(mockAdminWindow.focus).toHaveBeenCalled();
     });
 
     it('should open DevTools when showing admin window', () => {
-      manager.createAdminWindow();
-      manager.showAdminWindow();
+      manager.adminWindow.create();
+      manager.adminWindow.show();
 
       expect(mockAdminWindow.webContents.openDevTools).toHaveBeenCalledWith({ mode: 'detach' });
     });
 
     it('should recreate and show admin window if not valid', () => {
-      // No admin window created, showAdminWindow auto-recreates
-      manager.showAdminWindow();
+      // No admin window created, show auto-recreates
+      manager.adminWindow.show();
       expect(mockAdminWindow.show).toHaveBeenCalled();
       expect(mockAdminWindow.focus).toHaveBeenCalled();
     });
   });
 
-  describe('hideAdminWindow', () => {
+  describe('hide', () => {
     it('should hide admin window', () => {
-      manager.createAdminWindow();
-      manager.hideAdminWindow();
+      manager.adminWindow.create();
+      manager.adminWindow.hide();
 
       expect(mockAdminWindow.hide).toHaveBeenCalled();
     });
 
     it('should close DevTools when hiding admin window if DevTools are open', () => {
-      manager.createAdminWindow();
+      manager.adminWindow.create();
       mockAdminWindow.webContents.isDevToolsOpened.mockReturnValue(true);
 
-      manager.hideAdminWindow();
+      manager.adminWindow.hide();
 
       expect(mockAdminWindow.webContents.closeDevTools).toHaveBeenCalled();
       expect(mockAdminWindow.hide).toHaveBeenCalled();
     });
 
     it('should not call closeDevTools if DevTools are not open', () => {
-      manager.createAdminWindow();
+      manager.adminWindow.create();
       mockAdminWindow.webContents.isDevToolsOpened.mockReturnValue(false);
 
-      manager.hideAdminWindow();
+      manager.adminWindow.hide();
 
       expect(mockAdminWindow.webContents.closeDevTools).not.toHaveBeenCalled();
       expect(mockAdminWindow.hide).toHaveBeenCalled();
     });
   });
 
-  describe('toggleAdminWindow', () => {
+  describe('toggle', () => {
     it('should show admin window when hidden', () => {
-      manager.createAdminWindow();
+      manager.adminWindow.create();
       mockAdminWindow.isVisible.mockReturnValue(false);
 
-      manager.toggleAdminWindow();
+      manager.adminWindow.toggle();
 
       expect(mockAdminWindow.show).toHaveBeenCalled();
       expect(mockAdminWindow.focus).toHaveBeenCalled();
     });
 
     it('should hide admin window when visible', () => {
-      manager.createAdminWindow();
+      manager.adminWindow.create();
       mockAdminWindow.isVisible.mockReturnValue(true);
 
-      manager.toggleAdminWindow();
+      manager.adminWindow.toggle();
 
       expect(mockAdminWindow.hide).toHaveBeenCalled();
     });
   });
 
-  describe('getAdminWindow', () => {
-    it('should return null before createAdminWindow', () => {
-      expect(manager.getAdminWindow()).toBeNull();
+  describe('getWindow', () => {
+    it('should return null before create', () => {
+      expect(manager.adminWindow.getWindow()).toBeNull();
     });
 
-    it('should return admin window after createAdminWindow', () => {
-      manager.createAdminWindow();
-      expect(manager.getAdminWindow()).toBeDefined();
+    it('should return admin window after create', () => {
+      manager.adminWindow.create();
+      expect(manager.adminWindow.getWindow()).toBeDefined();
     });
   });
 
-  describe('isAdminWindowValid', () => {
-    it('should return false before createAdminWindow', () => {
-      expect(manager.isAdminWindowValid()).toBe(false);
+  describe('isValid', () => {
+    it('should return false before create', () => {
+      expect(manager.adminWindow.isValid()).toBe(false);
     });
 
-    it('should return true after createAdminWindow', () => {
-      manager.createAdminWindow();
-      expect(manager.isAdminWindowValid()).toBe(true);
+    it('should return true after create', () => {
+      manager.adminWindow.create();
+      expect(manager.adminWindow.isValid()).toBe(true);
     });
 
     it('should return false if admin window is destroyed', () => {
-      manager.createAdminWindow();
+      manager.adminWindow.create();
       mockAdminWindow.isDestroyed.mockReturnValue(true);
-      expect(manager.isAdminWindowValid()).toBe(false);
+      expect(manager.adminWindow.isValid()).toBe(false);
     });
   });
 
-  describe('destroyAdminWindow', () => {
+  describe('destroy', () => {
     it('should destroy admin window and remove listeners', () => {
-      manager.createAdminWindow();
-      manager.destroyAdminWindow();
+      manager.adminWindow.create();
+      manager.adminWindow.destroy();
 
       expect(mockAdminWindow.removeAllListeners).toHaveBeenCalledWith('close');
       expect(mockAdminWindow.destroy).toHaveBeenCalled();
-      expect(manager.getAdminWindow()).toBeNull();
+      expect(manager.adminWindow.getWindow()).toBeNull();
     });
 
     it('should be safe to call when no admin window exists', () => {
       // Should not throw
-      manager.destroyAdminWindow();
+      manager.adminWindow.destroy();
     });
   });
 
-  describe('destroy (main window cleanup)', () => {
+  describe('WindowManager.destroy', () => {
     it('should also destroy admin window when main destroy is called', () => {
       // Create main window first, then admin
-      manager.createWindow();
-      vi.clearAllMocks(); // Clear calls from createWindow
+      manager.mainWindow.create();
+      vi.clearAllMocks(); // Clear calls from create
       mockAdminWindow.isDestroyed.mockReturnValue(false);
 
-      manager.createAdminWindow();
+      manager.adminWindow.create();
       manager.destroy();
 
       // Admin window should be cleaned up
@@ -266,7 +266,7 @@ describe('Admin Window Management', () => {
 
   describe('close intercept', () => {
     it('should hide admin window and close DevTools on close instead of destroying', () => {
-      manager.createAdminWindow();
+      manager.adminWindow.create();
       mockAdminWindow.webContents.isDevToolsOpened.mockReturnValue(true);
 
       // Get the close handler from on('close', handler)

@@ -55,144 +55,156 @@ vi.mock('@kiosk/logger', () => ({
   }),
 }));
 
-import { WindowManager, createWindowManager } from '../window';
+import { createWindowManager } from '../window';
 
 describe('WindowManager', () => {
-  let manager: WindowManager;
-
   beforeEach(() => {
     vi.clearAllMocks();
     mockWindow.isDestroyed.mockReturnValue(false);
-    manager = createWindowManager();
   });
 
   describe('constructor', () => {
     it('should create instance with default config', () => {
-      const config = manager.getConfig();
+      const manager = createWindowManager();
+      const config = manager.mainWindow.getConfig();
       expect(config).toHaveProperty('width');
       expect(config).toHaveProperty('height');
       expect(config).toHaveProperty('fullscreen');
     });
 
     it('should merge custom config', () => {
-      const customManager = createWindowManager({
+      const manager = createWindowManager({
         width: 800,
         height: 600,
         fullscreen: false,
       });
-      const config = customManager.getConfig();
+      const config = manager.mainWindow.getConfig();
       expect(config.width).toBe(800);
       expect(config.height).toBe(600);
     });
   });
 
-  describe('createWindow', () => {
+  describe('mainWindow.create', () => {
     it('should create BrowserWindow', () => {
-      const window = manager.createWindow();
+      const manager = createWindowManager();
+      const window = manager.mainWindow.create();
       expect(window).toBeDefined();
     });
 
     it('should return existing window if already created', () => {
-      const window1 = manager.createWindow();
-      const window2 = manager.createWindow();
+      const manager = createWindowManager();
+      const window1 = manager.mainWindow.create();
+      const window2 = manager.mainWindow.create();
       expect(window1).toBe(window2);
     });
 
     it('should setup window events', () => {
-      manager.createWindow();
+      const manager = createWindowManager();
+      manager.mainWindow.create();
       expect(mockWindow.once).toHaveBeenCalledWith('ready-to-show', expect.any(Function));
       expect(mockWindow.on).toHaveBeenCalledWith('closed', expect.any(Function));
     });
   });
 
-  describe('getWindow', () => {
-    it('should return null before createWindow', () => {
-      expect(manager.getWindow()).toBeNull();
+  describe('mainWindow.getWindow', () => {
+    it('should return null before create', () => {
+      const manager = createWindowManager();
+      expect(manager.mainWindow.getWindow()).toBeNull();
     });
 
-    it('should return window after createWindow', () => {
-      manager.createWindow();
-      expect(manager.getWindow()).toBeDefined();
+    it('should return window after create', () => {
+      const manager = createWindowManager();
+      manager.mainWindow.create();
+      expect(manager.mainWindow.getWindow()).toBeDefined();
     });
   });
 
-  describe('isWindowValid', () => {
-    it('should return false before createWindow', () => {
-      expect(manager.isWindowValid()).toBe(false);
+  describe('mainWindow.isValid', () => {
+    it('should return false before create', () => {
+      const manager = createWindowManager();
+      expect(manager.mainWindow.isValid()).toBe(false);
     });
 
-    it('should return true after createWindow', () => {
-      manager.createWindow();
-      expect(manager.isWindowValid()).toBe(true);
+    it('should return true after create', () => {
+      const manager = createWindowManager();
+      manager.mainWindow.create();
+      expect(manager.mainWindow.isValid()).toBe(true);
     });
 
     it('should return false if window is destroyed', () => {
-      manager.createWindow();
+      const manager = createWindowManager();
+      manager.mainWindow.create();
       mockWindow.isDestroyed.mockReturnValue(true);
-      expect(manager.isWindowValid()).toBe(false);
+      expect(manager.mainWindow.isValid()).toBe(false);
     });
   });
 
-  describe('loadURL', () => {
+  describe('mainWindow.loadURL', () => {
     it('should throw if window not created', async () => {
-      await expect(manager.loadURL('https://example.com')).rejects.toThrow();
+      const manager = createWindowManager();
+      await expect(manager.mainWindow.loadURL('https://example.com')).rejects.toThrow();
     });
 
     it('should load URL into window', async () => {
-      manager.createWindow();
-      await manager.loadURL('https://example.com');
+      const manager = createWindowManager();
+      manager.mainWindow.create();
+      await manager.mainWindow.loadURL('https://example.com');
       expect(mockWindow.loadURL).toHaveBeenCalledWith('https://example.com');
     });
   });
 
-  describe('loadFile', () => {
+  describe('mainWindow.loadFile', () => {
     it('should throw if window not created', async () => {
-      await expect(manager.loadFile('/path/to/file.html')).rejects.toThrow();
+      const manager = createWindowManager();
+      await expect(manager.mainWindow.loadFile('/path/to/file.html')).rejects.toThrow();
     });
 
     it('should load file into window', async () => {
-      manager.createWindow();
-      await manager.loadFile('/path/to/file.html');
+      const manager = createWindowManager();
+      manager.mainWindow.create();
+      await manager.mainWindow.loadFile('/path/to/file.html');
       expect(mockWindow.loadFile).toHaveBeenCalledWith('/path/to/file.html');
     });
   });
 
   describe('fullscreen methods', () => {
-    beforeEach(() => {
-      manager.createWindow();
-    });
-
     it('enterFullscreen should set fullscreen true', () => {
-      manager.enterFullscreen();
+      const manager = createWindowManager();
+      manager.mainWindow.create();
+      manager.mainWindow.enterFullscreen();
       expect(mockWindow.setFullScreen).toHaveBeenCalledWith(true);
     });
 
     it('exitFullscreen should set fullscreen false', () => {
-      manager.exitFullscreen();
+      const manager = createWindowManager();
+      manager.mainWindow.create();
+      manager.mainWindow.exitFullscreen();
       expect(mockWindow.setFullScreen).toHaveBeenCalledWith(false);
     });
 
     it('toggleFullscreen should toggle state', () => {
+      const manager = createWindowManager();
+      manager.mainWindow.create();
       mockWindow.isFullScreen.mockReturnValue(false);
-      manager.toggleFullscreen();
+      manager.mainWindow.toggleFullscreen();
       expect(mockWindow.setFullScreen).toHaveBeenCalledWith(true);
     });
   });
 
   describe('kiosk mode methods', () => {
-    beforeEach(() => {
-      manager.createWindow();
-    });
-
     it('enterKioskMode should enable kiosk mode', () => {
-      manager.enterKioskMode();
+      const manager = createWindowManager();
+      manager.mainWindow.create();
+      manager.mainWindow.enterKioskMode();
       expect(mockWindow.setKiosk).toHaveBeenCalledWith(true);
       expect(mockWindow.setAlwaysOnTop).toHaveBeenCalledWith(true);
       expect(mockWindow.setSkipTaskbar).toHaveBeenCalledWith(true);
     });
 
     it('exitKioskMode should disable kiosk mode', () => {
-      manager.exitKioskMode();
+      const manager = createWindowManager();
+      manager.mainWindow.create();
+      manager.mainWindow.exitKioskMode();
       expect(mockWindow.setKiosk).toHaveBeenCalledWith(false);
       expect(mockWindow.setAlwaysOnTop).toHaveBeenCalledWith(false);
       expect(mockWindow.setSkipTaskbar).toHaveBeenCalledWith(false);
@@ -200,56 +212,56 @@ describe('WindowManager', () => {
   });
 
   describe('DevTools methods', () => {
-    beforeEach(() => {
-      // Create manager with devTools enabled
-      manager = createWindowManager({ devTools: true });
-      manager.createWindow();
-    });
-
     it('openDevTools should open DevTools', () => {
-      manager.openDevTools();
+      const manager = createWindowManager({ devTools: true });
+      manager.mainWindow.create();
+      manager.mainWindow.openDevTools();
       expect(mockWebContents.openDevTools).toHaveBeenCalled();
     });
 
     it('closeDevTools should close DevTools', () => {
-      manager.closeDevTools();
+      const manager = createWindowManager({ devTools: true });
+      manager.mainWindow.create();
+      manager.mainWindow.closeDevTools();
       expect(mockWebContents.closeDevTools).toHaveBeenCalled();
     });
 
     it('toggleDevTools should toggle state', () => {
+      const manager = createWindowManager({ devTools: true });
+      manager.mainWindow.create();
       mockWebContents.isDevToolsOpened.mockReturnValue(false);
-      manager.toggleDevTools();
+      manager.mainWindow.toggleDevTools();
       expect(mockWebContents.openDevTools).toHaveBeenCalled();
     });
   });
 
   describe('reload methods', () => {
-    beforeEach(() => {
-      manager.createWindow();
-    });
-
     it('reload should reload window', () => {
-      manager.reload();
+      const manager = createWindowManager();
+      manager.mainWindow.create();
+      manager.mainWindow.reload();
       expect(mockWebContents.reload).toHaveBeenCalled();
     });
 
     it('forceReload should reload ignoring cache', () => {
-      manager.forceReload();
+      const manager = createWindowManager();
+      manager.mainWindow.create();
+      manager.mainWindow.forceReload();
       expect(mockWebContents.reloadIgnoringCache).toHaveBeenCalled();
     });
   });
 
   describe('close and destroy', () => {
-    beforeEach(() => {
-      manager.createWindow();
-    });
-
     it('close should close window', () => {
-      manager.close();
+      const manager = createWindowManager();
+      manager.mainWindow.create();
+      manager.mainWindow.close();
       expect(mockWindow.close).toHaveBeenCalled();
     });
 
     it('destroy should destroy window', () => {
+      const manager = createWindowManager();
+      manager.mainWindow.create();
       manager.destroy();
       expect(mockWindow.destroy).toHaveBeenCalled();
     });
@@ -257,8 +269,9 @@ describe('WindowManager', () => {
 
   describe('updateConfig', () => {
     it('should update configuration', () => {
-      manager.updateConfig({ width: 1024 });
-      expect(manager.getConfig().width).toBe(1024);
+      const manager = createWindowManager();
+      manager.mainWindow.updateConfig({ width: 1024 });
+      expect(manager.mainWindow.getConfig().width).toBe(1024);
     });
   });
 });
