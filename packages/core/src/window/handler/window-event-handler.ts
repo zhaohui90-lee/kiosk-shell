@@ -16,6 +16,20 @@ export class WindowEventHandler {
     this.setupLoadErrorHandler(window)
   }
 
+  /**
+   * 为 Admin 窗口绑定事件
+   * Admin 窗口的关闭行为是「隐藏」而非「销毁」
+   */
+  setupAdminWindow(window: BrowserWindow, onHide: () => void): void {
+    window.on('close', (event) => {
+      if(!window.isDestroyed()) {
+        event.preventDefault()
+        onHide()
+        this.logger.debug('Admin window hidden (close intercepted)')
+      }
+    })
+  }
+
   private setupReadyToShow(window: BrowserWindow, strategy: WindowStrategy): void {
     window.once('ready-to-show', () => {
       this.logger.info('Window ready to show')
