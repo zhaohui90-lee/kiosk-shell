@@ -12,22 +12,20 @@ import { ByteUnit, formatBytes } from '@kiosk/shared'
 /**
  * Get logger instance
  */
-function getHardwareLogger() {
-  return getLogger()
-}
+const logger = getLogger().child('device:device-info')
 
 /**
  * Log info message with hardware prefix
  */
 function logInfo(msg: string): void {
-  getHardwareLogger().info(`[hardware] ${msg}`)
+  logger.info(`[hardware] ${msg}`)
 }
 
 /**
  * Log error message with hardware prefix
  */
 function logError(msg: string): void {
-  getHardwareLogger().error(`[hardware] ${msg}`)
+  logger.error(`[hardware] ${msg}`)
 }
 
 /**
