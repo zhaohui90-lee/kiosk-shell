@@ -4,10 +4,10 @@
 // ─────────────────────────────────────────────
 
 // 主要入口
-export { WindowManager, getWindowManager } from './window-manager'
+export { WindowManager, getWindowManager, resetWindowManager, createWindowManager } from './window-manager'
 
-// 类型
-export type { WindowConfig, AdminWindowConfig } from './types'
+// 类型（从 src/types.ts 转发）
+export type { WindowConfig, AdminWindowConfig } from '../types'
 
 // Strategy（如果外部需要自定义策略）
 export type { WindowStrategy } from './strategy/window-strategy'

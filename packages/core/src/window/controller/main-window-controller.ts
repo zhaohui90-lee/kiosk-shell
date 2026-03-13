@@ -2,19 +2,19 @@ import { BrowserWindow, screen } from 'electron'
 import { getLogger } from '@kiosk/logger'
 import { WindowStrategy } from '../strategy/window-strategy'
 import { WindowEventHandler } from '../handler/window-event-handler'
-import type { WindowConfig } from '../types'
+import type { WindowConfig } from '../../types'
 import { WindowOptionsBuilder } from '../builder/window-options-builder'
 
 const logger = getLogger().child('core:window:main')
 
 export class MainWindowController {
   private window: BrowserWindow | null = null
-  private readonly stratedy: WindowStrategy
+  private readonly strategy: WindowStrategy
   private readonly eventHandler: WindowEventHandler
   private readonly userConfig: WindowConfig
 
   constructor(strategy: WindowStrategy, userConfig: WindowConfig) {
-    this.stratedy = strategy
+    this.strategy = strategy
     this.userConfig = userConfig
     this.eventHandler = new WindowEventHandler()
   }
@@ -31,7 +31,7 @@ export class MainWindowController {
 
     const options = this.buildWindowOptions()
 
-    logger.info(' Creating main window', {
+    logger.info('Creating main window', {
       width: options.width,
       height: options.height,
       fullscreen: options.fullscreen,
@@ -39,7 +39,9 @@ export class MainWindowController {
     })
 
     this.window = new BrowserWindow(options)
-    this.eventHandler.setupMainWindow(this.window, this.stratedy)
+    this.eventHandler.setupMainWindow(this.window, this.strategy, () => {
+      this.window = null
+    })
 
     return this.window
   }
@@ -69,17 +71,13 @@ export class MainWindowController {
 
   async loadURL(url: string): Promise<void> {
     this.assertValid('loadURL')
-    logger.info('Loading URL', {
-      url,
-    })
+    logger.info('Loading URL', { url })
     await this.window!.loadURL(url)
   }
 
   async loadFile(filePath: string): Promise<void> {
     this.assertValid('loadFile')
-    logger.info('Loading file', {
-      filePath,
-    })
+    logger.info('Loading file', { filePath })
     await this.window!.loadFile(filePath)
   }
 
@@ -100,9 +98,7 @@ export class MainWindowController {
   toggleFullscreen(): void {
     if (!this.isValid()) return
     const current = this.window!.isFullScreen()
-    logger.info('Toggling fullscreen', {
-      current,
-    })
+    logger.info('Toggling fullscreen', { current })
     this.window!.setFullScreen(!current)
   }
 
@@ -135,7 +131,7 @@ export class MainWindowController {
   openDevTools(): void {
     if (!this.isValid()) return
 
-    if (!this.stratedy.isDevToolsAllowed()) {
+    if (!this.strategy.isDevToolsAllowed()) {
       logger.warn('DevTools are disabled by current strategy')
       return
     }
@@ -153,15 +149,13 @@ export class MainWindowController {
   toggleDevTools(): void {
     if (!this.isValid()) return
 
-    if (!this.stratedy.isDevToolsAllowed()) {
+    if (!this.strategy.isDevToolsAllowed()) {
       logger.warn('DevTools are disabled by current strategy')
       return
     }
 
     const isOpen = this.window!.webContents.isDevToolsOpened()
-    logger.info('Toggling DevTools', {
-      isOpen,
-    })
+    logger.info('Toggling DevTools', { isOpen })
     isOpen ? this.closeDevTools() : this.openDevTools()
   }
 
@@ -193,7 +187,7 @@ export class MainWindowController {
   }
 
   isValid(): boolean {
-    return this.window != null && !this.window.isDestroyed()
+    return this.window !== null && !this.window.isDestroyed()
   }
 
   isKioskMode(): boolean {
@@ -202,16 +196,16 @@ export class MainWindowController {
 
   /**
    * 通过builder来构建窗口配置
-   * 优先级：用户配置 - 策略基础配置 - Builder安全模式
+   * 优先级：用户配置 → 策略基础配置 → Builder安全默认
    */
   private buildWindowOptions() {
-    const baseConfig = this.stratedy.getBaseConfig()
+    const baseConfig = this.strategy.getBaseConfig()
     const merged = { ...baseConfig, ...this.userConfig }
 
     const { width, height } = this.resolveWindowSize(merged)
 
     const builder = new WindowOptionsBuilder()
-      .widthSize(width, height)
+      .withSize(width, height)
       .withFullscreen(merged.fullscreen ?? true)
       .withKiosk(merged.kiosk ?? true)
       .withFrame(merged.frame ?? false)
@@ -225,8 +219,8 @@ export class MainWindowController {
       builder.withPreload(merged.preload)
     }
 
-    if (merged.extralOptions) {
-      builder.withExtraOptions(merged.extralOptions)
+    if (merged.extraOptions) {
+      builder.withExtraOptions(merged.extraOptions)
     }
 
     return builder.build()

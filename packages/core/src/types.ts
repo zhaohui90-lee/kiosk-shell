@@ -32,8 +32,8 @@ export interface WindowConfig {
   backgroundColor?: string;
   /** Preload script path */
   preload?: string;
-  /** Additional BrowserWindow options */
-  additionalOptions?: Partial<BrowserWindowConstructorOptions>;
+  /** Extra BrowserWindow options */
+  extraOptions?: Partial<BrowserWindowConstructorOptions>;
 }
 
 /**

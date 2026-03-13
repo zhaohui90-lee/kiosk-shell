@@ -133,7 +133,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
   const windowManager = getWindowManager(windowConfig)
 
   // Create window
-  const window = windowManager.mainWindow.create()
+  const window = windowManager.createWindow()
   logger().info(`[main] Created window with ID: ${window.id}`)
 
   // Enable kiosk mode if configured
@@ -286,7 +286,7 @@ function setupAdminPanel(): void {
     : join(app.getAppPath(), 'resources', 'renderer', 'admin', 'index.html')
 
   // Create admin window (hidden)
-  windowManager.adminWindow.create({
+  windowManager.createAdminWindow({
     preload: adminPreloadPath,
     loadFile: adminHtmlPath,
   })
@@ -316,7 +316,7 @@ function setupAdminTriggers(): void {
   const shortcut = process.platform === 'darwin' ? 'CommandOrControl+Shift+F12' : 'Ctrl+Shift+F12'
   const registered = globalShortcut.register(shortcut, () => {
     logger().info('[main] Admin panel triggered via keyboard shortcut')
-    windowManager.adminWindow.toggle()
+    windowManager.toggleAdminWindow(config.devMode)
   })
 
   if (registered) {
@@ -328,7 +328,7 @@ function setupAdminTriggers(): void {
   // Renderer click zone trigger (primary)
   ipcMain.on(IPC_CHANNELS.ADMIN_TRIGGER, () => {
     logger().info('[main] Admin panel triggered via renderer click zone')
-    windowManager.adminWindow.show()
+    windowManager.showAdminWindow(config.devMode)
   })
 
   logger().info('[main] Admin triggers setup complete')
@@ -353,9 +353,9 @@ async function cleanup(): Promise<void> {
   const protocolHandler = getProtocolHandler()
   protocolHandler.unregister()
 
-  // Destroy admin window
+  // Force-destroy admin window (its close intercept prevents normal cleanup)
   const windowManager = getWindowManager()
-  windowManager.adminWindow.destroy()
+  windowManager.destroyAdminWindow()
 
   logger().info('[main] Cleanup completed')
 }
