@@ -51,7 +51,7 @@ let mainWindow: BrowserWindow | null = null
 /**
  * Get logger instance
  */
-const logger = getLogger().child('main')
+const logger = getLogger().child('apps:main')
 
 /**
  * Initialize the application
