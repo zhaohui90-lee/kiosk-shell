@@ -2,36 +2,43 @@
  * @kiosk/core type definitions
  */
 
-import type { BrowserWindowConstructorOptions } from 'electron';
+import type { BrowserWindowConstructorOptions } from 'electron'
 
 /**
  * Window configuration options
  */
 export interface WindowConfig {
   /** Window width (default: 1920) */
-  width?: number;
+  width?: number
   /** Window height (default: 1080) */
-  height?: number;
+  height?: number
   /** Start in fullscreen mode (default: true in production) */
-  fullscreen?: boolean;
+  fullscreen?: boolean
   /** Start in kiosk mode (default: true in production) */
-  kiosk?: boolean;
+  kiosk?: boolean
   /** Show window frame (default: false) */
-  frame?: boolean;
+  frame?: boolean
   /** Allow resizing (default: false) */
-  resizable?: boolean;
+  resizable?: boolean
   /** Show in taskbar (default: false in production) */
-  skipTaskbar?: boolean;
+  skipTaskbar?: boolean
   /** Always on top (default: true in production) */
-  alwaysOnTop?: boolean;
+  alwaysOnTop?: boolean
   /** Enable DevTools (default: false in production) */
-  devTools?: boolean;
+  devTools?: boolean
   /** Enable sandbox mode (default: true, disable for dev with workspace deps) */
-  sandbox?: boolean;
+  sandbox?: boolean
   /** Background color (default: #FFFFFF) */
-  backgroundColor?: string;
+  backgroundColor?: string
   /** Preload script path */
-  preload?: string;
+  preload?: string
   /** Extra BrowserWindow options */
-  extralOptions?: Partial<BrowserWindowConstructorOptions>;
+  extralOptions?: Partial<BrowserWindowConstructorOptions>
+}
+
+export interface AdminWindowConfig {
+  width?: number
+  height?: number
+  preload?: string
+  loadFile?: string
 }
