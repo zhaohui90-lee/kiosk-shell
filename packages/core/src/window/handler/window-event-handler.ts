@@ -6,11 +6,11 @@ import { WindowStrategy } from '../strategy/window-strategy'
  * 为BrowserWindow绑定生命周期事件
  */
 export class WindowEventHandler {
-  private readonly logger = getLogger().child('core:window:admin')
+  private readonly logger = getLogger().child('core:window:event')
 
-  setupMainWindow(window: BrowserWindow, strategy: WindowStrategy) {
+  setupMainWindow(window: BrowserWindow, strategy: WindowStrategy, onClosed?: () => void) {
     this.setupReadyToShow(window, strategy)
-    this.setupCloseHandler(window)
+    this.setupCloseHandler(window, onClosed)
     this.setupNavigationGuard(window, strategy)
     this.setupNavigationLogger(window)
     this.setupLoadErrorHandler(window)
@@ -22,7 +22,7 @@ export class WindowEventHandler {
    */
   setupAdminWindow(window: BrowserWindow, onHide: () => void): void {
     window.on('close', (event) => {
-      if(!window.isDestroyed()) {
+      if (!window.isDestroyed()) {
         event.preventDefault()
         onHide()
         this.logger.debug('Admin window hidden (close intercepted)')
@@ -35,7 +35,7 @@ export class WindowEventHandler {
       this.logger.info('Window ready to show')
       window.show()
 
-      if (strategy.shouldFoucsOnReady()) {
+      if (strategy.shouldFocusOnReady()) {
         window.focus()
       }
 
@@ -45,9 +45,10 @@ export class WindowEventHandler {
     })
   }
 
-  private setupCloseHandler(window: BrowserWindow): void {
+  private setupCloseHandler(window: BrowserWindow, onClosed?: () => void): void {
     window.on('closed', () => {
       this.logger.info('Window closed')
+      onClosed?.()
     })
   }
 

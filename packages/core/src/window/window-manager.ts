@@ -3,7 +3,7 @@ import { getLogger } from '@kiosk/logger'
 import { AdminWindowController } from './controller/admin-window-controller'
 import { MainWindowController } from './controller/main-window-controller'
 import { createStrategy } from './strategy/window-strategy'
-import { AdminWindowConfig, WindowConfig } from './types'
+import type { AdminWindowConfig, WindowConfig } from '../types'
 
 const logger = getLogger().child('core:window')
 
@@ -30,7 +30,7 @@ export class WindowManager {
     return this.main.getWindow()
   }
 
-  isWindowValid(): boolean {
+  isValid(): boolean {
     return this.main.isValid()
   }
 
@@ -104,10 +104,6 @@ export class WindowManager {
     return this.main.isKioskMode()
   }
 
-  isValid(): boolean {
-    return this.main.isValid()
-  }
-
   // ---- Admin窗口 ----
 
   createAdminWindow(config: AdminWindowConfig): BrowserWindow {
@@ -134,6 +130,10 @@ export class WindowManager {
     this.admin.toggle(isDev)
   }
 
+  destroyAdminWindow(): void {
+    this.admin.destroy()
+  }
+
   // ---- 全局销毁 ----
 
   destroy(): void {
@@ -156,4 +156,21 @@ export function getWindowManager(config?: WindowConfig): WindowManager {
     instance = new WindowManager(config)
   }
   return instance
+}
+
+/**
+ * 重置 WindowManager 单例（用于测试）
+ */
+export function resetWindowManager(): void {
+  if (instance) {
+    instance.destroy()
+    instance = null
+  }
+}
+
+/**
+ * 创建新的 WindowManager 实例（用于自定义配置）
+ */
+export function createWindowManager(config?: WindowConfig): WindowManager {
+  return new WindowManager(config)
 }

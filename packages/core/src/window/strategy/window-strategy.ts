@@ -1,5 +1,5 @@
 import { app } from 'electron'
-import type { WindowConfig } from '../types'
+import type { WindowConfig } from '../../types'
 
 /**
  * Strategy接口，每种环境（开发、生产）实现不同的窗口配置和行为
@@ -8,7 +8,7 @@ export interface WindowStrategy {
 
   getBaseConfig(): Partial<WindowConfig>
 
-  shouldFoucsOnReady(): boolean
+  shouldFocusOnReady(): boolean
 
   shouldOpenDevToolsOnReady(): boolean
 
@@ -35,7 +35,7 @@ export class KioskStrategy implements WindowStrategy {
     }
   }
 
-  shouldFoucsOnReady(): boolean {
+  shouldFocusOnReady(): boolean {
     return true
   }
 
@@ -69,7 +69,7 @@ export class DevStrategy implements WindowStrategy {
     }
   }
 
-  shouldFoucsOnReady(): boolean {
+  shouldFocusOnReady(): boolean {
     return true
   }
 

@@ -1,17 +1,16 @@
 import { BrowserWindow } from 'electron'
 import { getLogger } from '@kiosk/logger'
 import { loadConfig } from '@kiosk/device'
-import type { AdminWindowConfig } from "../types"
+import type { AdminWindowConfig } from '../../types'
 import { WindowEventHandler } from '../handler/window-event-handler'
 import { WindowOptionsBuilder } from '../builder/window-options-builder'
 
-const logger = getLogger().child('core:window:main')
+const logger = getLogger().child('core:window:admin')
 
 export class AdminWindowController {
   private window: BrowserWindow | null = null
   private savedConfig: AdminWindowConfig = {}
   private readonly eventHandler: WindowEventHandler
-  
 
   constructor() {
     this.eventHandler = new WindowEventHandler()
@@ -32,8 +31,8 @@ export class AdminWindowController {
     const width = config.width ?? appConfig.width
     const height = config.height ?? 768
 
-    const options = new WindowOptionsBuilder()
-      .widthSize(width, height)
+    const builder = new WindowOptionsBuilder()
+      .withSize(width, height)
       .withKiosk(false)
       .withFrame(false)
       .withResizable(true)
@@ -43,11 +42,12 @@ export class AdminWindowController {
       .withSandbox(true)
       .withDevTools(true)
       .withExtraOptions({ skipTaskbar: true })
-      .build()
 
     if (config.preload) {
-      new WindowOptionsBuilder().withPreload(config.preload)
+      builder.withPreload(config.preload)
     }
+
+    const options = builder.build()
 
     logger.info('Creating admin window', { width, height })
 
@@ -59,9 +59,9 @@ export class AdminWindowController {
 
     if (config.loadFile) {
       logger.info('Loading admin window content', {
-        path: config.loadFile
+        path: config.loadFile,
       })
-      this.window.loadFile(config.loadFile!).catch(err => {
+      this.window.loadFile(config.loadFile).catch((err) => {
         logger.error(`Failed to load admin content: ${err}`)
       })
     }
@@ -79,7 +79,7 @@ export class AdminWindowController {
     // 先移除事件监听
     this.window.removeAllListeners('close')
 
-    if(!this.window.isDestroyed()) {
+    if (!this.window.isDestroyed()) {
       this.window.destroy()
     }
 
@@ -89,20 +89,22 @@ export class AdminWindowController {
   /** 控制显示 */
 
   show(isDev: boolean): void {
-    if(!this.isValid()) {
+    if (!this.isValid()) {
       logger.info('Admin window invalid, recreating...')
       this.create(this.savedConfig)
     }
 
-    if(!this.isValid()) return
+    if (!this.isValid()) return
 
     logger.info('Showing admin window')
     this.window!.show()
     this.window!.focus()
 
     // Admin 面板显示时 判断是否开启devTools
-    if(isDev) this.window!.webContents.openDevTools({ mode: 'detach' })
-    logger.debug('Admin DevTools opened')
+    if (isDev) {
+      this.window!.webContents.openDevTools({ mode: 'detach' })
+      logger.debug('Admin DevTools opened')
+    }
   }
 
   /**
@@ -110,9 +112,9 @@ export class AdminWindowController {
    * 同时关闭devTools
    */
   hide(): void {
-    if(!this.isValid()) return
+    if (!this.isValid()) return
 
-    if(this.window!.webContents.isDevToolsOpened()) {
+    if (this.window!.webContents.isDevToolsOpened()) {
       this.window!.webContents.closeDevTools()
       logger.debug('Admin DevTools closed')
     }
@@ -139,7 +141,7 @@ export class AdminWindowController {
   }
 
   isValid(): boolean {
-    return this.window != null && !this.window.isDestroyed()
+    return this.window !== null && !this.window.isDestroyed()
   }
 
   isVisible(): boolean {

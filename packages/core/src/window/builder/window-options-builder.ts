@@ -13,7 +13,7 @@ export class WindowOptionsBuilder {
     }
   }
 
-  widthSize(width: number, height: number): this {
+  withSize(width: number, height: number): this {
     this.options.width = width
     this.options.height = height
     return this
