@@ -23,8 +23,6 @@ export {
   resetWindowManager,
   createWindowManager,
 } from './window';
-export { MainWindow } from './main-window';
-export { AdminWindow } from './admin-window';
 
 // Export resource loader
 export {

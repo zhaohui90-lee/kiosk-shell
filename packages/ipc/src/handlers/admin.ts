@@ -106,7 +106,7 @@ async function handleAdminPanelClose(_event: Electron.IpcMainInvokeEvent): Promi
 
   // Hide admin panel and invalidate session so user must re-login next time
   const windowManager = getWindowManager()
-  windowManager.adminWindow.hide()
+  windowManager.hideAdminWindow()
   invalidateSession()
 
   // Restore focus to main business window

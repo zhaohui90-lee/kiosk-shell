@@ -287,7 +287,7 @@ function setupAdminPanel(): void {
     : join(app.getAppPath(), 'resources', 'renderer', 'admin', 'index.html')
 
   // Create admin window (hidden)
-  windowManager.adminWindow.create({
+  windowManager.createAdminWindow({
     preload: adminPreloadPath,
     loadFile: adminHtmlPath,
   })
@@ -367,7 +367,7 @@ async function cleanup(): Promise<void> {
 
   // Force-destroy admin window (its close intercept prevents normal cleanup)
   const windowManager = getWindowManager()
-  windowManager.adminWindow.destroy()
+  windowManager.destroyAdminWindow()
 
   logger.info('[main] Cleanup completed')
 }
