@@ -8,3 +8,5 @@ export * from './update';
 export * from './app-config'
 export * from './utils';
 export * from './auth'
+export * from './plugin-rime/global'
+export * from './plugin-rime/rime'
