@@ -23,3 +23,16 @@ export {
   invalidateSession,
   verifyAdminSessionToken,
 } from './admin'
+
+export {
+  registerImeHandlers,
+  unregisterImeHandlers,
+  handleImeSetSchema,
+  handleImeProcessInput,
+  handleImeSelectCandidate,
+  handleImeChangePage,
+  handleImeSetOption,
+  handleImeSetPageSize,
+  handleImeDeploy,
+  handleImeReset,
+} from './ime'

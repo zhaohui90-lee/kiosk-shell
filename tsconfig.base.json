@@ -64,6 +64,8 @@
       "@kiosk/ipc/*": ["packages/ipc/src/*"],
       "@kiosk/platform": ["packages/platform/src"],
       "@kiosk/platform/*": ["packages/platform/src/*"],
+      "@kiosk/plugin-rime": ["packages/plugin-rime/src"],
+      "@kiosk/plugin-rime/*": ["packages/plugin-rime/src/*"],
       "@kiosk/shared/*": ["shared/*"],
       "@kiosk/ime/*": ["ime/*"]
     }

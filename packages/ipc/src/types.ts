@@ -2,7 +2,7 @@
  * @kiosk/ipc type definitions
  */
 
-import type { DeviceInfo, UpdateInfo } from '@kiosk/shared'
+import type { DeviceInfo, UpdateInfo, RIME_RESULT } from '@kiosk/shared'
 
 export interface ShellAPI {
   /** Get device information */
@@ -24,6 +24,15 @@ export interface ShellAPI {
   triggerAdmin(): void
 
   checkBusinessStatus(token: string, url: string): Promise<AdminBusinessNetworkStatus>
+
+  imeSetSchema(schemaId: string): Promise<ImeOperationResult>
+  imeProcessInput(input: string): Promise<RIME_RESULT>
+  imeSelectCandidate(index: number): Promise<string | null>
+  imeChangePage(backward: boolean): Promise<string>
+  imeSetOption(option: string, value: boolean): Promise<ImeOperationResult>
+  imeSetPageSize(size: number): Promise<ImeOperationResult>
+  imeDeploy(): Promise<ImeOperationResult>
+  imeReset(): Promise<ImeOperationResult>
 }
 
 /**
@@ -65,6 +74,16 @@ export const IPC_CHANNELS = {
 
   // Hardware info
   ADMIN_COLLECT_HARDWARE_INFO: 'admin:collectHardwareInfo',
+
+  // IME (Rime plugin)
+  IME_SET_SCHEMA: 'shell:imeSetSchema',
+  IME_PROCESS_INPUT: 'shell:imeProcessInput',
+  IME_SELECT_CANDIDATE: 'shell:imeSelectCandidate',
+  IME_CHANGE_PAGE: 'shell:imeChangePage',
+  IME_SET_OPTION: 'shell:imeSetOption',
+  IME_SET_PAGE_SIZE: 'shell:imeSetPageSize',
+  IME_DEPLOY: 'shell:imeDeploy',
+  IME_RESET: 'shell:imeReset',
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]
@@ -197,6 +216,11 @@ export interface AdminBusinessNetworkStatus {
   latency?: number
   isOnline?: boolean
   statusCode?: number
+}
+
+export interface ImeOperationResult {
+  success: boolean
+  message?: string
 }
 
 /**

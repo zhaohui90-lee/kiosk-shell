@@ -67,7 +67,55 @@ export class RimeKit implements IRimeKit {
     this.isInitialized = false
   }
 
-  async analyze(result: RIME_RESULT, rimeKey: string) {}
+  async analyze(result: RIME_RESULT, rimeKey: string) {
+    if (result.state === 0) {
+      this.currentContext = null
+      this.currentStatus.isComposing = false
+      this.emit('context', null)
+      this.emit('commit', result.committed)
+      return {
+        committed: result.committed,
+        context: null,
+        status: this.getStatus(),
+      }
+    }
+
+    if (result.state === 1) {
+      const composition = `${result.head}${result.body}${result.tail}`
+      const context: RimeContext = {
+        composition,
+        candidates: result.candidates,
+        cursorPosition: result.head.length + rimeKey.length,
+        pageIndex: result.page,
+        pageSize: result.candidates.length,
+        hasMore: !result.isLastPage,
+      }
+
+      this.currentContext = context
+      this.currentStatus.isComposing = composition.length > 0
+      this.emit('context', context)
+      return {
+        committed: result.committed ?? null,
+        context,
+        status: this.getStatus(),
+      }
+    }
+
+    if (result.state === 2 && result.updatedSchema) {
+      this.currentStatus.schemaId = result.updatedSchema
+      this.currentStatus.schemaName = result.updatedSchema
+      this.emit('status', this.currentStatus)
+    }
+
+    this.currentContext = null
+    this.currentStatus.isComposing = false
+    this.emit('context', null)
+    return {
+      committed: null,
+      context: null,
+      status: this.getStatus(),
+    }
+  }
 
   async processInput(text: string) {
     if (!this.isInitialized) {
@@ -301,7 +349,7 @@ export class RimeKit implements IRimeKit {
 
   private selectTargetSchema(config?: RimeConfig): string {
     // 优先级：配置中的 defaultSchema -> defaultOptions.schema -> 第一个可用方案
-    const requestedSchema = config?.defaultSchema || (config?.defaultOptions as any)?.schema
+    const requestedSchema = config?.defaultSchema || config?.defaultOptions?.schema
 
     const availableSchemas = this.getAvailableSchemas()
 
@@ -378,7 +426,6 @@ export class RimeKit implements IRimeKit {
 
   private async setSchemaInternal(schemaId: string): Promise<void> {
     try {
-      debugger
       await setIME(schemaId)
       this.currentStatus.schemaId = schemaId
       this.currentStatus.schemaName = schemaId // 可以根据需要映射为友好名称
@@ -390,12 +437,15 @@ export class RimeKit implements IRimeKit {
     }
   }
 
-  private emit(event: string, data: any): void {
+  private emit(event: string, data: unknown): void {
     const handlers = this.eventHandlers.get(event)
     if (handlers) {
       handlers.forEach((handler) => {
         try {
-          handler({ type: event as any, data })
+          handler({
+            type: event as 'candidate' | 'commit' | 'context',
+            data,
+          })
         } catch (error) {
           console.error('Event handler error:', error)
         }

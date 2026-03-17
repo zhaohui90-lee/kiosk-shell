@@ -29,6 +29,7 @@
     "@kiosk/device": "workspace:*",
     "@kiosk/logger": "workspace:*",
     "@kiosk/platform": "workspace:*",
+    "@kiosk/plugin-rime": "workspace:*",
     "@kiosk/shared": "workspace:*"
   },
   "devDependencies": {
