@@ -118,6 +118,14 @@ describe('Preload Script', () => {
       expect(typeof shellAPI.systemShutdown).toBe('function');
       expect(typeof shellAPI.systemRestart).toBe('function');
       expect(typeof shellAPI.openDevTools).toBe('function');
+      expect(typeof shellAPI.imeSetSchema).toBe('function');
+      expect(typeof shellAPI.imeProcessInput).toBe('function');
+      expect(typeof shellAPI.imeSelectCandidate).toBe('function');
+      expect(typeof shellAPI.imeChangePage).toBe('function');
+      expect(typeof shellAPI.imeSetOption).toBe('function');
+      expect(typeof shellAPI.imeSetPageSize).toBe('function');
+      expect(typeof shellAPI.imeDeploy).toBe('function');
+      expect(typeof shellAPI.imeReset).toBe('function');
     });
 
     it('should call ipcRenderer.invoke for getDeviceInfo', async () => {
@@ -178,5 +186,46 @@ describe('Preload Script', () => {
 
       await expect(shellAPI.systemRestart('session-token')).rejects.toThrow('Restart denied');
     });
+
+    it('should call IME IPC channels correctly', async () => {
+      const mockInvoke = vi.fn()
+        .mockResolvedValueOnce({ success: true })
+        .mockResolvedValueOnce({ state: 1, candidates: [] })
+        .mockResolvedValueOnce('候选词')
+        .mockResolvedValueOnce('page')
+        .mockResolvedValueOnce({ success: true })
+        .mockResolvedValueOnce({ success: true })
+        .mockResolvedValueOnce({ success: true })
+        .mockResolvedValueOnce({ success: true })
+
+      vi.doMock('electron', () => ({
+        contextBridge: {
+          exposeInMainWorld: vi.fn(),
+        },
+        ipcRenderer: {
+          invoke: mockInvoke,
+        },
+      }))
+
+      const { shellAPI } = await import('../preload')
+
+      await shellAPI.imeSetSchema('luna_pinyin')
+      await shellAPI.imeProcessInput('ni')
+      await shellAPI.imeSelectCandidate(0)
+      await shellAPI.imeChangePage(true)
+      await shellAPI.imeSetOption('ascii_mode', true)
+      await shellAPI.imeSetPageSize(9)
+      await shellAPI.imeDeploy()
+      await shellAPI.imeReset()
+
+      expect(mockInvoke).toHaveBeenNthCalledWith(1, 'shell:imeSetSchema', 'luna_pinyin')
+      expect(mockInvoke).toHaveBeenNthCalledWith(2, 'shell:imeProcessInput', 'ni')
+      expect(mockInvoke).toHaveBeenNthCalledWith(3, 'shell:imeSelectCandidate', 0)
+      expect(mockInvoke).toHaveBeenNthCalledWith(4, 'shell:imeChangePage', true)
+      expect(mockInvoke).toHaveBeenNthCalledWith(5, 'shell:imeSetOption', 'ascii_mode', true)
+      expect(mockInvoke).toHaveBeenNthCalledWith(6, 'shell:imeSetPageSize', 9)
+      expect(mockInvoke).toHaveBeenNthCalledWith(7, 'shell:imeDeploy')
+      expect(mockInvoke).toHaveBeenNthCalledWith(8, 'shell:imeReset')
+    })
   });
 });

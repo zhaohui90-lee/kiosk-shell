@@ -159,6 +159,7 @@ const CLICK_ZONE_CONFIG = {
  */
 function injectAdminTriggerZone(): void {
   if (!isPreloadContext()) return
+  if (typeof document === 'undefined') return
 
   document.addEventListener('DOMContentLoaded', () => {
     const clickTimestamps: number[] = []
@@ -194,6 +195,10 @@ function injectAdminTriggerZone(): void {
         ipcRenderer.send(IPC_CHANNELS.ADMIN_TRIGGER)
       }
     })
+
+    if (!document.body) {
+      return
+    }
 
     document.body.appendChild(zone)
     console.log('[Preload] Admin trigger click zone injected')
