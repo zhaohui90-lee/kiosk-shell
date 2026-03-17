@@ -4,7 +4,6 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "baseUrl": ".",
-    "paths": {},
     "lib": ["ES2022", "DOM"]
   },
   "include": ["src/**/*"],

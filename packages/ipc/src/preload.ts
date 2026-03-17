@@ -77,6 +77,38 @@ const shellAPI: ShellAPI = {
   async checkBusinessStatus(token: string, url: string): Promise<AdminBusinessNetworkStatus> {
     return await ipcRenderer.invoke(IPC_CHANNELS.ADMIN_BUSINESS_STATUS, token, url)
   },
+
+  async imeSetSchema(schemaId: string) {
+    return ipcRenderer.invoke(IPC_CHANNELS.IME_SET_SCHEMA, schemaId)
+  },
+
+  async imeProcessInput(input: string) {
+    return ipcRenderer.invoke(IPC_CHANNELS.IME_PROCESS_INPUT, input)
+  },
+
+  async imeSelectCandidate(index: number) {
+    return ipcRenderer.invoke(IPC_CHANNELS.IME_SELECT_CANDIDATE, index)
+  },
+
+  async imeChangePage(backward: boolean) {
+    return ipcRenderer.invoke(IPC_CHANNELS.IME_CHANGE_PAGE, backward)
+  },
+
+  async imeSetOption(option: string, value: boolean) {
+    return ipcRenderer.invoke(IPC_CHANNELS.IME_SET_OPTION, option, value)
+  },
+
+  async imeSetPageSize(size: number) {
+    return ipcRenderer.invoke(IPC_CHANNELS.IME_SET_PAGE_SIZE, size)
+  },
+
+  async imeDeploy() {
+    return ipcRenderer.invoke(IPC_CHANNELS.IME_DEPLOY)
+  },
+
+  async imeReset() {
+    return ipcRenderer.invoke(IPC_CHANNELS.IME_RESET)
+  },
 }
 
 /**

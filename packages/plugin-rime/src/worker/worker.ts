@@ -7,15 +7,65 @@ import dependencyMap from '../config/dependency-map.json'
 import targetFiles from '../config/target-files.json'
 import targetVersion from '../config/target-version.json'
 
-import { IDBFS, Module, type RimeResult } from '@kiosk/shared'
+import type { RIME_RESULT } from '@kiosk/shared'
 
 const RIME_USER = '/rime'
 const RIME_SHARED = '/usr/share/rime-data'
 
+type DeployStatus = 'start' | 'failure' | 'success'
+
+interface WasmFs {
+  lookupPath(path: string): void
+  mkdir(path: string): void
+  mount(type: unknown, opts: Record<string, unknown>, mountPoint: string): void
+  syncfs(read: boolean, callback: (err: unknown) => void): void
+  readdir(path: string): string[]
+  lstat(path: string): { mode: number }
+  isDir(mode: number): boolean
+  rmdir(path: string): void
+  writeFile(path: string, content: Uint8Array): void
+  unlink(path: string): void
+}
+
+interface WasmModule {
+  FS: WasmFs
+  ccall(
+    name: string,
+    returnType: string,
+    argsType: string[],
+    args: Array<string | number | boolean>,
+  ): unknown
+}
+
+interface RuntimeGlobals {
+  Module?: WasmModule
+  IDBFS?: unknown
+  _deployStatus?: (status: DeployStatus, schemas: string) => void
+}
+
+function getRuntimeGlobals(): RuntimeGlobals {
+  return globalThis as RuntimeGlobals
+}
+
+function getModule(): WasmModule {
+  const moduleRef = getRuntimeGlobals().Module
+  if (!moduleRef) {
+    throw new Error('RIME wasm Module is not ready')
+  }
+  return moduleRef
+}
+
+function getIDBFS(): unknown {
+  const idbfs = getRuntimeGlobals().IDBFS
+  if (!idbfs) {
+    throw new Error('IDBFS runtime is not available')
+  }
+  return idbfs
+}
+
 let deployed = false
 const deployStatus = control('deployStatus')
-// @ts-ignore
-globalThis._deployStatus = (status: 'start' | 'failure' | 'success', schemas: string) => { // called from api.cpp
+getRuntimeGlobals()._deployStatus = (status: DeployStatus, schemas: string) => {
   if (status === 'success') {
     deployed = true
   }
@@ -25,8 +75,13 @@ globalThis._deployStatus = (status: 'start' | 'failure' | 'success', schemas: st
 function getURL(target: string, name: string) {
   // 使用构建时注入的 CDN 地址
   const RIME_CDN = '__RIME_CDN__'
+  const versionMap = targetVersion as Record<string, string>
+  const version = versionMap[target]
   if (RIME_CDN && RIME_CDN !== '__RIME_CDN__') {
-    return RIME_CDN + `${target}@${(targetVersion as any)[target]}/${name}`
+    if (!version) {
+      throw new Error(`Missing target version for "${target}"`)
+    }
+    return RIME_CDN + `${target}@${version}/${name}`
   }
   return `ime/${target}/${name}`
 }
@@ -35,6 +90,11 @@ const lazyCache = new LazyCache('ime')
 
 async function fetchPrebuilt(schemaId: string) {
   const fetched: string[] = []
+  const dependencyMapValue = dependencyMap as Record<string, string[] | undefined>
+  const schemaFilesValue = schemaFiles as Record<string, { dict?: string; prism?: string } | undefined>
+  const schemaTargetValue = schemaTarget as Record<string, string | undefined>
+  const targetFilesValue = targetFiles as Record<string, Array<{ name: string; md5: string }> | undefined>
+
   function getFiles(key: string) {
     if (fetched.includes(key)) {
       return []
@@ -46,18 +106,33 @@ async function fetchPrebuilt(schemaId: string) {
       target: string
     }[] = []
 
-    for (const dependency of (dependencyMap as {[key: string]: string[] | undefined})[key] || []) {
+    for (const dependency of dependencyMapValue[key] || []) {
       files.push(...getFiles(dependency))
     }
-    const { dict, prism } = (schemaFiles as {[key: string]: { dict?: string, prism?: string }})[key]
+
+    const schemaFile = schemaFilesValue[key]
+    if (!schemaFile) {
+      throw new Error(`Schema files config is missing for "${key}"`)
+    }
+
+    const { dict, prism } = schemaFile
     const dictionary = dict || key
     const tableBin = `${dictionary}.table.bin`
     const reverseBin = `${dictionary}.reverse.bin`
     const prismBin = `${prism || dictionary}.prism.bin`
     const schemaYaml = `${key}.schema.yaml`
-    const target = (schemaTarget as {[key: string]: string})[key]
+    const target = schemaTargetValue[key]
+    if (!target) {
+      throw new Error(`Schema target is missing for "${key}"`)
+    }
+
+    const targetEntries = targetFilesValue[target]
+    if (!targetEntries) {
+      throw new Error(`Target files are missing for "${target}"`)
+    }
+
     for (const fileName of [tableBin, reverseBin, prismBin, schemaYaml]) {
-      for (const { name, md5 } of (targetFiles as { [key: string]: { name: string, md5: string }[]})[target]) {
+      for (const { name, md5 } of targetEntries) {
         if (fileName === name) {
           files.push({ name, md5, target })
           break
@@ -69,11 +144,12 @@ async function fetchPrebuilt(schemaId: string) {
   const files = getFiles(schemaId)
   await Promise.all(files.map(async ({ name, target, md5 }) => {
     const path = `${RIME_SHARED}/build/${name}`
+    const moduleRef = getModule()
     try {
-      Module.FS.lookupPath(path)
+      moduleRef.FS.lookupPath(path)
     } catch (e) { // not exists
       const ab = await lazyCache.get(name, md5, getURL(target, name))
-      Module.FS.writeFile(path, new Uint8Array(ab))
+      moduleRef.FS.writeFile(path, new Uint8Array(ab))
     }
   }))
 }
@@ -82,35 +158,33 @@ async function setIME (schemaId: string) {
   if (!deployed) {
     await fetchPrebuilt(schemaId)
   }
-  Module.ccall('set_ime', 'null', ['string'], [schemaId])
+  getModule().ccall('set_ime', 'null', ['string'], [schemaId])
   return syncUserDirectory('write')
 }
 
 function syncUserDirectory (direction: 'read' | 'write') {
-  let resolve: (_: any) => void
-  let reject: (err: any) => void
-  const promise = new Promise<void>((_resolve, _reject) => {
-    resolve = _resolve
-    reject = _reject
-  })
-  Module.FS.syncfs(direction === 'read', (err: any) => {
+  return new Promise<void>((resolve, reject) => {
+    const moduleRef = getModule()
+    moduleRef.FS.syncfs(direction === 'read', (err: unknown) => {
     if (err) {
       reject(err)
+      return
     }
-    resolve(null)
+      resolve()
+    })
   })
-  return promise
 }
 
 const readyPromise = loadWasm('rime.js', {
   url: '__LIBRESERVICE_CDN__',
   async init () {
-    Module.FS.mkdir(RIME_USER)
-    Module.FS.mount(IDBFS, {}, RIME_USER)
+    const moduleRef = getModule()
+    moduleRef.FS.mkdir(RIME_USER)
+    moduleRef.FS.mount(getIDBFS(), {}, RIME_USER)
     await syncUserDirectory('read')
-    Module.ccall('init', 'null', [], [])
+    moduleRef.ccall('init', 'null', [], [])
     for (const [schema, name] of Object.entries(schemaName)) {
-      Module.ccall('set_schema_name', 'null', ['string', 'string'], [schema, name])
+      moduleRef.ccall('set_schema_name', 'null', ['string', 'string'], [schema, name])
     }
   },
   Module: {
@@ -132,17 +206,18 @@ const readyPromise = loadWasm('rime.js', {
 })
 
 function rmStar (path: string) {
-  for (const file of Module.FS.readdir(path)) {
+  const moduleRef = getModule()
+  for (const file of moduleRef.FS.readdir(path)) {
     if (file === '.' || file === '..') {
       continue
     }
     const subPath = `${path}/${file}`
-    const { mode } = Module.FS.lstat(subPath)
-    if (Module.FS.isDir(mode)) {
+    const { mode } = moduleRef.FS.lstat(subPath)
+    if (moduleRef.FS.isDir(mode)) {
       rmStar(subPath)
-      Module.FS.rmdir(subPath)
+      moduleRef.FS.rmdir(subPath)
     } else {
-      Module.FS.unlink(subPath)
+      moduleRef.FS.unlink(subPath)
     }
   }
 }
@@ -151,7 +226,7 @@ async function resetUserDirectory () {
   rmStar(RIME_USER)
   await syncUserDirectory('write')
   deployed = false
-  Module.ccall('reset', 'null', [], [])
+  getModule().ccall('reset', 'null', [], [])
 }
 
 expose({
@@ -159,25 +234,25 @@ expose({
   resetUserDirectory,
   setIME,
   setOption(option: string, value: boolean): void {
-    return Module.ccall('set_option', 'null', ['string', 'number'], [option, value])
+    getModule().ccall('set_option', 'null', ['string', 'number'], [option, value ? 1 : 0])
   },
   setPageSize(size: number) {
-    return Module.ccall('set_page_size', 'null', ['number'], [size])
+    return getModule().ccall('set_page_size', 'null', ['number'], [size])
   },
   deploy(): void {
-    return Module.ccall('deploy', 'null', [], [])
+    getModule().ccall('deploy', 'null', [], [])
   },
-  async process(input: string): Promise<RimeResult> {
-    const result = JSON.parse(Module.ccall('process', 'string', ['string'], [input]))
+  async process(input: string): Promise<RIME_RESULT> {
+    const result = JSON.parse(String(getModule().ccall('process', 'string', ['string'], [input]))) as RIME_RESULT
     if ('committed' in result) {
       await syncUserDirectory('write')
     }
     return result
   },
   selectCandidateOnCurrentPage(index: number): string {
-    return Module.ccall('select_candidate_on_current_page', 'string', ['number'], [index])
+    return String(getModule().ccall('select_candidate_on_current_page', 'string', ['number'], [index]))
   },
-  changePage(backward: boolean): void {
-    return Module.ccall('change_page', 'string', ['boolean'], [backward])
+  changePage(backward: boolean): string {
+    return String(getModule().ccall('change_page', 'string', ['boolean'], [backward]))
   }
 }, readyPromise)

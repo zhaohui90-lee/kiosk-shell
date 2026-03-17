@@ -55,9 +55,18 @@ export interface RimeConfig {
 }
 
 export interface RimeInputEvent {
-  type: 'candidate' | 'commit' | 'context'
-  data: any
+  type: RimeEventType
+  data: unknown
 }
+
+export type RimeEventType =
+  | 'candidate'
+  | 'commit'
+  | 'context'
+  | 'status'
+  | 'deploy'
+  | 'reset'
+  | 'ready'
 
 export type RimeEventHandler = (event: RimeInputEvent) => void
 
@@ -68,7 +77,7 @@ export interface RimeKit {
   destroy(): void
   
   // 输入处理
-  processInput(text: string): void
+  processInput(text: string): Promise<unknown>
   selectCandidate(index: number): Promise<string | null>
   commitComposition(): Promise<string | null>
   clearComposition(): void

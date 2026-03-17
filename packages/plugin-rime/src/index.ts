@@ -12,6 +12,8 @@ export {
   setIME
 } from './worker/worker-api'
 
+export { RimeKit } from './core/rime-kit'
+
 // 导出config
 export {
   schemas,

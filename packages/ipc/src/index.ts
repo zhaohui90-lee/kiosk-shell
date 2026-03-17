@@ -17,6 +17,7 @@ export type {
   DebugResult,
   AdminLoginResult,
   AdminOperationResult,
+  ImeOperationResult,
   PasswordVerifyResult,
   DeviceInfo,
   UpdateInfo,
@@ -56,6 +57,8 @@ export {
   setMainWindowRef,
   invalidateSession,
   verifyAdminSessionToken,
+  registerImeHandlers,
+  unregisterImeHandlers,
 } from './handlers'
 
 // Export preload (for use in preload script)
@@ -70,11 +73,13 @@ export function registerAllHandlers(): void {
   const { registerDeviceHandlers } = require('./handlers/device')
   const { registerDebugHandlers } = require('./handlers/debug')
   const { registerAdminHandlers } = require('./handlers/admin')
+  const { registerImeHandlers } = require('./handlers/ime')
 
   registerSystemHandlers()
   registerDeviceHandlers()
   registerDebugHandlers()
   registerAdminHandlers()
+  registerImeHandlers()
 }
 
 /**
@@ -86,9 +91,11 @@ export function unregisterAllHandlers(): void {
   const { unregisterDeviceHandlers } = require('./handlers/device')
   const { unregisterDebugHandlers } = require('./handlers/debug')
   const { unregisterAdminHandlers } = require('./handlers/admin')
+  const { unregisterImeHandlers } = require('./handlers/ime')
 
   unregisterSystemHandlers()
   unregisterDeviceHandlers()
   unregisterDebugHandlers()
   unregisterAdminHandlers()
+  unregisterImeHandlers()
 }
