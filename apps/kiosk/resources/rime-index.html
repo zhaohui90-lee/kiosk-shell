@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RIME IME Keyboard Test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #0f1117;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+      user-select: none;
+    }
+
+    h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #a0a8c0;
+      margin-bottom: 14px;
+      letter-spacing: 1px;
+    }
+
+    /* ── Status bar ── */
+    #status-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      font-size: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .stag {
+      padding: 3px 10px;
+      border-radius: 4px;
+      background: #1a1d2e;
+      border: 1px solid #2a2d3e;
+      white-space: nowrap;
+    }
+    .stag.on  { border-color: #4a7dff; color: #6ea1ff; }
+    .stag.err { border-color: #ff4a4a; color: #ff7070; }
+
+    /* ── Output ── */
+    #output-area {
+      width: 100%;
+      max-width: 720px;
+      min-height: 80px;
+      background: #1a1d2e;
+      border: 1px solid #2a2d3e;
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: 18px;
+      line-height: 1.7;
+      margin-bottom: 10px;
+      word-break: break-all;
+      white-space: pre-wrap;
+      color: #f0f0f0;
+    }
+    #output-area .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1.1em;
+      background: #4a7dff;
+      vertical-align: text-bottom;
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ── Composition bar ── */
+    #comp-bar {
+      width: 100%;
+      max-width: 720px;
+      min-height: 34px;
+      background: #1a1d2e;
+      border: 1px solid #333655;
+      border-radius: 5px;
+      padding: 5px 14px;
+      font-size: 15px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      color: #7cacff;
+    }
+    #comp-bar:empty::after { content: "preedit"; color: #333; }
+
+    /* ── Candidate list ── */
+    #cand-list {
+      width: 100%;
+      max-width: 720px;
+      min-height: 42px;
+      background: #1a1d2e;
+      border: 1px solid #2a2d3e;
+      border-radius: 5px;
+      padding: 6px 10px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .cand {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 2px;
+      padding: 3px 9px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.12s;
+      font-size: 15px;
+      border: 1px solid transparent;
+    }
+    .cand:hover { background: #252840; }
+    .cand.hl { background: #1e2e5a; border-color: #4a7dff; }
+    .cand .idx { color: #4a7dff; font-size: 12px; font-weight: 700; margin-right: 1px; }
+    .cand .txt { color: #f0f0f0; }
+    .cand .cmt { color: #555; font-size: 11px; margin-left: 2px; }
+    #cand-list:empty::after { content: "candidates"; color: #333; font-size: 13px; }
+
+    /* ── Page nav ── */
+    #page-nav {
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      font-size: 12px;
+      color: #444;
+    }
+    #page-nav button {
+      padding: 3px 10px;
+      background: #1a1d2e;
+      border: 1px solid #2a2d3e;
+      border-radius: 4px;
+      color: #888;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    #page-nav button:hover:not(:disabled) { border-color: #4a7dff; color: #6ea1ff; }
+    #page-nav button:disabled { opacity: 0.25; cursor: not-allowed; }
+
+    /* ── Virtual keyboard ── */
+    #keyboard {
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .row {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+    }
+    .k {
+      min-width: 46px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #1c1f30;
+      border: 1px solid #2a2d3e;
+      border-radius: 5px;
+      font-size: 14px;
+      color: #ccc;
+      cursor: pointer;
+      transition: all 0.1s;
+      flex-shrink: 0;
+    }
+    .k:hover { background: #262944; border-color: #3a5acc; }
+    .k.down { background: #2e3e72; border-color: #5a8dff; transform: scale(0.94); }
+    .k.num { color: #5a8dcc; font-size: 12px; }
+    .k.fn  { background: #151822; color: #666; font-size: 12px; }
+    .k.wide  { min-width: 76px; font-size: 12px; }
+    .k.wider { min-width: 96px; font-size: 12px; }
+    .k.spc   { flex: 1; max-width: 300px; font-size: 12px; }
+
+    /* ── Controls ── */
+    #controls {
+      width: 100%;
+      max-width: 720px;
+      margin-top: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+    }
+    .cgroup {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      background: #1a1d2e;
+      border: 1px solid #2a2d3e;
+      border-radius: 5px;
+      font-size: 12px;
+    }
+    .cgroup label { color: #777; }
+    .cgroup select {
+      background: #0f1117;
+      border: 1px solid #2a2d3e;
+      color: #d0d0d0;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+    .cbtn {
+      padding: 5px 12px;
+      background: #1a1d2e;
+      border: 1px solid #2a2d3e;
+      border-radius: 5px;
+      color: #a0a8c0;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.12s;
+    }
+    .cbtn:hover { border-color: #4a7dff; color: #6ea1ff; }
+    .cbtn.active { border-color: #4a7dff; background: #1a2545; color: #6ea1ff; }
+    .cbtn.danger:hover { border-color: #ff4a6a; color: #ff6a8a; }
+
+    /* ── Log ── */
+    #log {
+      width: 100%;
+      max-width: 720px;
+      margin-top: 14px;
+      background: #090b12;
+      border: 1px solid #1a1d2e;
+      border-radius: 5px;
+      padding: 8px 12px;
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+      font-size: 11px;
+      color: #555;
+      max-height: 180px;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+    .le { margin-bottom: 1px; }
+    .le.e { color: #ff6060; }
+    .le.s { color: #60d060; }
+    .le.i { color: #60a0ff; }
+  </style>
+</head>
+<body>
+<h1>RIME IME Keyboard Test</h1>
+
+<div id="status-bar">
+  <span class="stag" id="st-api">API: checking…</span>
+  <span class="stag" id="st-schema">Schema: --</span>
+  <span class="stag" id="st-mode">Mode: 中文</span>
+  <span class="stag" id="st-ascii">ASCII: off</span>
+  <span class="stag" id="st-composing">Composing: no</span>
+</div>
+
+<div id="output-area"><span id="out-text"></span><span class="cursor"></span></div>
+<div id="comp-bar"></div>
+<div id="cand-list"></div>
+
+<div id="page-nav">
+  <button id="btn-prev" disabled onclick="doChangePage(true)">‹ Prev</button>
+  <span id="page-info"></span>
+  <button id="btn-next" disabled onclick="doChangePage(false)">Next ›</button>
+</div>
+
+<div id="keyboard">
+  <!-- Number row — also candidate shortcuts when composing -->
+  <div class="row">
+    <div class="k num" data-k="1">1</div><div class="k num" data-k="2">2</div>
+    <div class="k num" data-k="3">3</div><div class="k num" data-k="4">4</div>
+    <div class="k num" data-k="5">5</div><div class="k num" data-k="6">6</div>
+    <div class="k num" data-k="7">7</div><div class="k num" data-k="8">8</div>
+    <div class="k num" data-k="9">9</div><div class="k num" data-k="0">0</div>
+  </div>
+  <div class="row">
+    <div class="k" data-k="q">q</div><div class="k" data-k="w">w</div>
+    <div class="k" data-k="e">e</div><div class="k" data-k="r">r</div>
+    <div class="k" data-k="t">t</div><div class="k" data-k="y">y</div>
+    <div class="k" data-k="u">u</div><div class="k" data-k="i">i</div>
+    <div class="k" data-k="o">o</div><div class="k" data-k="p">p</div>
+  </div>
+  <div class="row">
+    <div class="k" data-k="a">a</div><div class="k" data-k="s">s</div>
+    <div class="k" data-k="d">d</div><div class="k" data-k="f">f</div>
+    <div class="k" data-k="g">g</div><div class="k" data-k="h">h</div>
+    <div class="k" data-k="j">j</div><div class="k" data-k="k">k</div>
+    <div class="k" data-k="l">l</div>
+  </div>
+  <div class="row">
+    <div class="k" data-k="z">z</div><div class="k" data-k="x">x</div>
+    <div class="k" data-k="c">c</div><div class="k" data-k="v">v</div>
+    <div class="k" data-k="b">b</div><div class="k" data-k="n">n</div>
+    <div class="k" data-k="m">m</div>
+  </div>
+  <div class="row">
+    <div class="k fn wider" data-action="backspace">⌫ Back</div>
+    <div class="k" data-k=",">,</div>
+    <div class="k" data-k=".">.</div>
+    <div class="k spc" data-action="space">Space</div>
+    <div class="k" data-k="-">-</div>
+    <div class="k" data-k="=">=</div>
+    <div class="k fn fn wider" data-action="escape">Esc</div>
+    <div class="k fn wide" data-action="enter">Enter</div>
+  </div>
+</div>
+
+<div id="controls">
+  <div class="cgroup">
+    <label>Schema</label>
+    <select id="sel-schema" onchange="doSetSchema(this.value)">
+      <option value="luna_pinyin">朙月拼音</option>
+      <option value="double_pinyin">自然码双拼</option>
+      <option value="double_pinyin_flypy">小鹤双拼</option>
+      <option value="pinyin_simp">袖珍简化字</option>
+      <option value="wubi86">五笔86</option>
+      <option value="cangjie5">仓颉五代</option>
+      <option value="stroke">五笔画</option>
+      <option value="bopomofo">注音</option>
+      <option value="terra_pinyin">地球拼音</option>
+      <option value="jyut6ping3">粤拼</option>
+    </select>
+  </div>
+  <!-- Direct-input mode: bypasses RIME entirely -->
+  <button class="cbtn" id="btn-direct" onclick="toggleDirectMode()">直接输入: OFF</button>
+  <button class="cbtn" id="btn-ascii" onclick="toggleAscii()">ASCII 模式: OFF</button>
+  <button class="cbtn" onclick="toggleSimplified()">简/繁</button>
+  <button class="cbtn" onclick="doBackspace()">⌫</button>
+  <button class="cbtn" onclick="doClear()">清空</button>
+  <button class="cbtn danger" onclick="doReset()">重置 RIME</button>
+</div>
+
+<div id="log"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────
+var state = {
+  committed: '',       // accumulated output text
+  composing: false,    // RIME preedit active
+  page: 0,
+  hasMore: false,
+  ascii: false,        // RIME ascii_mode
+  simplified: true,
+  directMode: false,   // bypass RIME, output keys directly
+  currentSchema: 'luna_pinyin',
+  lastKey: '',         // last key sent, used for UNHANDLED passthrough
+};
+
+// ── DOM ────────────────────────────────────────────────────────────
+var $out       = document.getElementById('out-text');
+var $comp      = document.getElementById('comp-bar');
+var $cands     = document.getElementById('cand-list');
+var $pageInfo  = document.getElementById('page-info');
+var $btnPrev   = document.getElementById('btn-prev');
+var $btnNext   = document.getElementById('btn-next');
+var $stApi     = document.getElementById('st-api');
+var $stSchema  = document.getElementById('st-schema');
+var $stMode    = document.getElementById('st-mode');
+var $stAscii   = document.getElementById('st-ascii');
+var $stComp    = document.getElementById('st-composing');
+var $btnDirect = document.getElementById('btn-direct');
+var $btnAscii  = document.getElementById('btn-ascii');
+var $log       = document.getElementById('log');
+
+// ── API ────────────────────────────────────────────────────────────
+var api = window.shellAPI || null;
+
+// ── Logging ────────────────────────────────────────────────────────
+function log(msg, cls) {
+  var el = document.createElement('div');
+  el.className = 'le' + (cls ? ' ' + cls : '');
+  var ts = new Date().toLocaleTimeString('en-US', { hour12: false, fractionalSecondDigits: 2 });
+  el.textContent = '[' + ts + '] ' + msg;
+  $log.appendChild(el);
+  // keep max 200 lines
+  while ($log.childNodes.length > 200) $log.removeChild($log.firstChild);
+  $log.scrollTop = $log.scrollHeight;
+}
+
+// ── Render ─────────────────────────────────────────────────────────
+function renderOutput() {
+  $out.textContent = state.committed;
+}
+
+function renderComp(head, body, tail) {
+  if (!head && !body && !tail) {
+    $comp.innerHTML = '';
+    return;
+  }
+  $comp.innerHTML =
+    esc(head) +
+    '<span style="display:inline-block;width:1px;height:1em;background:#7cacff;vertical-align:text-bottom;"></span>' +
+    esc(body) +
+    '<span style="color:#445">' + esc(tail) + '</span>';
+}
+
+function renderCands(cands, hl, labels) {
+  if (!cands || !cands.length) {
+    $cands.innerHTML = '';
+    $btnPrev.disabled = true;
+    $btnNext.disabled = true;
+    $pageInfo.textContent = '';
+    return;
+  }
+  $cands.innerHTML = cands.map(function(c, i) {
+    var label = (labels && labels[i]) ? labels[i] : String(i + 1);
+    var hlCls = (i === hl) ? ' hl' : '';
+    var cmt = c.comment ? '<span class="cmt">' + esc(c.comment) + '</span>' : '';
+    return '<div class="cand' + hlCls + '" onclick="doSelectCandidate(' + i + ')">' +
+      '<span class="idx">' + esc(label) + '</span>' +
+      '<span class="txt">' + esc(c.text) + '</span>' + cmt + '</div>';
+  }).join('');
+}
+
+function updateStatus() {
+  $stSchema.textContent   = 'Schema: ' + state.currentSchema;
+  $stMode.textContent     = 'Mode: ' + (state.directMode ? '直接' : '中文');
+  $stMode.className       = 'stag' + (state.directMode ? ' on' : '');
+  $stAscii.textContent    = 'ASCII: ' + (state.ascii ? 'on' : 'off');
+  $stAscii.className      = 'stag' + (state.ascii ? ' on' : '');
+  $stComp.textContent     = 'Composing: ' + (state.composing ? 'yes' : 'no');
+  $stComp.className       = 'stag' + (state.composing ? ' on' : '');
+  $btnDirect.textContent  = '直接输入: ' + (state.directMode ? 'ON' : 'OFF');
+  $btnDirect.className    = 'cbtn' + (state.directMode ? ' active' : '');
+  $btnAscii.textContent   = 'ASCII 模式: ' + (state.ascii ? 'ON' : 'OFF');
+  $btnAscii.className     = 'cbtn' + (state.ascii ? ' active' : '');
+}
+
+function clearComposition() {
+  state.composing = false;
+  state.page = 0;
+  state.hasMore = false;
+  renderComp('', '', '');
+  renderCands([], -1);
+  $pageInfo.textContent = '';
+  $btnPrev.disabled = true;
+  $btnNext.disabled = true;
+  updateStatus();
+}
+
+function esc(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── RIME result handler ────────────────────────────────────────────
+function handleResult(r, inputKey) {
+  if (!r) return;
+  log('state=' + r.state + (r.committed ? ' commit="' + r.committed + '"' : '') +
+    (r.candidates ? ' cands=' + r.candidates.length : ''), 'i');
+
+  switch (r.state) {
+    case 0: // COMMITTED — text committed directly
+      if (r.committed) {
+        state.committed += r.committed;
+        renderOutput();
+      }
+      clearComposition();
+      break;
+
+    case 1: // ACCEPTED — composition in progress
+      if (r.committed) {
+        state.committed += r.committed;
+        renderOutput();
+      }
+      renderComp(r.head || '', r.body || '', r.tail || '');
+      renderCands(r.candidates, r.highlighted, r.selectLabels);
+      state.page = r.page || 0;
+      state.hasMore = !r.isLastPage;
+      $btnPrev.disabled = (state.page <= 0);
+      $btnNext.disabled = !state.hasMore;
+      $pageInfo.textContent = 'p' + (state.page + 1) + (state.hasMore ? '…' : '');
+      state.composing = true;
+      updateStatus();
+      break;
+
+    case 2: // REJECTED (e.g., schema switch)
+      if (r.updatedSchema) {
+        state.currentSchema = r.updatedSchema;
+        log('schema updated: ' + r.updatedSchema, 's');
+      }
+      clearComposition();
+      break;
+
+    case 3: // UNHANDLED — RIME didn't consume the key
+      // Passthrough: if it's a printable single char, output it directly
+      if (inputKey && inputKey.length === 1 && !state.composing) {
+        state.committed += inputKey;
+        renderOutput();
+        log('UNHANDLED passthrough: "' + inputKey + '"', 'i');
+      } else {
+        clearComposition();
+      }
+      break;
+  }
+}
+
+// ── Core API calls ─────────────────────────────────────────────────
+async function sendKey(key) {
+  if (!api) { log('shellAPI not available', 'e'); return; }
+
+  // Direct mode: bypass RIME for printable chars
+  if (state.directMode && key.length === 1) {
+    state.committed += key;
+    renderOutput();
+    return;
+  }
+
+  // Number keys 1-9 while composing → select candidate
+  if (state.composing && key >= '1' && key <= '9') {
+    await doSelectCandidate(parseInt(key) - 1);
+    return;
+  }
+
+  state.lastKey = key;
+  try {
+    var result = await api.imeProcessInput(key);
+    handleResult(result, key);
+  } catch (err) {
+    log('processInput error: ' + err.message, 'e');
+    clearComposition();
+  }
+}
+
+async function doSelectCandidate(index) {
+  if (!api) return;
+  log('select candidate[' + index + ']', 'i');
+  try {
+    var result = await api.imeSelectCandidate(index);
+    // Always reset composition state regardless of result value
+    var committed = (typeof result === 'string') ? result : '';
+    if (committed) {
+      state.committed += committed;
+      renderOutput();
+    }
+    clearComposition();
+    log('candidate committed: "' + committed + '"', 's');
+  } catch (err) {
+    log('selectCandidate error: ' + err.message, 'e');
+    clearComposition();  // reset state even on error
+  }
+}
+
+async function doChangePage(backward) {
+  if (!api) return;
+  log('changePage backward=' + backward, 'i');
+  try {
+    var result = await api.imeChangePage(backward);
+    // changePage returns a string; try to parse as RIME_RESULT JSON
+    if (typeof result === 'string' && result) {
+      try {
+        var parsed = JSON.parse(result);
+        if (parsed && typeof parsed.state === 'number') {
+          handleResult(parsed, '');
+          return;
+        }
+      } catch (_) { /* not JSON */ }
+    }
+    log('changePage returned: ' + String(result).substring(0, 80), 'i');
+  } catch (err) {
+    log('changePage error: ' + err.message, 'e');
+  }
+}
+
+async function doSetSchema(schemaId) {
+  if (!api) return;
+  log('setSchema: ' + schemaId, 'i');
+  clearComposition();
+  try {
+    var r = await api.imeSetSchema(schemaId);
+    if (r && r.success) {
+      state.currentSchema = schemaId;
+      updateStatus();
+      log('schema set: ' + schemaId, 's');
+    } else {
+      log('setSchema failed: ' + (r && r.message), 'e');
+    }
+  } catch (err) {
+    log('setSchema error: ' + err.message, 'e');
+  }
+}
+
+function toggleDirectMode() {
+  state.directMode = !state.directMode;
+  clearComposition();
+  updateStatus();
+  log('direct mode: ' + state.directMode, 'i');
+}
+
+async function toggleAscii() {
+  if (!api) return;
+  state.ascii = !state.ascii;
+  updateStatus();
+  try {
+    var r = await api.imeSetOption('ascii_mode', state.ascii);
+    log('ascii_mode=' + state.ascii + ': ' + (r && r.success ? 'ok' : r && r.message), r && r.success ? 's' : 'e');
+  } catch (err) {
+    log('setOption error: ' + err.message, 'e');
+    state.ascii = !state.ascii;  // rollback
+    updateStatus();
+  }
+}
+
+async function toggleSimplified() {
+  if (!api) return;
+  state.simplified = !state.simplified;
+  try {
+    var r = await api.imeSetOption('simplification', !state.simplified);
+    log('simplification=' + !state.simplified + ' (simp=' + state.simplified + '): ' + (r && r.success ? 'ok' : r && r.message), 'i');
+  } catch (err) {
+    log('setOption error: ' + err.message, 'e');
+  }
+}
+
+function doBackspace() {
+  if (state.directMode) {
+    // Direct mode: delete last char from output
+    if (state.committed.length > 0) {
+      // Handle surrogate pairs / emoji
+      var arr = Array.from(state.committed);
+      arr.pop();
+      state.committed = arr.join('');
+      renderOutput();
+    }
+    return;
+  }
+  sendKey('BackSpace');
+}
+
+function doClear() {
+  state.committed = '';
+  renderOutput();
+  clearComposition();
+  log('cleared', 'i');
+}
+
+async function doReset() {
+  if (!api) return;
+  log('resetting RIME…', 'i');
+  try {
+    var r = await api.imeReset();
+    doClear();
+    log('reset: ' + (r && r.success ? 'ok' : r && r.message), r && r.success ? 's' : 'e');
+  } catch (err) {
+    log('reset error: ' + err.message, 'e');
+  }
+}
+
+// ── Virtual keyboard binding ────────────────────────────────────────
+document.querySelectorAll('.k').forEach(function(el) {
+  el.addEventListener('pointerdown', function(e) {
+    e.preventDefault();
+    el.classList.add('down');
+    var action = el.dataset.action;
+    var k = el.dataset.k;
+    if (action === 'backspace') {
+      doBackspace();
+    } else if (action === 'enter') {
+      sendKey('Return');
+    } else if (action === 'escape') {
+      sendKey('Escape');
+    } else if (action === 'space') {
+      sendKey(' ');
+    } else if (k !== undefined) {
+      sendKey(k);
+    }
+  });
+  el.addEventListener('pointerup',    function() { el.classList.remove('down'); });
+  el.addEventListener('pointerleave', function() { el.classList.remove('down'); });
+});
+
+// ── Physical keyboard passthrough ──────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  if (['Backspace','Enter','Tab','Escape'].indexOf(e.key) !== -1) e.preventDefault();
+
+  // Highlight virtual key
+  var vk = document.querySelector('.k[data-k="' + e.key.toLowerCase() + '"]');
+  if (!vk) {
+    if (e.key === 'Backspace') vk = document.querySelector('.k[data-action="backspace"]');
+    else if (e.key === 'Enter') vk = document.querySelector('.k[data-action="enter"]');
+    else if (e.key === 'Escape') vk = document.querySelector('.k[data-action="escape"]');
+    else if (e.key === ' ') vk = document.querySelector('.k[data-action="space"]');
+  }
+  if (vk) vk.classList.add('down');
+
+  if (e.key === 'Backspace') {
+    doBackspace();
+  } else if (e.key === 'Enter') {
+    sendKey('Return');
+  } else if (e.key === 'Escape') {
+    sendKey('Escape');
+  } else if (e.key === 'PageUp') {
+    e.preventDefault(); doChangePage(true);
+  } else if (e.key === 'PageDown') {
+    e.preventDefault(); doChangePage(false);
+  } else if (e.key.length === 1) {
+    sendKey(e.key);
+  }
+});
+
+document.addEventListener('keyup', function(e) {
+  var vk = document.querySelector('.k[data-k="' + e.key.toLowerCase() + '"]') ||
+           document.querySelector('.k[data-action="backspace"]') ||
+           document.querySelector('.k[data-action="enter"]');
+  document.querySelectorAll('.k.down').forEach(function(k) { k.classList.remove('down'); });
+});
+
+// ── Init ───────────────────────────────────────────────────────────
+(function init() {
+  if (api) {
+    $stApi.textContent = 'API: ready';
+    $stApi.classList.add('on');
+    log('shellAPI ready', 's');
+    doSetSchema('luna_pinyin');
+  } else {
+    $stApi.textContent = 'API: not found (outside Electron?)';
+    $stApi.classList.add('err');
+    log('window.shellAPI not found — direct mode auto-enabled', 'e');
+    // Auto-enable direct mode so keyboard is still usable for testing UI
+    state.directMode = true;
+  }
+  updateStatus();
+  log('page loaded', 'i');
+})();
+</script>
+</body>
+</html>
