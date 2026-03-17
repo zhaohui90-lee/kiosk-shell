@@ -40,6 +40,7 @@ interface WasmModule {
 interface RuntimeGlobals {
   Module?: WasmModule
   IDBFS?: unknown
+  indexedDB?: unknown
   _deployStatus?: (status: DeployStatus, schemas: string) => void
 }
 
@@ -55,13 +56,7 @@ function getModule(): WasmModule {
   return moduleRef
 }
 
-function getIDBFS(): unknown {
-  const idbfs = getRuntimeGlobals().IDBFS
-  if (!idbfs) {
-    throw new Error('IDBFS runtime is not available')
-  }
-  return idbfs
-}
+let enableUserDirPersistence = false
 
 let deployed = false
 const deployStatus = control('deployStatus')
@@ -86,7 +81,67 @@ function getURL(target: string, name: string) {
   return `ime/${target}/${name}`
 }
 
-const lazyCache = new LazyCache('ime')
+function isNodeRuntime(): boolean {
+  return typeof process === 'object' && typeof process.versions?.node === 'string'
+}
+
+function resolveLibreserviceCDN(): string | undefined {
+  const LIBRESERVICE_CDN = '__LIBRESERVICE_CDN__'
+  if (LIBRESERVICE_CDN && LIBRESERVICE_CDN !== '__LIBRESERVICE_CDN__') {
+    return LIBRESERVICE_CDN
+  }
+  return undefined
+}
+
+function resolveNodeWasmBasePath(): string {
+  const fs = require('node:fs') as { existsSync(path: string): boolean }
+  const path = require('node:path') as { join(...paths: string[]): string; sep: string }
+  const distPath = path.join(__dirname, '../wasm')
+  if (fs.existsSync(path.join(distPath, 'rime.js'))) {
+    return `${distPath}${path.sep}`
+  }
+  return `${path.join(__dirname, '../../src/wasm')}${path.sep}`
+}
+
+function resolveNodePrebuiltFilePath(target: string, name: string): string {
+  const fs = require('node:fs') as { existsSync(path: string): boolean }
+  const path = require('node:path') as { join(...paths: string[]): string }
+  const distPath = path.join(__dirname, '../wasm/ime', target, name)
+  if (fs.existsSync(distPath)) {
+    return distPath
+  }
+  return path.join(__dirname, '../../src/wasm/ime', target, name)
+}
+
+async function readNodePrebuiltFile(target: string, name: string): Promise<ArrayBuffer> {
+  const fs = require('node:fs/promises') as { readFile(path: string): Promise<Uint8Array> }
+  const filePath = resolveNodePrebuiltFilePath(target, name)
+  const content = await fs.readFile(filePath)
+  const copied = new Uint8Array(content.byteLength)
+  copied.set(content)
+  return copied.buffer
+}
+
+async function fetchArrayBuffer(url: string, key: string): Promise<ArrayBuffer> {
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Fail to download ${key}`)
+  }
+  return response.arrayBuffer()
+}
+
+const useNodeRuntime = isNodeRuntime()
+const lazyCache = !useNodeRuntime && getRuntimeGlobals().indexedDB ? new LazyCache('ime') : null
+
+async function loadPrebuiltBinary(target: string, name: string, md5: string): Promise<ArrayBuffer> {
+  if (useNodeRuntime) {
+    return readNodePrebuiltFile(target, name)
+  }
+  if (lazyCache) {
+    return lazyCache.get(name, md5, getURL(target, name))
+  }
+  return fetchArrayBuffer(getURL(target, name), name)
+}
 
 async function fetchPrebuilt(schemaId: string) {
   const fetched: string[] = []
@@ -148,7 +203,7 @@ async function fetchPrebuilt(schemaId: string) {
     try {
       moduleRef.FS.lookupPath(path)
     } catch (e) { // not exists
-      const ab = await lazyCache.get(name, md5, getURL(target, name))
+      const ab = await loadPrebuiltBinary(target, name, md5)
       moduleRef.FS.writeFile(path, new Uint8Array(ab))
     }
   }))
@@ -163,6 +218,10 @@ async function setIME (schemaId: string) {
 }
 
 function syncUserDirectory (direction: 'read' | 'write') {
+  if (!enableUserDirPersistence) {
+    return Promise.resolve()
+  }
+
   return new Promise<void>((resolve, reject) => {
     const moduleRef = getModule()
     moduleRef.FS.syncfs(direction === 'read', (err: unknown) => {
@@ -175,13 +234,28 @@ function syncUserDirectory (direction: 'read' | 'write') {
   })
 }
 
-const readyPromise = loadWasm('rime.js', {
-  url: '__LIBRESERVICE_CDN__',
+const wasmEntryScript = 'rime.js'
+const libreserviceCDN = useNodeRuntime ? resolveNodeWasmBasePath() : resolveLibreserviceCDN()
+
+const loadWasmOptions: {
+  url?: string
+  init: () => Promise<void>
+  Module: {
+    printErr: (message: string) => void
+  }
+} = {
   async init () {
     const moduleRef = getModule()
     moduleRef.FS.mkdir(RIME_USER)
-    moduleRef.FS.mount(getIDBFS(), {}, RIME_USER)
-    await syncUserDirectory('read')
+    const idbfs = getRuntimeGlobals().IDBFS
+    if (idbfs && getRuntimeGlobals().indexedDB) {
+      moduleRef.FS.mount(idbfs, {}, RIME_USER)
+      enableUserDirPersistence = true
+      await syncUserDirectory('read')
+    } else {
+      enableUserDirPersistence = false
+      console.warn('[plugin-rime] IDBFS is unavailable, user directory persistence is disabled')
+    }
     moduleRef.ccall('init', 'null', [], [])
     for (const [schema, name] of Object.entries(schemaName)) {
       moduleRef.ccall('set_schema_name', 'null', ['string', 'string'], [schema, name])
@@ -192,18 +266,30 @@ const readyPromise = loadWasm('rime.js', {
     printErr (message: string) {
       const match = message.match(/[EWID]\S+ \S+ \S+ (.*)/)
       if (match) {
-        ({
+        const logByLevel = ({
           E: console.error,
           W: console.warn,
           I: console.info,
           D: console.debug
-        })[message[0] as 'E' | 'W' | 'I' | 'D'](match[1])
+        })[message[0] as 'E' | 'W' | 'I' | 'D']
+        if (logByLevel) {
+          logByLevel(match[1])
+          return
+        }
       } else {
         console.error(message)
+        return
       }
+      console.error(message)
     }
   }
-})
+}
+
+if (libreserviceCDN) {
+  loadWasmOptions.url = libreserviceCDN
+}
+
+const readyPromise = loadWasm(wasmEntryScript, loadWasmOptions)
 
 function rmStar (path: string) {
   const moduleRef = getModule()

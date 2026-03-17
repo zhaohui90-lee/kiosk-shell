@@ -1,7 +1,9 @@
 import { LambdaWorker, asyncFS } from '@libreservice/my-worker'
 import type { RIME_RESULT } from "@kiosk/shared";
+import { ensureLambdaWorkerRuntime, resolveLambdaWorkerScript } from './node-worker-runtime'
 
-const worker = new LambdaWorker('./worker')
+ensureLambdaWorkerRuntime()
+const worker = new LambdaWorker(resolveLambdaWorkerScript('./worker'))
 
 const setIME: (ime: string) => Promise<void> = worker.register('setIME')
 const setOption: (option: string, value: boolean) => Promise<void> = worker.register('setOption')
