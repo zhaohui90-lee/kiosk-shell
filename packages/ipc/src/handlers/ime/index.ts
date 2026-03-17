@@ -1,20 +1,47 @@
 import { ipcMain } from 'electron'
 import { getLogger } from '@kiosk/logger'
-import {
-  setIME,
-  process as processInput,
-  selectCandidateOnCurrentPage,
-  changePage,
-  setOption,
-  setPageSize,
-  deploy,
-  resetUserDirectory,
-} from '@kiosk/plugin-rime'
 import { IPC_CHANNELS } from '../../types'
 import type { ImeOperationResult } from '../../types'
 import type { RIME_RESULT } from '@kiosk/shared'
 
 const logger = getLogger()
+
+type ImeApi = {
+  setIME: (schemaId: string) => Promise<void>
+  process: (input: string) => Promise<RIME_RESULT>
+  selectCandidateOnCurrentPage: (index: number) => Promise<string>
+  changePage: (backward: boolean) => Promise<string>
+  setOption: (option: string, value: boolean) => Promise<void>
+  setPageSize: (size: number) => Promise<void>
+  deploy: () => Promise<void>
+  resetUserDirectory: () => Promise<void>
+}
+
+let imeApiPromise: Promise<ImeApi> | null = null
+
+async function getImeApi(): Promise<ImeApi> {
+  if (imeApiPromise) {
+    return imeApiPromise
+  }
+
+  imeApiPromise = import('@kiosk/plugin-rime')
+    .then((mod) => ({
+      setIME: mod.setIME,
+      process: mod.process,
+      selectCandidateOnCurrentPage: mod.selectCandidateOnCurrentPage,
+      changePage: mod.changePage,
+      setOption: mod.setOption,
+      setPageSize: mod.setPageSize,
+      deploy: mod.deploy,
+      resetUserDirectory: mod.resetUserDirectory,
+    }))
+    .catch((error) => {
+      imeApiPromise = null
+      throw error
+    })
+
+  return imeApiPromise
+}
 
 function success(message: string): ImeOperationResult {
   return { success: true, message }
@@ -38,7 +65,8 @@ async function handleImeSetSchema(
   }
 
   try {
-    await setIME(schemaId)
+    const imeApi = await getImeApi()
+    await imeApi.setIME(schemaId)
     return success('IME schema updated')
   } catch (error) {
     return failure(error, '[IPC:IME] Failed to set schema')
@@ -49,7 +77,13 @@ async function handleImeProcessInput(
   _event: Electron.IpcMainInvokeEvent,
   input: string,
 ): Promise<RIME_RESULT> {
-  return processInput(input)
+  try {
+    const imeApi = await getImeApi()
+    return imeApi.process(input)
+  } catch (error) {
+    logger.error('[IPC:IME] Failed to process input', { error: (error as Error).message })
+    return { state: 3 }
+  }
 }
 
 async function handleImeSelectCandidate(
@@ -59,14 +93,26 @@ async function handleImeSelectCandidate(
   if (!Number.isInteger(index) || index < 0) {
     return null
   }
-  return selectCandidateOnCurrentPage(index)
+  try {
+    const imeApi = await getImeApi()
+    return imeApi.selectCandidateOnCurrentPage(index)
+  } catch (error) {
+    logger.error('[IPC:IME] Failed to select candidate', { error: (error as Error).message })
+    return null
+  }
 }
 
 async function handleImeChangePage(
   _event: Electron.IpcMainInvokeEvent,
   backward: boolean,
 ): Promise<string> {
-  return changePage(backward)
+  try {
+    const imeApi = await getImeApi()
+    return imeApi.changePage(backward)
+  } catch (error) {
+    logger.error('[IPC:IME] Failed to change page', { error: (error as Error).message })
+    return ''
+  }
 }
 
 async function handleImeSetOption(
@@ -79,7 +125,8 @@ async function handleImeSetOption(
   }
 
   try {
-    await setOption(option, value)
+    const imeApi = await getImeApi()
+    await imeApi.setOption(option, value)
     return success(`Option "${option}" updated`)
   } catch (error) {
     return failure(error, '[IPC:IME] Failed to set option')
@@ -95,7 +142,8 @@ async function handleImeSetPageSize(
   }
 
   try {
-    await setPageSize(size)
+    const imeApi = await getImeApi()
+    await imeApi.setPageSize(size)
     return success('Page size updated')
   } catch (error) {
     return failure(error, '[IPC:IME] Failed to set page size')
@@ -104,7 +152,8 @@ async function handleImeSetPageSize(
 
 async function handleImeDeploy(): Promise<ImeOperationResult> {
   try {
-    await deploy()
+    const imeApi = await getImeApi()
+    await imeApi.deploy()
     return success('IME deploy completed')
   } catch (error) {
     return failure(error, '[IPC:IME] Deploy failed')
@@ -113,7 +162,8 @@ async function handleImeDeploy(): Promise<ImeOperationResult> {
 
 async function handleImeReset(): Promise<ImeOperationResult> {
   try {
-    await resetUserDirectory()
+    const imeApi = await getImeApi()
+    await imeApi.resetUserDirectory()
     return success('IME user data reset completed')
   } catch (error) {
     return failure(error, '[IPC:IME] Reset failed')
