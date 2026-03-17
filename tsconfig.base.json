@@ -64,7 +64,8 @@
       "@kiosk/ipc/*": ["packages/ipc/src/*"],
       "@kiosk/platform": ["packages/platform/src"],
       "@kiosk/platform/*": ["packages/platform/src/*"],
-      "@kiosk/shared/*": ["shared/*"]
+      "@kiosk/shared/*": ["shared/*"],
+      "@kiosk/ime/*": ["ime/*"]
     }
   },
   "exclude": [
