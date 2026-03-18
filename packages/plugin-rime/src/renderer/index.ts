@@ -20,6 +20,7 @@ type ImeApi = {
   imeProcessInput: (input: string) => Promise<RIME_RESULT>
   imeSelectCandidate: (index: number) => Promise<string | null>
   imeSetPageSize: (size: number) => Promise<unknown>
+  imeSetOption: (option: string, value: boolean) => Promise<unknown>
 }
 
 export type VirtualKeyboardOptions = {
@@ -28,6 +29,8 @@ export type VirtualKeyboardOptions = {
   candidatePageSize?: number
   hideDelayMs?: number
   zIndex?: number
+  showEmoji?: boolean
+  simplified?: boolean
 }
 
 export type VirtualKeyboardHandle = {
@@ -77,6 +80,8 @@ class VirtualKeyboardController {
   private readonly candidatePageSize: number
   private readonly hideDelayMs: number
   private readonly zIndex: number
+  private readonly showEmoji: boolean
+  private readonly simplified: boolean
 
   private root: HTMLDivElement | null = null
   private statusEl: HTMLSpanElement | null = null
@@ -104,6 +109,8 @@ class VirtualKeyboardController {
     this.candidatePageSize = options.candidatePageSize ?? DEFAULT_CANDIDATE_PAGE_SIZE
     this.hideDelayMs = options.hideDelayMs ?? DEFAULT_HIDE_DELAY_MS
     this.zIndex = options.zIndex ?? DEFAULT_Z_INDEX
+    this.showEmoji = options.showEmoji ?? false
+    this.simplified = options.simplified ?? true
   }
 
   start(): void {
@@ -555,6 +562,8 @@ class VirtualKeyboardController {
     try {
       await this.api.imeSetSchema(this.defaultSchema)
       await this.api.imeSetPageSize(this.candidatePageSize)
+      await this.api.imeSetOption('emoji_suggestion', this.showEmoji)
+      await this.api.imeSetOption('simplification', this.simplified)
       this.imeInitialized = true
       this.renderStatus('中文输入已就绪')
     } catch {

@@ -156,7 +156,13 @@ async function installImeVirtualKeyboard(): Promise<void> {
     return
   }
 
-  let vkConfig: ImeConfig = { defaultSchema: 'luna_pinyin', candidatePageSize: 5, hideDelayMs: 160 }
+  let vkConfig: ImeConfig = {
+    defaultSchema: 'luna_pinyin',
+    candidatePageSize: 5,
+    hideDelayMs: 160,
+    showEmoji: false,
+    simplified: true,
+  }
   try {
     const cfg = await ipcRenderer.invoke(IPC_CHANNELS.IME_GET_CONFIG) as ImeConfig
     if (cfg) {
@@ -171,6 +177,8 @@ async function installImeVirtualKeyboard(): Promise<void> {
     defaultSchema: vkConfig.defaultSchema,
     candidatePageSize: vkConfig.candidatePageSize,
     hideDelayMs: vkConfig.hideDelayMs,
+    showEmoji: vkConfig.showEmoji,
+    simplified: vkConfig.simplified,
   })
   virtualKeyboardInstalled = true
   console.log('[Preload] IME virtual keyboard installed')

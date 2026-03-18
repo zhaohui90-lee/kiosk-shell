@@ -8,6 +8,10 @@ export interface VirtualKeyboardConfig {
   candidatePageSize?: number
   /** Delay in milliseconds before hiding the keyboard after blur */
   hideDelayMs?: number
+  /** Enable emoji suggestions */
+  showEmoji?: boolean
+  /** Use simplified Chinese characters */
+  simplified?: boolean
 }
 
 /**

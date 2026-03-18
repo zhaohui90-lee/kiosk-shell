@@ -6,6 +6,7 @@ declare module '@kiosk/plugin-rime/renderer' {
     imeProcessInput: (input: string) => Promise<RIME_RESULT>
     imeSelectCandidate: (index: number) => Promise<string | null>
     imeSetPageSize: (size: number) => Promise<unknown>
+    imeSetOption: (option: string, value: boolean) => Promise<unknown>
   }
 
   export type VirtualKeyboardOptions = {
@@ -14,6 +15,8 @@ declare module '@kiosk/plugin-rime/renderer' {
     candidatePageSize?: number
     hideDelayMs?: number
     zIndex?: number
+    showEmoji?: boolean
+    simplified?: boolean
   }
 
   export type VirtualKeyboardHandle = {
