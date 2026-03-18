@@ -3,7 +3,7 @@
   "devMode": true,
   "crashMonitoring": true,
   "blankDetection": true,
-  "contentUrl": "kiosk://renderer/rime-index.html",
+  "contentUrl": "https://www.google.com",
   "width": 1080,
   "height": 1920,
   "whitelist": [],
@@ -11,7 +11,9 @@
   "adminPassword": "12345678",
   "virtualKeyboard": {
     "defaultSchema": "luna_pinyin",
-    "candidatePageSize": 5,
-    "hideDelayMs": 160
+    "candidatePageSize": 9,
+    "hideDelayMs": 160,
+    "showEmoji": false,
+    "simplified": true
   }
 }
