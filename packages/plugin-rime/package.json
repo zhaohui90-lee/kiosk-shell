@@ -8,11 +8,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
-    },
-    "./renderer": {
-      "types": "./dist/renderer/index.d.ts",
-      "import": "./dist/renderer/index.js",
-      "default": "./dist/renderer/index.js"
     }
   },
   "scripts": {
