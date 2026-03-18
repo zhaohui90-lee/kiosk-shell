@@ -95,10 +95,18 @@ describe('keyboard-model', () => {
     expect(enRows[3]?.[0]?.action).toBe('mode-zh')
     expect(enRows[3]?.[0]?.label).toBe('中文')
 
-    // Num mode: 4 rows (3x3 + bottom)
+    // Num mode: 4 rows (4x3 with symbol column + bottom row)
     expect(numRows.length).toBe(4)
-    expect(numRows[0]?.length).toBe(3)
+    // rows 0-2: symbol + 3 digits = 4 keys each
+    expect(numRows[0]?.length).toBe(4)
+    expect(numRows[0]?.[0]?.value).toBe('@')
+    expect(numRows[1]?.[0]?.value).toBe('%')
+    expect(numRows[2]?.[0]?.value).toBe('-')
+    // bottom row: + . 0 X ⌫ = 5 keys
+    expect(numRows[3]?.length).toBe(5)
+    expect(numRows[3]?.[0]?.value).toBe('+')
     expect(numRows[3]?.[2]?.value).toBe('0')
+    expect(numRows[3]?.[3]?.value).toBe('X')
     expect(numRows[3]?.[4]?.action).toBe('backspace')
   })
 

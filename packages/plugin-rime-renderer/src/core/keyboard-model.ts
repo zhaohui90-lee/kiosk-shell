@@ -289,15 +289,24 @@ export function buildKeyboardRows(mode: KeyboardMode, shifted: boolean): Keyboar
   }
 
   return [
-    ['1', '2', '3'].map((value) => ({ id: value, label: value, value })),
-    ['4', '5', '6'].map((value) => ({ id: value, label: value, value })),
-    ['7', '8', '9'].map((value) => ({ id: value, label: value, value })),
     [
-      { id: 'mode-zh', label: '中文', action: 'mode-zh', variant: 'muted' },
+      { id: 'at', label: '@', value: '@' },
+      ...(['1', '2', '3'] as const).map((v) => ({ id: v, label: v, value: v })),
+    ],
+    [
+      { id: 'percent', label: '%', value: '%' },
+      ...(['4', '5', '6'] as const).map((v) => ({ id: v, label: v, value: v })),
+    ],
+    [
+      { id: 'minus', label: '-', value: '-' },
+      ...(['7', '8', '9'] as const).map((v) => ({ id: v, label: v, value: v })),
+    ],
+    [
+      { id: 'plus', label: '+', value: '+' },
       { id: 'dot', label: '.', value: '.' },
       { id: '0', label: '0', value: '0' },
-      { id: 'dash', label: '-', value: '-' },
-      { id: 'backspace', label: '⌫', action: 'backspace', variant: 'muted', width: 'wide' },
+      { id: 'x-upper', label: 'X', value: 'X' },
+      { id: 'backspace', label: '⌫', action: 'backspace', variant: 'muted' },
     ],
   ]
 }
