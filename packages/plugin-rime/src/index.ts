@@ -13,8 +13,6 @@ export {
 } from './worker/worker-api'
 
 export { RimeKit } from './core/rime-kit'
-export { installVirtualKeyboardPlugin } from './renderer'
-export type { VirtualKeyboardHandle, VirtualKeyboardOptions, KeyboardMode } from './renderer'
 
 // 导出config
 export {

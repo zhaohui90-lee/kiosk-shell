@@ -10,7 +10,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { IPC_CHANNELS, AdminBusinessNetworkStatus, ShellAPI, ImeConfig } from './types'
 import { SHELL_API_NAMESPACE } from './constants'
 import type { DeviceInfo, UpdateInfo } from '@kiosk/shared'
-import { installVirtualKeyboardPlugin } from '@kiosk/plugin-rime/renderer'
+import { installVirtualKeyboardPlugin } from '@kiosk/plugin-rime-renderer'
 
 /**
  * Shell API implementation
