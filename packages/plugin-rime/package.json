@@ -18,14 +18,11 @@
   "dependencies": {
     "@libreservice/my-worker": "^0.4.2",
     "@libreservice/lazy-cache": "^0.1.2",
-    "@libreservice/micro-plum": "^0.2.3",
-    "@libreservice/my-widget": "^0.1.4",
-    "@libreservice/wasm-code": "^0.1.5",
     "@kiosk/shared": "workspace:*"
   },
   "files": [
     "dist",
-    "src"
+    "src/wasm"
   ],
   "devDependencies": {
     "@types/node": "^20.11.0",

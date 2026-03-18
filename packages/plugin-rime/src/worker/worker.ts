@@ -8,6 +8,8 @@ import targetFiles from '../config/target-files.json'
 import targetVersion from '../config/target-version.json'
 
 import type { RIME_RESULT } from '@kiosk/shared'
+import { normalizeProcessInput } from './input-sequence'
+import { shouldIgnoreRuntimeWarning } from './runtime-log'
 
 const RIME_USER = '/rime'
 const RIME_SHARED = '/usr/share/rime-data'
@@ -264,6 +266,9 @@ const loadWasmOptions: {
   Module: {
     // Customize for glog
     printErr (message: string) {
+      if (shouldIgnoreRuntimeWarning(message)) {
+        return
+      }
       const match = message.match(/[EWID]\S+ \S+ \S+ (.*)/)
       if (match) {
         const logByLevel = ({
@@ -329,7 +334,10 @@ expose({
     getModule().ccall('deploy', 'null', [], [])
   },
   async process(input: string): Promise<RIME_RESULT> {
-    const result = JSON.parse(String(getModule().ccall('process', 'string', ['string'], [input]))) as RIME_RESULT
+    const normalizedInput = normalizeProcessInput(input)
+    const result = JSON.parse(
+      String(getModule().ccall('process', 'string', ['string'], [normalizedInput])),
+    ) as RIME_RESULT
     if ('committed' in result) {
       await syncUserDirectory('write')
     }
