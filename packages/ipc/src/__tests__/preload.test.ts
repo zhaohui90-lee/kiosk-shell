@@ -8,15 +8,19 @@ describe('Preload Script', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    delete (globalThis as { document?: unknown }).document
   });
 
   afterEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    delete (globalThis as { document?: unknown }).document
   });
 
   describe('Context Detection', () => {
     it('should not call exposeInMainWorld when contextBridge is undefined (main process)', async () => {
+      const mockInstallVirtualKeyboardPlugin = vi.fn()
+
       // Mock electron with undefined contextBridge (simulates main process)
       vi.doMock('electron', () => ({
         contextBridge: undefined,
@@ -24,6 +28,9 @@ describe('Preload Script', () => {
           invoke: vi.fn(),
         },
       }));
+      vi.doMock('@kiosk/plugin-rime/renderer', () => ({
+        installVirtualKeyboardPlugin: mockInstallVirtualKeyboardPlugin,
+      }))
 
       // Import preload - this should not throw even though contextBridge is undefined
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -37,6 +44,7 @@ describe('Preload Script', () => {
 
       // Should not have logged error
       expect(consoleErrorSpy).not.toHaveBeenCalled();
+      expect(mockInstallVirtualKeyboardPlugin).not.toHaveBeenCalled()
 
       consoleSpy.mockRestore();
       consoleErrorSpy.mockRestore();
@@ -44,6 +52,7 @@ describe('Preload Script', () => {
 
     it('should call exposeInMainWorld when contextBridge is available (preload context)', async () => {
       const mockExposeInMainWorld = vi.fn();
+      const mockInstallVirtualKeyboardPlugin = vi.fn()
 
       // Mock electron with valid contextBridge (simulates preload context)
       vi.doMock('electron', () => ({
@@ -54,6 +63,9 @@ describe('Preload Script', () => {
           invoke: vi.fn(),
         },
       }));
+      vi.doMock('@kiosk/plugin-rime/renderer', () => ({
+        installVirtualKeyboardPlugin: mockInstallVirtualKeyboardPlugin,
+      }))
 
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
@@ -64,6 +76,7 @@ describe('Preload Script', () => {
 
       // Should have logged success
       expect(consoleSpy).toHaveBeenCalledWith('[Preload] shellAPI exposed successfully');
+      expect(mockInstallVirtualKeyboardPlugin).not.toHaveBeenCalled()
 
       consoleSpy.mockRestore();
     });
@@ -72,6 +85,7 @@ describe('Preload Script', () => {
       const mockExposeInMainWorld = vi.fn().mockImplementation(() => {
         throw new Error('Test error: already exposed');
       });
+      const mockInstallVirtualKeyboardPlugin = vi.fn()
 
       vi.doMock('electron', () => ({
         contextBridge: {
@@ -81,6 +95,9 @@ describe('Preload Script', () => {
           invoke: vi.fn(),
         },
       }));
+      vi.doMock('@kiosk/plugin-rime/renderer', () => ({
+        installVirtualKeyboardPlugin: mockInstallVirtualKeyboardPlugin,
+      }))
 
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -92,14 +109,55 @@ describe('Preload Script', () => {
         '[Preload] Failed to expose shellAPI:',
         expect.any(Error)
       );
+      expect(mockInstallVirtualKeyboardPlugin).not.toHaveBeenCalled()
 
       consoleErrorSpy.mockRestore();
     });
+
+    it('should install ime virtual keyboard when document is available', async () => {
+      const mockExposeInMainWorld = vi.fn()
+      const mockInstallVirtualKeyboardPlugin = vi.fn()
+
+      vi.doMock('electron', () => ({
+        contextBridge: {
+          exposeInMainWorld: mockExposeInMainWorld,
+        },
+        ipcRenderer: {
+          invoke: vi.fn(),
+          send: vi.fn(),
+        },
+      }))
+      vi.doMock('@kiosk/plugin-rime/renderer', () => ({
+        installVirtualKeyboardPlugin: mockInstallVirtualKeyboardPlugin,
+      }))
+
+      const documentStub = {
+        addEventListener: vi.fn(),
+      }
+      ;(globalThis as { document?: unknown }).document = documentStub
+
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+      await import('../preload')
+
+      expect(mockInstallVirtualKeyboardPlugin).toHaveBeenCalledWith({
+        api: expect.objectContaining({
+          imeSetSchema: expect.any(Function),
+          imeProcessInput: expect.any(Function),
+        }),
+      })
+      expect(consoleSpy).toHaveBeenCalledWith('[Preload] IME virtual keyboard installed')
+
+      consoleSpy.mockRestore()
+    })
   });
 
   describe('shellAPI methods', () => {
     it('should export shellAPI with all required methods', async () => {
       const mockInvoke = vi.fn();
+      vi.doMock('@kiosk/plugin-rime/renderer', () => ({
+        installVirtualKeyboardPlugin: vi.fn(),
+      }))
 
       vi.doMock('electron', () => ({
         contextBridge: {
@@ -130,6 +188,9 @@ describe('Preload Script', () => {
 
     it('should call ipcRenderer.invoke for getDeviceInfo', async () => {
       const mockInvoke = vi.fn().mockResolvedValue({ uuid: 'test-uuid' });
+      vi.doMock('@kiosk/plugin-rime/renderer', () => ({
+        installVirtualKeyboardPlugin: vi.fn(),
+      }))
 
       vi.doMock('electron', () => ({
         contextBridge: {
@@ -152,6 +213,9 @@ describe('Preload Script', () => {
         success: false,
         message: 'Shutdown denied',
       });
+      vi.doMock('@kiosk/plugin-rime/renderer', () => ({
+        installVirtualKeyboardPlugin: vi.fn(),
+      }))
 
       vi.doMock('electron', () => ({
         contextBridge: {
@@ -172,6 +236,9 @@ describe('Preload Script', () => {
         success: false,
         message: 'Restart denied',
       });
+      vi.doMock('@kiosk/plugin-rime/renderer', () => ({
+        installVirtualKeyboardPlugin: vi.fn(),
+      }))
 
       vi.doMock('electron', () => ({
         contextBridge: {
@@ -197,6 +264,9 @@ describe('Preload Script', () => {
         .mockResolvedValueOnce({ success: true })
         .mockResolvedValueOnce({ success: true })
         .mockResolvedValueOnce({ success: true })
+      vi.doMock('@kiosk/plugin-rime/renderer', () => ({
+        installVirtualKeyboardPlugin: vi.fn(),
+      }))
 
       vi.doMock('electron', () => ({
         contextBridge: {
