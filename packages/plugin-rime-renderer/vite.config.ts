@@ -7,7 +7,15 @@ import { resolve } from 'path'
 export default defineConfig({
   plugins: [
     vue(),
-    cssInjectedByJs(),
+    cssInjectedByJs({
+      // Electron preload runs before HTML is parsed: document.head is null at that point.
+      // Fall back to document.documentElement (<html>) so the style is always injected.
+      injectCode: (cssCode) =>
+        `(function(){try{if(typeof document!=="undefined"){` +
+        `var t=document.head||document.documentElement;` +
+        `if(t){var e=document.createElement("style");` +
+        `e.textContent=${cssCode};t.appendChild(e);}}}catch(r){}})();`,
+    }),
     dts({
       include: ['src'],
       exclude: ['src/**/*.test.ts'],
