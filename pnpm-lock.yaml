@@ -220,6 +220,9 @@ importers:
       vite:
         specifier: ^5.4.0
         version: 5.4.21(@types/node@20.19.30)
+      vite-plugin-css-injected-by-js:
+        specifier: ^4.0.1
+        version: 4.0.1(vite@5.4.21(@types/node@20.19.30))
       vite-plugin-dts:
         specifier: ^4.3.0
         version: 4.5.4(@types/node@20.19.30)(rollup@4.57.1)(typescript@5.9.3)(vite@5.4.21(@types/node@20.19.30))
@@ -2553,6 +2556,11 @@ packages:
     resolution: {integrity: sha512-YAXkfvGtuTzwWbDSACdJSg4A4DZiAqckWe90Zapc/sEX3XvHcw1NdurM/6od8J207tSDqNbSsgdCacBgvJKFuA==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
+
+  vite-plugin-css-injected-by-js@4.0.1:
+    resolution: {integrity: sha512-WfyRojojQyAO/KzWf+efcXpTPv6zJPXaRmr9EYq5a4v5I3PWCR7kR01hiri2lW6+rHm3a57kpwsf+iahIJi1Qw==}
+    peerDependencies:
+      vite: '>2.0.0-0'
 
   vite-plugin-dts@4.5.4:
     resolution: {integrity: sha512-d4sOM8M/8z7vRXHHq/ebbblfaxENjogAAekcfcDCCwAyvGqnPrc7f4NZbvItS+g4WTgerW0xDwSz5qz11JT3vg==}
@@ -4967,6 +4975,10 @@ snapshots:
       - sugarss
       - supports-color
       - terser
+
+  vite-plugin-css-injected-by-js@4.0.1(vite@5.4.21(@types/node@20.19.30)):
+    dependencies:
+      vite: 5.4.21(@types/node@20.19.30)
 
   vite-plugin-dts@4.5.4(@types/node@20.19.30)(rollup@4.57.1)(typescript@5.9.3)(vite@5.4.21(@types/node@20.19.30)):
     dependencies:
