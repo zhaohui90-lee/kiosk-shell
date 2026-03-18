@@ -18,6 +18,7 @@ export type {
   AdminLoginResult,
   AdminOperationResult,
   ImeOperationResult,
+  ImeConfig,
   PasswordVerifyResult,
   DeviceInfo,
   UpdateInfo,
@@ -59,6 +60,7 @@ export {
   verifyAdminSessionToken,
   registerImeHandlers,
   unregisterImeHandlers,
+  setImeConfig,
 } from './handlers'
 
 // Export preload (for use in preload script)

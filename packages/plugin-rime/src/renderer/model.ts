@@ -241,6 +241,26 @@ export function resolveKeyValue(mode: KeyboardMode, shifted: boolean, key: strin
 }
 
 export function buildKeyboardRows(mode: KeyboardMode, shifted: boolean): KeyboardKey[][] {
+  // Bottom row varies by active alpha mode
+  const alphaBottomRow: KeyboardKey[] =
+    mode === 'zh'
+      ? [
+          { id: 'mode-en', label: '英文', action: 'mode-en', variant: 'muted' },
+          { id: 'mode-num', label: '123', action: 'mode-num', variant: 'muted' },
+          { id: 'comma', label: '，', value: '，' },
+          { id: 'space', label: '空格', action: 'space', width: 'grow' },
+          { id: 'period', label: '。', value: '。' },
+          { id: 'enter', label: '完成', action: 'enter', variant: 'accent', width: 'wide' },
+        ]
+      : [
+          { id: 'mode-zh', label: '中文', action: 'mode-zh', variant: 'muted' },
+          { id: 'mode-num', label: '123', action: 'mode-num', variant: 'muted' },
+          { id: 'comma', label: ',', value: ',' },
+          { id: 'space', label: '空格', action: 'space', width: 'grow' },
+          { id: 'period', label: '.', value: '.' },
+          { id: 'enter', label: '完成', action: 'enter', variant: 'accent', width: 'wide' },
+        ]
+
   const alphaRows: KeyboardKey[][] = [
     ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'].map((key) => ({
       id: key,
@@ -253,7 +273,7 @@ export function buildKeyboardRows(mode: KeyboardMode, shifted: boolean): Keyboar
       value: key,
     })),
     [
-      { id: 'shift', label: shifted ? '大写' : '小写', action: 'shift', variant: 'muted', width: 'wide' },
+      { id: 'shift', label: '⇧', action: 'shift', variant: shifted ? 'accent' : 'muted', width: 'wide' },
       ...['z', 'x', 'c', 'v', 'b', 'n', 'm'].map((key) => ({
         id: key,
         label: resolveKeyValue(mode, shifted, key),
@@ -261,16 +281,7 @@ export function buildKeyboardRows(mode: KeyboardMode, shifted: boolean): Keyboar
       })),
       { id: 'backspace', label: '⌫', action: 'backspace', variant: 'muted', width: 'wide' },
     ],
-    [
-      { id: 'mode-zh', label: '中', action: 'mode-zh', variant: mode === 'zh' ? 'accent' : 'muted' },
-      { id: 'mode-en', label: 'ABC', action: 'mode-en', variant: mode === 'en' ? 'accent' : 'muted' },
-      { id: 'mode-num', label: '123', action: 'mode-num', variant: mode === 'num' ? 'accent' : 'muted' },
-      { id: 'comma', label: ',', value: ',' },
-      { id: 'space', label: '空格', action: 'space', width: 'grow' },
-      { id: 'period', label: '.', value: '.' },
-      { id: 'enter', label: '完成', action: 'enter', variant: 'muted', width: 'wide' },
-      { id: 'hide', label: '收起', action: 'hide', variant: 'muted', width: 'wide' },
-    ],
+    alphaBottomRow,
   ]
 
   if (mode !== 'num') {
@@ -282,17 +293,11 @@ export function buildKeyboardRows(mode: KeyboardMode, shifted: boolean): Keyboar
     ['4', '5', '6'].map((value) => ({ id: value, label: value, value })),
     ['7', '8', '9'].map((value) => ({ id: value, label: value, value })),
     [
-      { id: 'mode-zh', label: '中', action: 'mode-zh', variant: 'muted' },
-      { id: 'mode-en', label: 'ABC', action: 'mode-en', variant: 'muted' },
-      { id: '0', label: '0', value: '0' },
-      { id: 'backspace', label: '⌫', action: 'backspace', variant: 'muted', width: 'wide' },
-    ],
-    [
-      { id: 'dash', label: '-', value: '-' },
-      { id: 'slash', label: '/', value: '/' },
+      { id: 'mode-zh', label: '中文', action: 'mode-zh', variant: 'muted' },
       { id: 'dot', label: '.', value: '.' },
-      { id: 'space', label: '空格', action: 'space', width: 'grow' },
-      { id: 'hide', label: '收起', action: 'hide', variant: 'muted', width: 'wide' },
+      { id: '0', label: '0', value: '0' },
+      { id: 'dash', label: '-', value: '-' },
+      { id: 'backspace', label: '⌫', action: 'backspace', variant: 'muted', width: 'wide' },
     ],
   ]
 }

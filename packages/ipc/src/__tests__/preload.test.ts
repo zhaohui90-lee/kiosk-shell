@@ -123,7 +123,7 @@ describe('Preload Script', () => {
           exposeInMainWorld: mockExposeInMainWorld,
         },
         ipcRenderer: {
-          invoke: vi.fn(),
+          invoke: vi.fn().mockResolvedValue(null),
           send: vi.fn(),
         },
       }))
@@ -139,13 +139,19 @@ describe('Preload Script', () => {
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
       await import('../preload')
+      // Flush pending microtasks so the async installImeVirtualKeyboard completes
+      await new Promise((resolve) => setTimeout(resolve, 0))
 
-      expect(mockInstallVirtualKeyboardPlugin).toHaveBeenCalledWith({
-        api: expect.objectContaining({
-          imeSetSchema: expect.any(Function),
-          imeProcessInput: expect.any(Function),
+      expect(mockInstallVirtualKeyboardPlugin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          api: expect.objectContaining({
+            imeSetSchema: expect.any(Function),
+            imeProcessInput: expect.any(Function),
+          }),
+          defaultSchema: expect.any(String),
+          candidatePageSize: expect.any(Number),
         }),
-      })
+      )
       expect(consoleSpy).toHaveBeenCalledWith('[Preload] IME virtual keyboard installed')
 
       consoleSpy.mockRestore()
@@ -176,6 +182,7 @@ describe('Preload Script', () => {
       expect(typeof shellAPI.systemShutdown).toBe('function');
       expect(typeof shellAPI.systemRestart).toBe('function');
       expect(typeof shellAPI.openDevTools).toBe('function');
+      expect(typeof shellAPI.imeGetConfig).toBe('function');
       expect(typeof shellAPI.imeSetSchema).toBe('function');
       expect(typeof shellAPI.imeProcessInput).toBe('function');
       expect(typeof shellAPI.imeSelectCandidate).toBe('function');

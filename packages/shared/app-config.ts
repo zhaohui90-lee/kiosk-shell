@@ -1,4 +1,16 @@
 /**
+ * Virtual keyboard configuration
+ */
+export interface VirtualKeyboardConfig {
+  /** Default RIME schema ID (e.g. 'luna_pinyin') */
+  defaultSchema?: string
+  /** Number of candidate items shown per page */
+  candidatePageSize?: number
+  /** Delay in milliseconds before hiding the keyboard after blur */
+  hideDelayMs?: number
+}
+
+/**
  * Application configuration interface
  */
 export interface AppConfig {
@@ -22,6 +34,8 @@ export interface AppConfig {
   adminPassword?: string
   /** Device number */
   deviceNo: string
+  /** Virtual keyboard configuration */
+  virtualKeyboard?: VirtualKeyboardConfig
 }
 
 /**

@@ -27,6 +27,8 @@ export {
 export {
   registerImeHandlers,
   unregisterImeHandlers,
+  setImeConfig,
+  handleImeGetConfig,
   handleImeSetSchema,
   handleImeProcessInput,
   handleImeSelectCandidate,

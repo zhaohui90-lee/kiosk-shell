@@ -25,6 +25,7 @@ export interface ShellAPI {
 
   checkBusinessStatus(token: string, url: string): Promise<AdminBusinessNetworkStatus>
 
+  imeGetConfig(): Promise<ImeConfig>
   imeSetSchema(schemaId: string): Promise<ImeOperationResult>
   imeProcessInput(input: string): Promise<RIME_RESULT>
   imeSelectCandidate(index: number): Promise<string | null>
@@ -76,6 +77,7 @@ export const IPC_CHANNELS = {
   ADMIN_COLLECT_HARDWARE_INFO: 'admin:collectHardwareInfo',
 
   // IME (Rime plugin)
+  IME_GET_CONFIG: 'shell:imeGetConfig',
   IME_SET_SCHEMA: 'shell:imeSetSchema',
   IME_PROCESS_INPUT: 'shell:imeProcessInput',
   IME_SELECT_CANDIDATE: 'shell:imeSelectCandidate',
@@ -221,6 +223,15 @@ export interface AdminBusinessNetworkStatus {
 export interface ImeOperationResult {
   success: boolean
   message?: string
+}
+
+/**
+ * Virtual keyboard configuration returned to renderer via IPC
+ */
+export interface ImeConfig {
+  defaultSchema: string
+  candidatePageSize: number
+  hideDelayMs: number
 }
 
 /**
