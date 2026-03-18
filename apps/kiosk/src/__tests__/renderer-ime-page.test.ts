@@ -14,6 +14,7 @@ describe('Renderer IME Suggestion Page', () => {
     expect(html).toContain('id="cand-list"')
     expect(html).toContain('id="keyboard"')
     expect(html).toContain('id="log"')
+    expect(html).toContain('committedCursor')
   })
 
   it('contains ime ipc action buttons', () => {
@@ -35,7 +36,10 @@ describe('Renderer IME Suggestion Page', () => {
     expect(html).toContain("api.imeChangePage")
     expect(html).toContain("api.imeSetOption")
     expect(html).toContain('resolveImeKeyFromKeyboardEvent')
+    expect(html).toContain('applyUnhandledSpecialKey')
     expect(html).toContain('ArrowLeft')
     expect(html).toContain("key === 'Tab'")
+    expect(html).toContain("key >= '1' && key <= '9'")
+    expect(html).toContain('doSelectCandidate(parseInt(key) - 1)')
   })
 })
