@@ -307,43 +307,46 @@ class VirtualKeyboardController {
       }
       #${ROOT_ID} .vk-key {
         min-width: 52px;
-        min-height: 48px;
-        padding: 0 14px;
-        border-radius: 14px;
+        min-height: 56px;
+        padding: 0 10px;
+        border-radius: 12px;
         background: rgba(243, 247, 255, 0.98);
         color: #12213e;
         font-size: 18px;
         font-weight: 600;
-        box-shadow: 0 8px 16px rgba(5, 10, 20, 0.14);
+        box-shadow: 0 4px 8px rgba(5, 10, 20, 0.18), 0 1px 0 rgba(0,0,0,0.3);
       }
       #${ROOT_ID} .vk-key.is-muted {
-        background: rgba(199, 213, 241, 0.82);
+        background: rgba(172, 190, 224, 0.72);
         color: #203459;
         font-size: 15px;
+        box-shadow: 0 4px 8px rgba(5, 10, 20, 0.14), 0 1px 0 rgba(0,0,0,0.25);
       }
       #${ROOT_ID} .vk-key.is-accent {
-        background: rgba(103, 147, 255, 0.96);
+        background: rgba(78, 128, 255, 0.96);
         color: #ffffff;
+        box-shadow: 0 4px 8px rgba(40, 80, 200, 0.3), 0 1px 0 rgba(0,0,0,0.25);
       }
       #${ROOT_ID} .vk-key.is-wide {
-        min-width: 84px;
+        min-width: 80px;
       }
       #${ROOT_ID} .vk-key.is-grow {
         flex: 1;
       }
       @media (max-width: 640px) {
         #${ROOT_ID} {
-          padding-left: 8px;
-          padding-right: 8px;
+          padding-left: 6px;
+          padding-right: 6px;
         }
         #${ROOT_ID} .vk-key {
           min-width: 0;
           flex: 1;
           font-size: 16px;
-          padding: 0 8px;
+          padding: 0 4px;
+          min-height: 52px;
         }
         #${ROOT_ID} .vk-row {
-          gap: 6px;
+          gap: 5px;
         }
       }
     `

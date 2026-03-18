@@ -21,6 +21,7 @@ import {
   unregisterAllHandlers,
   setAdminPassword,
   setMainWindowRef,
+  setImeConfig,
   IPC_CHANNELS,
 } from '@kiosk/ipc'
 
@@ -89,6 +90,9 @@ async function initialize(): Promise<void> {
   // Register IPC handlers
   registerAllHandlers()
   logger.info('[main] Registered IPC handlers')
+
+  // Pass virtual keyboard config to IPC handler
+  setImeConfig(config.virtualKeyboard ?? {})
 
   // Initialize lifecycle manager
   const lifecycleManager = getLifecycleManager()

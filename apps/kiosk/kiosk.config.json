@@ -8,5 +8,10 @@
   "height": 1920,
   "whitelist": [],
   "deviceNo": "KSK-001",
-  "adminPassword": "12345678"
+  "adminPassword": "12345678",
+  "virtualKeyboard": {
+    "defaultSchema": "luna_pinyin",
+    "candidatePageSize": 5,
+    "hideDelayMs": 160
+  }
 }

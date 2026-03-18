@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
 import { getLogger } from '@kiosk/logger'
 import { IPC_CHANNELS } from '../../types'
-import type { ImeOperationResult } from '../../types'
+import type { ImeOperationResult, ImeConfig } from '../../types'
 import type { RIME_RESULT } from '@kiosk/shared'
 
 const logger = getLogger()
@@ -18,6 +18,26 @@ type ImeApi = {
 }
 
 let imeApiPromise: Promise<ImeApi> | null = null
+
+const DEFAULT_IME_CONFIG: ImeConfig = {
+  defaultSchema: 'luna_pinyin',
+  candidatePageSize: 5,
+  hideDelayMs: 160,
+}
+
+let imeConfig: ImeConfig = { ...DEFAULT_IME_CONFIG }
+
+export function setImeConfig(config: Partial<ImeConfig>): void {
+  imeConfig = {
+    defaultSchema: config.defaultSchema ?? DEFAULT_IME_CONFIG.defaultSchema,
+    candidatePageSize: config.candidatePageSize ?? DEFAULT_IME_CONFIG.candidatePageSize,
+    hideDelayMs: config.hideDelayMs ?? DEFAULT_IME_CONFIG.hideDelayMs,
+  }
+}
+
+function handleImeGetConfig(): ImeConfig {
+  return imeConfig
+}
 
 async function getImeApi(): Promise<ImeApi> {
   if (imeApiPromise) {
@@ -172,6 +192,7 @@ async function handleImeReset(): Promise<ImeOperationResult> {
 
 export function registerImeHandlers(): void {
   logger.debug('[IPC:IME] Registering IME handlers')
+  ipcMain.handle(IPC_CHANNELS.IME_GET_CONFIG, handleImeGetConfig)
   ipcMain.handle(IPC_CHANNELS.IME_SET_SCHEMA, handleImeSetSchema)
   ipcMain.handle(IPC_CHANNELS.IME_PROCESS_INPUT, handleImeProcessInput)
   ipcMain.handle(IPC_CHANNELS.IME_SELECT_CANDIDATE, handleImeSelectCandidate)
@@ -184,6 +205,7 @@ export function registerImeHandlers(): void {
 
 export function unregisterImeHandlers(): void {
   logger.debug('[IPC:IME] Unregistering IME handlers')
+  ipcMain.removeHandler(IPC_CHANNELS.IME_GET_CONFIG)
   ipcMain.removeHandler(IPC_CHANNELS.IME_SET_SCHEMA)
   ipcMain.removeHandler(IPC_CHANNELS.IME_PROCESS_INPUT)
   ipcMain.removeHandler(IPC_CHANNELS.IME_SELECT_CANDIDATE)
@@ -195,6 +217,7 @@ export function unregisterImeHandlers(): void {
 }
 
 export {
+  handleImeGetConfig,
   handleImeSetSchema,
   handleImeProcessInput,
   handleImeSelectCandidate,

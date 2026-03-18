@@ -88,13 +88,30 @@ describe('virtual-keyboard model', () => {
 
   it('renders alpha and numeric layouts for different modes', () => {
     const enRows = buildKeyboardRows('en', true)
+    const zhRows = buildKeyboardRows('zh', false)
     const numRows = buildKeyboardRows('num', false)
 
+    // Alpha rows: standard 4-row mobile layout
     assert.equal(enRows[0]?.[0]?.label, 'Q')
     assert.equal(enRows[2]?.[0]?.action, 'shift')
+    assert.equal(enRows.length, 4)
+
+    // zh bottom row: 英文 | 123 | ， | 空格 | 。 | 完成
+    assert.equal(zhRows[3]?.length, 6)
+    assert.equal(zhRows[3]?.[0]?.action, 'mode-en')
+    assert.equal(zhRows[3]?.[0]?.label, '英文')
+    assert.equal(zhRows[3]?.[3]?.action, 'space')
+    assert.equal(zhRows[3]?.[5]?.action, 'enter')
+
+    // en bottom row: 中文 | 123 | , | 空格 | . | 完成
+    assert.equal(enRows[3]?.[0]?.action, 'mode-zh')
+    assert.equal(enRows[3]?.[0]?.label, '中文')
+
+    // Num mode: 4 rows (3x3 + bottom)
+    assert.equal(numRows.length, 4)
     assert.equal(numRows[0]?.length, 3)
     assert.equal(numRows[3]?.[2]?.value, '0')
-    assert.equal(numRows[4]?.[4]?.action, 'hide')
+    assert.equal(numRows[3]?.[4]?.action, 'backspace')
   })
 
   it('resolves english key casing without affecting other modes', () => {

@@ -7,7 +7,7 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron'
-import { IPC_CHANNELS, AdminBusinessNetworkStatus, ShellAPI } from './types'
+import { IPC_CHANNELS, AdminBusinessNetworkStatus, ShellAPI, ImeConfig } from './types'
 import { SHELL_API_NAMESPACE } from './constants'
 import type { DeviceInfo, UpdateInfo } from '@kiosk/shared'
 import { installVirtualKeyboardPlugin } from '@kiosk/plugin-rime/renderer'
@@ -79,6 +79,10 @@ const shellAPI: ShellAPI = {
     return await ipcRenderer.invoke(IPC_CHANNELS.ADMIN_BUSINESS_STATUS, token, url)
   },
 
+  async imeGetConfig() {
+    return ipcRenderer.invoke(IPC_CHANNELS.IME_GET_CONFIG) as Promise<ImeConfig>
+  },
+
   async imeSetSchema(schemaId: string) {
     return ipcRenderer.invoke(IPC_CHANNELS.IME_SET_SCHEMA, schemaId)
   },
@@ -143,7 +147,7 @@ exposeShellAPI()
 
 let virtualKeyboardInstalled = false
 
-function installImeVirtualKeyboard(): void {
+async function installImeVirtualKeyboard(): Promise<void> {
   if (!isPreloadContext()) {
     return
   }
@@ -152,12 +156,27 @@ function installImeVirtualKeyboard(): void {
     return
   }
 
-  installVirtualKeyboardPlugin({ api: shellAPI })
+  let vkConfig: ImeConfig = { defaultSchema: 'luna_pinyin', candidatePageSize: 5, hideDelayMs: 160 }
+  try {
+    const cfg = await ipcRenderer.invoke(IPC_CHANNELS.IME_GET_CONFIG) as ImeConfig
+    if (cfg) {
+      vkConfig = cfg
+    }
+  } catch {
+    // fall back to defaults
+  }
+
+  installVirtualKeyboardPlugin({
+    api: shellAPI,
+    defaultSchema: vkConfig.defaultSchema,
+    candidatePageSize: vkConfig.candidatePageSize,
+    hideDelayMs: vkConfig.hideDelayMs,
+  })
   virtualKeyboardInstalled = true
   console.log('[Preload] IME virtual keyboard installed')
 }
 
-installImeVirtualKeyboard()
+void installImeVirtualKeyboard()
 
 /**
  * Admin trigger click zone configuration
