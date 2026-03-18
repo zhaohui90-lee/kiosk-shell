@@ -17,10 +17,8 @@ import {
   type KeyboardMode,
 } from '../../core/keyboard-model'
 import type { VirtualKeyboardOptions } from '../../types'
-import { injectKeyboardStyle } from '../keyboard-styles'
 
 const ACTIVE_ELEMENT_SYNC_INTERVAL_MS = 180
-const DEFAULT_Z_INDEX = 2147483646
 
 function isEditableElement(target: EventTarget | null): target is HTMLInputElement | HTMLTextAreaElement {
   return isSupportedKeyboardTarget(coerceKeyboardTarget(target))
@@ -71,7 +69,6 @@ export function useVirtualKeyboard(
     defaultSchema = 'luna_pinyin',
     candidatePageSize = 5,
     hideDelayMs = 160,
-    zIndex = DEFAULT_Z_INDEX,
     showEmoji = false,
     simplified = true,
   } = options
@@ -379,7 +376,6 @@ export function useVirtualKeyboard(
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   onMounted(() => {
-    injectKeyboardStyle(zIndex)
     document.addEventListener('focusin', handleFocusIn, true)
     document.addEventListener('focusout', handleFocusOut, true)
     document.addEventListener('pointerdown', handleDocumentPointerDown, true)
