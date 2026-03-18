@@ -232,6 +232,8 @@ export interface ImeConfig {
   defaultSchema: string
   candidatePageSize: number
   hideDelayMs: number
+  showEmoji: boolean
+  simplified: boolean
 }
 
 /**

@@ -23,6 +23,8 @@ const DEFAULT_IME_CONFIG: ImeConfig = {
   defaultSchema: 'luna_pinyin',
   candidatePageSize: 5,
   hideDelayMs: 160,
+  showEmoji: false,
+  simplified: true
 }
 
 let imeConfig: ImeConfig = { ...DEFAULT_IME_CONFIG }
@@ -32,6 +34,8 @@ export function setImeConfig(config: Partial<ImeConfig>): void {
     defaultSchema: config.defaultSchema ?? DEFAULT_IME_CONFIG.defaultSchema,
     candidatePageSize: config.candidatePageSize ?? DEFAULT_IME_CONFIG.candidatePageSize,
     hideDelayMs: config.hideDelayMs ?? DEFAULT_IME_CONFIG.hideDelayMs,
+    showEmoji: config.showEmoji ?? DEFAULT_IME_CONFIG.showEmoji,
+    simplified: config.simplified ?? DEFAULT_IME_CONFIG.simplified
   }
 }
 
