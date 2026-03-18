@@ -256,7 +256,6 @@ const loadWasmOptions: {
       await syncUserDirectory('read')
     } else {
       enableUserDirPersistence = false
-      console.warn('[plugin-rime] IDBFS is unavailable, user directory persistence is disabled')
     }
     moduleRef.ccall('init', 'null', [], [])
     for (const [schema, name] of Object.entries(schemaName)) {
