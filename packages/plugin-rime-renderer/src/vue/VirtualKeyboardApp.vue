@@ -2,6 +2,7 @@
   <div
     :id="ROOT_ID"
     :class="{ 'is-visible': isVisible }"
+    :style="{ '--vk-z-index': props.options.zIndex ?? DEFAULT_Z_INDEX }"
     ref="rootEl"
     @pointerdown.prevent="onKeyboardPointerDown"
   >
@@ -70,7 +71,6 @@ import type { KeyboardKey } from '../core/keyboard-model'
 import type { VirtualKeyboardOptions } from '../types'
 
 const ROOT_ID = '__kiosk_virtual_keyboard_root'
-const STYLE_ID = '__kiosk_virtual_keyboard_style'
 const DEFAULT_Z_INDEX = 2147483646
 
 const props = defineProps<{ options: VirtualKeyboardOptions }>()
