@@ -30,6 +30,7 @@
     "@kiosk/logger": "workspace:*",
     "@kiosk/platform": "workspace:*",
     "@kiosk/plugin-rime": "workspace:*",
+    "@kiosk/plugin-rime-renderer": "workspace:*",
     "@kiosk/shared": "workspace:*"
   },
   "devDependencies": {

@@ -1,6 +1,7 @@
 {
-  "name": "@kiosk/plugin-rime",
+  "name": "@kiosk/plugin-rime-renderer",
   "version": "1.0.0",
+  "description": "Virtual keyboard UI renderer for kiosk IME",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -13,19 +14,20 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@libreservice/my-worker": "^0.4.2",
-    "@libreservice/lazy-cache": "^0.1.2",
     "@kiosk/shared": "workspace:*"
   },
-  "files": [
-    "dist",
-    "src/wasm"
-  ],
   "devDependencies": {
     "@types/node": "^20.11.0",
-    "typescript": "^5.3.0"
-  }
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "ISC"
 }

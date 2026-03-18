@@ -28,7 +28,7 @@ describe('Preload Script', () => {
           invoke: vi.fn(),
         },
       }));
-      vi.doMock('@kiosk/plugin-rime/renderer', () => ({
+      vi.doMock('@kiosk/plugin-rime-renderer', () => ({
         installVirtualKeyboardPlugin: mockInstallVirtualKeyboardPlugin,
       }))
 
@@ -63,7 +63,7 @@ describe('Preload Script', () => {
           invoke: vi.fn(),
         },
       }));
-      vi.doMock('@kiosk/plugin-rime/renderer', () => ({
+      vi.doMock('@kiosk/plugin-rime-renderer', () => ({
         installVirtualKeyboardPlugin: mockInstallVirtualKeyboardPlugin,
       }))
 
@@ -95,7 +95,7 @@ describe('Preload Script', () => {
           invoke: vi.fn(),
         },
       }));
-      vi.doMock('@kiosk/plugin-rime/renderer', () => ({
+      vi.doMock('@kiosk/plugin-rime-renderer', () => ({
         installVirtualKeyboardPlugin: mockInstallVirtualKeyboardPlugin,
       }))
 
@@ -127,7 +127,7 @@ describe('Preload Script', () => {
           send: vi.fn(),
         },
       }))
-      vi.doMock('@kiosk/plugin-rime/renderer', () => ({
+      vi.doMock('@kiosk/plugin-rime-renderer', () => ({
         installVirtualKeyboardPlugin: mockInstallVirtualKeyboardPlugin,
       }))
 
@@ -161,7 +161,7 @@ describe('Preload Script', () => {
   describe('shellAPI methods', () => {
     it('should export shellAPI with all required methods', async () => {
       const mockInvoke = vi.fn();
-      vi.doMock('@kiosk/plugin-rime/renderer', () => ({
+      vi.doMock('@kiosk/plugin-rime-renderer', () => ({
         installVirtualKeyboardPlugin: vi.fn(),
       }))
 
@@ -195,7 +195,7 @@ describe('Preload Script', () => {
 
     it('should call ipcRenderer.invoke for getDeviceInfo', async () => {
       const mockInvoke = vi.fn().mockResolvedValue({ uuid: 'test-uuid' });
-      vi.doMock('@kiosk/plugin-rime/renderer', () => ({
+      vi.doMock('@kiosk/plugin-rime-renderer', () => ({
         installVirtualKeyboardPlugin: vi.fn(),
       }))
 
@@ -220,7 +220,7 @@ describe('Preload Script', () => {
         success: false,
         message: 'Shutdown denied',
       });
-      vi.doMock('@kiosk/plugin-rime/renderer', () => ({
+      vi.doMock('@kiosk/plugin-rime-renderer', () => ({
         installVirtualKeyboardPlugin: vi.fn(),
       }))
 
@@ -243,7 +243,7 @@ describe('Preload Script', () => {
         success: false,
         message: 'Restart denied',
       });
-      vi.doMock('@kiosk/plugin-rime/renderer', () => ({
+      vi.doMock('@kiosk/plugin-rime-renderer', () => ({
         installVirtualKeyboardPlugin: vi.fn(),
       }))
 
@@ -271,7 +271,7 @@ describe('Preload Script', () => {
         .mockResolvedValueOnce({ success: true })
         .mockResolvedValueOnce({ success: true })
         .mockResolvedValueOnce({ success: true })
-      vi.doMock('@kiosk/plugin-rime/renderer', () => ({
+      vi.doMock('@kiosk/plugin-rime-renderer', () => ({
         installVirtualKeyboardPlugin: vi.fn(),
       }))
 

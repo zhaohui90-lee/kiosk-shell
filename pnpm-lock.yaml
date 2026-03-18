@@ -131,6 +131,9 @@ importers:
       '@kiosk/plugin-rime':
         specifier: workspace:*
         version: link:../plugin-rime
+      '@kiosk/plugin-rime-renderer':
+        specifier: workspace:*
+        version: link:../plugin-rime-renderer
       '@kiosk/shared':
         specifier: workspace:*
         version: link:../shared
@@ -195,6 +198,22 @@ importers:
       typescript:
         specifier: ^5.3.0
         version: 5.9.3
+
+  packages/plugin-rime-renderer:
+    dependencies:
+      '@kiosk/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: ^20.11.0
+        version: 20.19.30
+      typescript:
+        specifier: ^5.3.0
+        version: 5.9.3
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.30)
 
   packages/recovery:
     dependencies:
