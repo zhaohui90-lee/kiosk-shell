@@ -2,7 +2,6 @@
   <div
     :id="ROOT_ID"
     :class="{ 'is-visible': isVisible }"
-    :style="{ '--vk-z-index': props.options.zIndex ?? DEFAULT_Z_INDEX }"
     ref="rootEl"
     @pointerdown.prevent="onKeyboardPointerDown"
   >
@@ -64,11 +63,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useVirtualKeyboard, candidateLabel } from './composables/useVirtualKeyboard'
 import type { VirtualKeyboardOptions } from '../types'
 
 const ROOT_ID = '__kiosk_virtual_keyboard_root'
+const STYLE_ID = '__kiosk_virtual_keyboard_style'
 const DEFAULT_Z_INDEX = 2147483646
 
 const props = defineProps<{ options: VirtualKeyboardOptions }>()
@@ -95,21 +95,19 @@ const MODES = [
   { id: 'num', label: '数字' },
 ] as const
 
-defineExpose({ show, hide })
-</script>
-
-<style>
-#__kiosk_virtual_keyboard_root {
+function buildCSS(zIndex: number): string {
+  return `
+#${ROOT_ID} {
   position: fixed;
   left: 0; right: 0; bottom: 0;
-  z-index: var(--vk-z-index, 2147483646);
+  z-index: ${zIndex};
   transform: translateY(100%);
   transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
   -webkit-user-select: none;
   user-select: none;
 }
-#__kiosk_virtual_keyboard_root.is-visible {
+#${ROOT_ID}.is-visible {
   transform: translateY(0);
 }
 .vk-shell {
@@ -259,4 +257,23 @@ defineExpose({ show, hide })
   flex: 3;
   max-width: none;
 }
-</style>
+`.trim()
+}
+
+onMounted(() => {
+  const zIndex = props.options.zIndex ?? DEFAULT_Z_INDEX
+  let el = document.getElementById(STYLE_ID)
+  if (!el) {
+    el = document.createElement('style')
+    el.id = STYLE_ID
+    document.head.appendChild(el)
+  }
+  el.textContent = buildCSS(zIndex)
+})
+
+onUnmounted(() => {
+  document.getElementById(STYLE_ID)?.remove()
+})
+
+defineExpose({ show, hide })
+</script>
