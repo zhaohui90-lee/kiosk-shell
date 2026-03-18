@@ -3,7 +3,7 @@
   "devMode": true,
   "crashMonitoring": true,
   "blankDetection": true,
-  "contentUrl": "kiosk://renderer/index.html",
+  "contentUrl": "kiosk://renderer/rime-index.html",
   "width": 1080,
   "height": 1920,
   "whitelist": [],
