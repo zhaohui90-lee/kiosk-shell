@@ -17,6 +17,7 @@ import {
   selectCandidateOnCurrentPage,
   setOption,
 } from '../worker/worker-api'
+import { getAvailableSchemaIds, getSchemaDisplayName } from './schema-registry'
 
 export class RimeKit implements IRimeKit {
   private eventHandlers: Map<string, RimeEventHandler[]> = new Map()
@@ -37,19 +38,6 @@ export class RimeKit implements IRimeKit {
     try {
       console.log('[RimeKit] 开始初始化...')
 
-      // 第一阶段：基础设置和验证
-      if (await this.isInitializedFromConfig(config)) {
-        console.log('[RimeKit] 从配置完成初始化')
-        return
-      }
-
-      // 第二阶段：检查现有部署状态
-      if (await this.checkExistingDeployment(config)) {
-        console.log('[RimeKit] 使用现有部署完成初始化')
-        return
-      }
-
-      // 第三阶段：标准初始化流程
       await this.performStandardInit(config)
 
       console.log('[RimeKit] 初始化完成')
@@ -103,7 +91,7 @@ export class RimeKit implements IRimeKit {
 
     if (result.state === 2 && result.updatedSchema) {
       this.currentStatus.schemaId = result.updatedSchema
-      this.currentStatus.schemaName = result.updatedSchema
+      this.currentStatus.schemaName = getSchemaDisplayName(result.updatedSchema)
       this.emit('status', this.currentStatus)
     }
 
@@ -288,7 +276,7 @@ export class RimeKit implements IRimeKit {
       await setIME(schemaId)
 
       this.currentStatus.schemaId = schemaId
-      // 这里可以根据 schema 配置更新 schemaName
+      this.currentStatus.schemaName = getSchemaDisplayName(schemaId)
       this.emit('status', this.currentStatus)
       console.log(`[RimeKit] 切换方案成功: ${schemaId}`)
       return true
@@ -296,27 +284,6 @@ export class RimeKit implements IRimeKit {
       console.error('[RimeKit] 切换方案失败:', error)
       return false
     }
-  }
-
-  private async isInitializedFromConfig(config?: RimeConfig) {
-    // 如果配置中指定了特定的初始化模式，优先处理
-    if (config?.installFromSource) {
-      console.log('[RimeKit] 从源安装配置...')
-      return await this.installFromSource(config.installFromSource)
-    }
-    return false
-  }
-
-  private async installFromSource(
-    source: {
-      target: string
-      schemaIds: string[]
-    }[],
-  ): Promise<boolean> {
-    // 实现从指定源安装的逻辑 TODO
-    // 这里可以扩展支持从不同源安装输入法配置
-    console.log('[RimeKit] 安装源功能待实现, 源配置:', source)
-    return false
   }
 
   private async performStandardInit(config?: RimeConfig): Promise<void> {
@@ -360,75 +327,11 @@ export class RimeKit implements IRimeKit {
     return availableSchemas[0] || 'luna_pinyin' // 默认回退方案
   }
 
-  private async checkExistingDeployment(config?: RimeConfig): Promise<boolean> {
-    try {
-      // 检查是否已有用户配置部署
-      const hasDeployment = await this.hasUserDeployment()
-      if (hasDeployment) {
-        console.log('[RimeKit] 检测到现有部署')
-
-        // 如果指定了特定的 schema，检查是否需要重置
-        const requestedSchema = config?.defaultSchema || config?.defaultOptions?.schema
-        if (requestedSchema && (await this.needsReset(requestedSchema))) {
-          console.log('[RimeKit] 需要重置用户目录')
-          await this.resetAndDeploy()
-        } else {
-          // 使用现有部署，只需要重新部署
-          return await this.deployExisting()
-        }
-        return true
-      }
-    } catch (error) {
-      console.warn('[RimeKit] 检查现有部署失败:', error)
-    }
-    return false
-  }
-
-  private async hasUserDeployment(): Promise<boolean> {
-    try {
-      // 检查是否存在用户配置文件（这里可以根据实际情况调整检查逻辑）
-      // 由于我们使用的是抽象的 worker API，这里做一个简单的假设
-      if (worker) {
-        // 如果有 worker 实例，假设存在部署（实际实现需要根据具体的文件系统 API）
-        return false
-      }
-      return false // 暂时返回 false，实际实现需要根据具体的文件系统 API
-    } catch (error) {
-      return false
-    }
-  }
-
-  private async needsReset(requestedSchema: string): Promise<boolean> {
-    // 检查是否需要重置，例如当请求的 schema 与当前不兼容时
-    return (
-      this.currentStatus.schemaId !== '' &&
-      this.currentStatus.schemaId !== requestedSchema &&
-      this.getAvailableSchemas().includes(requestedSchema)
-    )
-  }
-
-  private async resetAndDeploy(): Promise<void> {
-    await resetUserDirectory()
-    await deploy()
-    this.isInitialized = true
-  }
-
-  private async deployExisting(): Promise<boolean> {
-    try {
-      await deploy()
-      this.isInitialized = true
-      return true
-    } catch (error) {
-      console.error('[RimeKit] 部署现有配置失败:', error)
-      return false
-    }
-  }
-
   private async setSchemaInternal(schemaId: string): Promise<void> {
     try {
       await setIME(schemaId)
       this.currentStatus.schemaId = schemaId
-      this.currentStatus.schemaName = schemaId // 可以根据需要映射为友好名称
+      this.currentStatus.schemaName = getSchemaDisplayName(schemaId)
       this.emit('status', this.currentStatus)
       console.log(`[RimeKit] 内部设置方案成功: ${schemaId}`)
     } catch (error) {
@@ -454,8 +357,6 @@ export class RimeKit implements IRimeKit {
   }
 
   getAvailableSchemas(): string[] {
-    // 从配置中获取可用的输入方案
-    // 这里可以根据实际情况返回支持的方案列表
-    return ['luna_pinyin', 'double_pinyin', 'wubi86', 'cangjie5', 'bopomofo', 'terra_pinyin']
+    return getAvailableSchemaIds()
   }
 }
