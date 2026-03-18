@@ -10,6 +10,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { IPC_CHANNELS, AdminBusinessNetworkStatus, ShellAPI } from './types'
 import { SHELL_API_NAMESPACE } from './constants'
 import type { DeviceInfo, UpdateInfo } from '@kiosk/shared'
+import { installVirtualKeyboardPlugin } from '@kiosk/plugin-rime/renderer'
 
 /**
  * Shell API implementation
@@ -140,6 +141,24 @@ function exposeShellAPI(): void {
 // Auto-expose when script loads (only in preload context)
 exposeShellAPI()
 
+let virtualKeyboardInstalled = false
+
+function installImeVirtualKeyboard(): void {
+  if (!isPreloadContext()) {
+    return
+  }
+
+  if (typeof document === 'undefined' || virtualKeyboardInstalled) {
+    return
+  }
+
+  installVirtualKeyboardPlugin({ api: shellAPI })
+  virtualKeyboardInstalled = true
+  console.log('[Preload] IME virtual keyboard installed')
+}
+
+installImeVirtualKeyboard()
+
 /**
  * Admin trigger click zone configuration
  */
@@ -208,4 +227,4 @@ function injectAdminTriggerZone(): void {
 // Inject click zone for admin trigger
 injectAdminTriggerZone()
 
-export { shellAPI, exposeShellAPI, injectAdminTriggerZone, CLICK_ZONE_CONFIG }
+export { shellAPI, exposeShellAPI, injectAdminTriggerZone, installImeVirtualKeyboard, CLICK_ZONE_CONFIG }

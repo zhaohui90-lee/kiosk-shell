@@ -66,6 +66,7 @@
       "@kiosk/platform/*": ["packages/platform/src/*"],
       "@kiosk/plugin-rime": ["packages/plugin-rime/src"],
       "@kiosk/plugin-rime/*": ["packages/plugin-rime/src/*"],
+      "@kiosk/plugin-rime/renderer": ["packages/plugin-rime/src/renderer/index.ts"],
       "@kiosk/shared/*": ["shared/*"],
       "@kiosk/ime/*": ["ime/*"]
     }

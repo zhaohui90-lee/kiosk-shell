@@ -4,8 +4,9 @@
   "description": "Kiosk shell application for medical self-service terminals",
   "main": "dist/main/index.js",
   "scripts": {
-    "build": "tsc && node scripts/bundle-preload.js",
-    "dev": "tsc && electron .",
+    "build:preload-deps": "pnpm -C ../../packages/plugin-rime build && pnpm -C ../../packages/ipc build",
+    "build": "pnpm run build:preload-deps && tsc && node scripts/bundle-preload.js",
+    "dev": "pnpm run build:preload-deps && tsc && electron .",
     "start": "electron .",
     "pack": "electron-builder --dir",
     "pack:win": "electron-builder --win --dir",
