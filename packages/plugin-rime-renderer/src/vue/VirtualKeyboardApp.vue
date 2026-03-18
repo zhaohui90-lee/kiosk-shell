@@ -88,14 +88,16 @@ function buildCSS(zIndex: number): string {
   font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
   -webkit-user-select: none;
   user-select: none;
+  background: #CDD0D5;
+  box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.18);
 }
 #${ROOT_ID}.is-visible {
   transform: translateY(0);
 }
 .vk-shell {
-  background: #CDD0D5;
+  max-width: 700px;
+  margin: 0 auto;
   padding: 6px 3px 10px;
-  box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.18);
 }
 .vk-topbar {
   display: flex;
@@ -122,40 +124,43 @@ function buildCSS(zIndex: number): string {
 }
 .vk-candidates {
   display: flex;
-  gap: 5px;
-  padding: 4px 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.vk-candidates::-webkit-scrollbar {
-  display: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  margin-bottom: 4px;
 }
 .vk-candidate {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  justify-content: center;
   gap: 3px;
-  background: #FFFFFF;
+  background: transparent;
   border: none;
-  border-radius: 6px;
-  padding: 5px 12px;
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 7px 4px;
   font-size: 16px;
   color: #1C1C1E;
   cursor: pointer;
-  white-space: nowrap;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.28);
-  flex-shrink: 0;
+  overflow: hidden;
+}
+.vk-candidate:last-child {
+  border-right: none;
 }
 .vk-candidate.is-active {
-  background: #007AFF;
-  color: #FFFFFF;
+  background: rgba(0, 122, 255, 0.12);
+  color: #007AFF;
 }
 .vk-candidate-index {
   font-size: 10px;
-  opacity: 0.5;
+  opacity: 0.4;
+  flex-shrink: 0;
 }
 .vk-candidate-comment {
   font-size: 10px;
-  opacity: 0.5;
+  opacity: 0.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .vk-keyboard {
   padding: 0 3px;
