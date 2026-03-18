@@ -6,7 +6,7 @@
     @pointerdown.prevent="onKeyboardPointerDown"
   >
     <div class="vk-shell">
-      <!-- Top bar: composition text + status hint -->
+      <!-- Composition + status -->
       <div class="vk-topbar">
         <div class="vk-composition" :class="{ 'is-idle': !compositionText }">
           {{ compositionText || '点击输入框开始输入' }}
@@ -29,18 +29,7 @@
         </button>
       </div>
 
-      <!-- Mode tabs -->
-      <div class="vk-mode-bar">
-        <button
-          v-for="m in MODES"
-          :key="m.id"
-          type="button"
-          :class="['vk-mode-btn', mode === m.id ? 'is-active' : '']"
-          @click="handleKeyClick({ id: `mode-${m.id}`, label: m.label, action: `mode-${m.id}` })"
-        >{{ m.label }}</button>
-      </div>
-
-      <!-- Keyboard rows -->
+      <!-- Keyboard rows (mode switch is in the bottom row from the model) -->
       <div class="vk-keyboard">
         <div v-for="(row, rowIndex) in keyboardRows" :key="rowIndex" class="vk-row">
           <button
@@ -77,7 +66,6 @@ const rootEl = ref<HTMLElement | null>(null)
 
 const {
   isVisible,
-  mode,
   compositionText,
   candidates,
   statusText,
@@ -88,12 +76,6 @@ const {
   handleCandidateClick,
   onKeyboardPointerDown,
 } = useVirtualKeyboard(rootEl, props.options)
-
-const MODES = [
-  { id: 'zh', label: '中文' },
-  { id: 'en', label: '英文' },
-  { id: 'num', label: '数字' },
-] as const
 
 function buildCSS(zIndex: number): string {
   return `
@@ -175,34 +157,13 @@ function buildCSS(zIndex: number): string {
   font-size: 10px;
   opacity: 0.5;
 }
-.vk-mode-bar {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  padding: 4px 6px 6px;
-}
-.vk-mode-btn {
-  background: #FFFFFF;
-  border: none;
-  border-radius: 8px;
-  padding: 5px 20px;
-  font-size: 13px;
-  color: #3C3C43;
-  cursor: pointer;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.28);
-}
-.vk-mode-btn.is-active {
-  background: #007AFF;
-  color: #FFFFFF;
-  box-shadow: none;
-}
 .vk-keyboard {
   padding: 0 3px;
 }
 .vk-row {
   display: flex;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   margin-bottom: 8px;
 }
 .vk-row:last-child {
@@ -210,7 +171,7 @@ function buildCSS(zIndex: number): string {
 }
 .vk-key {
   flex: 1;
-  max-width: 44px;
+  min-width: 0;
   height: 44px;
   background: #FFFFFF;
   border: none;
@@ -224,6 +185,8 @@ function buildCSS(zIndex: number): string {
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.38);
   padding: 0;
   line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
 }
 .vk-key:active {
   background: #E5E5EA;
@@ -232,30 +195,30 @@ function buildCSS(zIndex: number): string {
 .vk-key.is-muted {
   background: #ACB3BB;
   color: #1C1C1E;
-  font-size: 13px;
-  max-width: none;
-  flex: 1.5;
+  font-size: 12px;
+  flex: 1.3;
 }
 .vk-key.is-muted:active {
   background: #9BA3AC;
   box-shadow: none;
 }
+.vk-key.is-muted.is-wide {
+  font-size: 18px;
+}
 .vk-key.is-accent {
   background: #007AFF;
   color: #FFFFFF;
-  font-size: 15px;
+  font-size: 14px;
 }
 .vk-key.is-accent:active {
   background: #0062CC;
   box-shadow: none;
 }
 .vk-key.is-wide {
-  flex: 2;
-  max-width: none;
+  flex: 1.7;
 }
 .vk-key.is-grow {
   flex: 3;
-  max-width: none;
 }
 `.trim()
 }
