@@ -5,9 +5,10 @@
     "rootDir": "./src",
     "baseUrl": ".",
     "lib": ["ES2022", "DOM"],
-    "composite": true,
     "declaration": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "jsx": "preserve",
+    "jsxImportSource": "vue"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
