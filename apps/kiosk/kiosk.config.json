@@ -1,5 +1,5 @@
 {
-  "kioskMode": false,
+  "kioskMode": true,
   "devMode": true,
   "crashMonitoring": true,
   "blankDetection": true,

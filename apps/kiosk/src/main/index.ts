@@ -26,7 +26,13 @@ import {
 } from '@kiosk/ipc'
 
 // Recovery
-import { startCrashMonitoring, startBlankDetection } from '@kiosk/recovery'
+import {
+  startCrashMonitoring,
+  startBlankDetection,
+  stopCrashMonitoring,
+  stopBlankDetection,
+  cancelAutoRetry,
+} from '@kiosk/recovery'
 
 // Device
 import { initUuidManager, getDeviceUuidAsync, loadConfig } from '@kiosk/device'
@@ -48,6 +54,7 @@ let config: AppConfig
  * Main window reference
  */
 let mainWindow: BrowserWindow | null = null
+let cleanupStarted = false
 
 /**
  * Get logger instance
@@ -96,6 +103,7 @@ async function initialize(): Promise<void> {
 
   // Initialize lifecycle manager
   const lifecycleManager = getLifecycleManager()
+  lifecycleManager.initialize()
   lifecycleManager.on('before-quit', () => {
     logger.info('[main] Application is quitting...')
     void cleanup()
@@ -330,7 +338,18 @@ function setupAdminTriggers(): void {
  * Cleanup before quit
  */
 async function cleanup(): Promise<void> {
+  if (cleanupStarted) {
+    return
+  }
+
+  cleanupStarted = true
   logger.info('[main] Cleaning up...')
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    stopBlankDetection(mainWindow)
+    stopCrashMonitoring(mainWindow)
+    cancelAutoRetry(mainWindow)
+  }
 
   // Unregister global shortcuts
   globalShortcut.unregisterAll()
@@ -496,6 +515,7 @@ async function main(): Promise<void> {
   // Handle before-quit
   app.on('before-quit', () => {
     logger.info('[main] Before quit event')
+    void cleanup()
   })
 
   // Handle quit
