@@ -70,6 +70,9 @@ const commonOptions = {
   external: ['electron'],
   allowOverwrite: true,
   plugins: [resolveWorkspacePlugin],
+  define: {
+    'process.env.NODE_ENV': '"production"',
+  },
 };
 
 Promise.all([
