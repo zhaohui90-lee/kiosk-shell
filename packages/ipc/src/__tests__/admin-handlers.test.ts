@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { resetAllRateLimits } from '../rate-limiter';
 
 // Hoisted mocks (vi.mock factories are hoisted, so variables must be too)
-const { mockQuit, mockRelaunch, mockReload, mockPlatformAdapter } = vi.hoisted(() => {
+const { mockQuit, mockRelaunch, mockReload, mockPlatformAdapter, mockWindowManager } = vi.hoisted(() => {
   const mockQuit = vi.fn();
   const mockRelaunch = vi.fn();
   const mockReload = vi.fn();
@@ -24,7 +24,11 @@ const { mockQuit, mockRelaunch, mockReload, mockPlatformAdapter } = vi.hoisted((
     shutdown: vi.fn().mockResolvedValue(undefined),
     restart: vi.fn().mockResolvedValue(undefined),
   };
-  return { mockQuit, mockRelaunch, mockReload, mockPlatformAdapter };
+  const mockWindowManager = {
+    hideAdminWindow: vi.fn(),
+    destroyAdminWindow: vi.fn(),
+  };
+  return { mockQuit, mockRelaunch, mockReload, mockPlatformAdapter, mockWindowManager };
 });
 
 // Mock crypto
@@ -66,6 +70,10 @@ vi.mock('@kiosk/logger', () => ({
 // Mock @kiosk/platform
 vi.mock('@kiosk/platform', () => ({
   getPlatformAdapter: vi.fn(() => mockPlatformAdapter),
+}));
+
+vi.mock('@kiosk/core', () => ({
+  getWindowManager: vi.fn(() => mockWindowManager),
 }));
 
 // Import the module under test (after mocks are set up)
@@ -173,6 +181,7 @@ describe('Admin IPC Handlers', () => {
       const result = await handleAdminExitApp(mockEvent, validToken);
 
       expect(result.success).toBe(true);
+      expect(mockWindowManager.destroyAdminWindow).toHaveBeenCalled();
       expect(mockQuit).toHaveBeenCalled();
     });
 
@@ -180,6 +189,7 @@ describe('Admin IPC Handlers', () => {
       const result = await handleAdminRestartApp(mockEvent, validToken);
 
       expect(result.success).toBe(true);
+      expect(mockWindowManager.destroyAdminWindow).toHaveBeenCalled();
       expect(mockRelaunch).toHaveBeenCalled();
       expect(mockQuit).toHaveBeenCalled();
     });
