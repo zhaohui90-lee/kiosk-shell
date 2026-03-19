@@ -31,6 +31,8 @@ asarUnpack:
   - "**/node_modules/@kiosk/plugin-rime/dist/worker/**/*"
   - "**/node_modules/@kiosk/plugin-rime/dist/config/**/*"
   - "**/node_modules/@kiosk/plugin-rime/src/wasm/**/*"
+  - "**/node_modules/@kiosk/plugin-rime/node_modules/@libreservice/**/*"
+  - "**/node_modules/@kiosk/plugin-rime/node_modules/idb/**/*"
 
 # Windows 配置
 win:
