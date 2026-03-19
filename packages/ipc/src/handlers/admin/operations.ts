@@ -37,6 +37,7 @@ export const handleAdminExitApp = createAdminAction(IPC_CHANNELS.ADMIN_EXIT_APP,
   logger.info('[IPC:Admin] Exit app requested')
 
   try {
+    getWindowManager().destroyAdminWindow()
     app.quit()
     return { success: true, message: 'Application exiting' }
   } catch (error) {
@@ -50,6 +51,7 @@ export const handleAdminRestartApp = createAdminAction(IPC_CHANNELS.ADMIN_RESTAR
   logger.info('[IPC:Admin] Restart app requested')
 
   try {
+    getWindowManager().destroyAdminWindow()
     app.relaunch()
     app.quit()
     return { success: true, message: 'Application restarting' }
