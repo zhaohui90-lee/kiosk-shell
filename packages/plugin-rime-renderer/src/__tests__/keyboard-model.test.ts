@@ -101,13 +101,13 @@ describe('keyboard-model', () => {
     expect(numRows[0]?.length).toBe(4)
     expect(numRows[0]?.[0]?.value).toBe('@')
     expect(numRows[1]?.[0]?.value).toBe('%')
-    expect(numRows[2]?.[0]?.value).toBe('-')
-    // bottom row: + . 0 X ⌫ = 5 keys
-    expect(numRows[3]?.length).toBe(5)
-    expect(numRows[3]?.[0]?.value).toBe('+')
+    expect(numRows[2]?.[0]?.value).toBe('X')
+    // bottom row: 返回 . 0 ⌫ = 4 keys (all rows uniform)
+    expect(numRows[3]?.length).toBe(4)
+    expect(numRows[3]?.[0]?.action).toBe('mode-zh')
+    expect(numRows[3]?.[0]?.label).toBe('返回')
     expect(numRows[3]?.[2]?.value).toBe('0')
-    expect(numRows[3]?.[3]?.value).toBe('X')
-    expect(numRows[3]?.[4]?.action).toBe('backspace')
+    expect(numRows[3]?.[3]?.action).toBe('backspace')
   })
 
   it('resolves english key casing without affecting other modes', () => {
