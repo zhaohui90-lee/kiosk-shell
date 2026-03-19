@@ -10,6 +10,7 @@ import targetVersion from '../config/target-version.json'
 import type { RIME_RESULT } from '@kiosk/shared'
 import { normalizeProcessInput } from './input-sequence'
 import { shouldIgnoreRuntimeWarning } from './runtime-log'
+import { preferUnpackedPath } from './asar-path'
 
 const RIME_USER = '/rime'
 const RIME_SHARED = '/usr/share/rime-data'
@@ -98,21 +99,21 @@ function resolveLibreserviceCDN(): string | undefined {
 function resolveNodeWasmBasePath(): string {
   const fs = require('node:fs') as { existsSync(path: string): boolean }
   const path = require('node:path') as { join(...paths: string[]): string; sep: string }
-  const distPath = path.join(__dirname, '../wasm')
+  const distPath = preferUnpackedPath(path.join(__dirname, '../wasm'), fs.existsSync)
   if (fs.existsSync(path.join(distPath, 'rime.js'))) {
     return `${distPath}${path.sep}`
   }
-  return `${path.join(__dirname, '../../src/wasm')}${path.sep}`
+  return `${preferUnpackedPath(path.join(__dirname, '../../src/wasm'), fs.existsSync)}${path.sep}`
 }
 
 function resolveNodePrebuiltFilePath(target: string, name: string): string {
   const fs = require('node:fs') as { existsSync(path: string): boolean }
   const path = require('node:path') as { join(...paths: string[]): string }
-  const distPath = path.join(__dirname, '../wasm/ime', target, name)
+  const distPath = preferUnpackedPath(path.join(__dirname, '../wasm/ime', target, name), fs.existsSync)
   if (fs.existsSync(distPath)) {
     return distPath
   }
-  return path.join(__dirname, '../../src/wasm/ime', target, name)
+  return preferUnpackedPath(path.join(__dirname, '../../src/wasm/ime', target, name), fs.existsSync)
 }
 
 async function readNodePrebuiltFile(target: string, name: string): Promise<ArrayBuffer> {

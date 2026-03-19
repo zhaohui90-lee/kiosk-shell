@@ -1,3 +1,5 @@
+import { preferUnpackedPath } from './asar-path'
+
 type WorkerMessageEvent = {
   data: unknown
 }
@@ -81,13 +83,13 @@ function resolveRuntimeFile(fileName: string): string {
   const fs = getFsModule()
   const localPath = path.join(__dirname, fileName)
   if (fs.existsSync(localPath)) {
-    return localPath
+    return preferUnpackedPath(localPath, fs.existsSync)
   }
   const distPath = path.resolve(__dirname, '../../dist/worker', fileName)
   if (fs.existsSync(distPath)) {
-    return distPath
+    return preferUnpackedPath(distPath, fs.existsSync)
   }
-  return localPath
+  return preferUnpackedPath(localPath, fs.existsSync)
 }
 
 function resolveNodeScriptPath(scriptURL: string): string {
@@ -100,20 +102,20 @@ function resolveNodeScriptPath(scriptURL: string): string {
   }
 
   if (path.isAbsolute(resolvedScriptURL)) {
-    return resolvedScriptURL
+    return preferUnpackedPath(resolvedScriptURL, fs.existsSync)
   }
 
   const localPath = path.resolve(__dirname, resolvedScriptURL)
   if (fs.existsSync(localPath)) {
-    return localPath
+    return preferUnpackedPath(localPath, fs.existsSync)
   }
 
   const distPath = path.resolve(__dirname, '../../dist/worker', path.basename(resolvedScriptURL))
   if (fs.existsSync(distPath)) {
-    return distPath
+    return preferUnpackedPath(distPath, fs.existsSync)
   }
 
-  return localPath
+  return preferUnpackedPath(localPath, fs.existsSync)
 }
 
 class NodeWorkerShim implements WorkerLike {
