@@ -86,7 +86,11 @@ export class DevStrategy implements WindowStrategy {
   }
 }
 
-export function createStrategy(): WindowStrategy {
+export function createStrategy(config?: Pick<WindowConfig, 'devTools'>): WindowStrategy {
+  if (config?.devTools) {
+    return new DevStrategy()
+  }
+
   if (app.isPackaged) {
     return new KioskStrategy()
   }

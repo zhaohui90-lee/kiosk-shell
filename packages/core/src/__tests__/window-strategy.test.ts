@@ -101,4 +101,15 @@ describe('createStrategy', () => {
     // Reset
     Object.defineProperty(app, 'isPackaged', { value: false, configurable: true })
   })
+
+  it('should return DevStrategy when packaged app explicitly enables devTools', async () => {
+    const { app } = await import('electron')
+    Object.defineProperty(app, 'isPackaged', { value: true, configurable: true })
+
+    const { createStrategy } = await import('../window/strategy/window-strategy')
+    const strategy = createStrategy({ devTools: true })
+    expect(strategy).toBeInstanceOf(DevStrategy)
+
+    Object.defineProperty(app, 'isPackaged', { value: false, configurable: true })
+  })
 })
