@@ -49,6 +49,8 @@ export type UseVirtualKeyboardReturn = {
   composing: Ref<boolean>
   compositionText: Ref<string>
   candidates: Ref<Array<{ text: string; comment?: string }>>
+  currentPage: Ref<number>
+  isLastPage: Ref<boolean>
   statusText: ComputedRef<string>
   keyboardRows: ComputedRef<KeyboardKey[][]>
   show: () => void
@@ -57,6 +59,8 @@ export type UseVirtualKeyboardReturn = {
   focusActiveTarget: () => void
   handleKeyClick: (key: KeyboardKey) => void
   handleCandidateClick: (index: number) => void
+  nextPage: () => void
+  prevPage: () => void
   onKeyboardPointerDown: () => void
 }
 
@@ -81,6 +85,8 @@ export function useVirtualKeyboard(
   const composing = ref(false)
   const compositionText = ref('')
   const candidates = ref<Array<{ text: string; comment?: string }>>([])
+  const currentPage = ref(0)
+  const isLastPage = ref(true)
 
   let imeInitialized = false
   let hideTimer: ReturnType<typeof setTimeout> | null = null
@@ -222,6 +228,8 @@ export function useVirtualKeyboard(
     composing.value = false
     compositionText.value = ''
     candidates.value = []
+    currentPage.value = 0
+    isLastPage.value = true
   }
 
   function dispatchInputEvent(): void {
@@ -247,6 +255,8 @@ export function useVirtualKeyboard(
         composing.value = true
         compositionText.value = comp?.text ?? ''
         candidates.value = comp?.candidates ?? []
+        currentPage.value = comp?.page ?? 0
+        isLastPage.value = comp?.isLastPage ?? true
         return
       }
       case 2:
@@ -369,6 +379,14 @@ export function useVirtualKeyboard(
     void selectCandidate(index)
   }
 
+  function nextPage(): void {
+    if (!isLastPage.value) void processImeKey('Page_Down')
+  }
+
+  function prevPage(): void {
+    if (currentPage.value > 0) void processImeKey('Page_Up')
+  }
+
   function onKeyboardPointerDown(): void {
     cancelHide()
     focusActiveTarget()
@@ -400,6 +418,8 @@ export function useVirtualKeyboard(
     composing,
     compositionText,
     candidates,
+    currentPage,
+    isLastPage,
     statusText,
     keyboardRows,
     show,
@@ -408,6 +428,8 @@ export function useVirtualKeyboard(
     focusActiveTarget,
     handleKeyClick,
     handleCandidateClick,
+    nextPage,
+    prevPage,
     onKeyboardPointerDown,
   }
 }

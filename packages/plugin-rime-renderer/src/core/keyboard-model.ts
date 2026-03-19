@@ -37,6 +37,8 @@ export type CompositionState = {
   text: string
   candidates: RimeCandidate[]
   highlighted: number
+  page: number
+  isLastPage: boolean
 }
 
 export function coerceKeyboardTarget(target: unknown): KeyboardTargetLike | null {
@@ -250,7 +252,7 @@ export function buildKeyboardRows(mode: KeyboardMode, shifted: boolean): Keyboar
           { id: 'comma', label: '，', value: '，' },
           { id: 'space', label: '空格', action: 'space', width: 'grow' },
           { id: 'period', label: '。', value: '。' },
-          { id: 'enter', label: '完成', action: 'enter', variant: 'accent', width: 'wide' },
+          { id: 'enter', label: '确定', action: 'enter', variant: 'accent', width: 'wide' },
         ]
       : [
           { id: 'mode-zh', label: '中文', action: 'mode-zh', variant: 'muted' },
@@ -258,7 +260,7 @@ export function buildKeyboardRows(mode: KeyboardMode, shifted: boolean): Keyboar
           { id: 'comma', label: ',', value: ',' },
           { id: 'space', label: '空格', action: 'space', width: 'grow' },
           { id: 'period', label: '.', value: '.' },
-          { id: 'enter', label: '完成', action: 'enter', variant: 'accent', width: 'wide' },
+          { id: 'enter', label: '确定', action: 'enter', variant: 'accent', width: 'wide' },
         ]
 
   const alphaRows: KeyboardKey[][] = [
@@ -298,14 +300,13 @@ export function buildKeyboardRows(mode: KeyboardMode, shifted: boolean): Keyboar
       ...(['4', '5', '6'] as const).map((v) => ({ id: v, label: v, value: v })),
     ],
     [
-      { id: 'minus', label: '-', value: '-' },
+      { id: 'x', label: 'X', value: 'X' },
       ...(['7', '8', '9'] as const).map((v) => ({ id: v, label: v, value: v })),
     ],
     [
-      { id: 'plus', label: '+', value: '+' },
+      { id: 'mode-zh', label: '返回', action: 'mode-zh', variant: 'muted' },
       { id: 'dot', label: '.', value: '.' },
       { id: '0', label: '0', value: '0' },
-      { id: 'x-upper', label: 'X', value: 'X' },
       { id: 'backspace', label: '⌫', action: 'backspace', variant: 'muted' },
     ],
   ]
@@ -320,5 +321,7 @@ export function resolveCompositionState(result: RIME_RESULT): CompositionState |
     text: `${result.head}${result.body}${result.tail}`,
     candidates: Array.isArray(result.candidates) ? result.candidates : [],
     highlighted: result.highlighted,
+    page: result.page,
+    isLastPage: result.isLastPage,
   }
 }
