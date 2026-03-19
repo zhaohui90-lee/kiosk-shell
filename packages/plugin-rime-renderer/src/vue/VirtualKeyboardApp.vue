@@ -52,6 +52,9 @@
             type="button"
             :class="keyClasses(key)"
             @click="handleKeyClick(key)"
+            @pointerdown="onKeyPointerDown(key)"
+            @pointerup="onKeyPointerUp()"
+            @pointercancel="onKeyPointerUp()"
           >{{ key.label }}</button>
         </div>
       </div>
@@ -86,6 +89,8 @@ const {
   show,
   hide,
   handleKeyClick,
+  onKeyPointerDown,
+  onKeyPointerUp,
   handleCandidateClick,
   nextPage,
   prevPage,

@@ -58,6 +58,8 @@ export type UseVirtualKeyboardReturn = {
   cancelHide: () => void
   focusActiveTarget: () => void
   handleKeyClick: (key: KeyboardKey) => void
+  onKeyPointerDown: (key: KeyboardKey) => void
+  onKeyPointerUp: () => void
   handleCandidateClick: (index: number) => void
   nextPage: () => void
   prevPage: () => void
@@ -92,6 +94,8 @@ export function useVirtualKeyboard(
   let hideTimer: ReturnType<typeof setTimeout> | null = null
   let syncTimer: ReturnType<typeof setTimeout> | null = null
   let pollTimer: ReturnType<typeof setInterval> | null = null
+  let longPressTimer: ReturnType<typeof setTimeout> | null = null
+  let longPressTriggered = false
 
   // ── Computed ──────────────────────────────────────────────────────────────
   const statusText = computed<string>(() => {
@@ -369,10 +373,44 @@ export function useVirtualKeyboard(
     }
   }
 
+  // ── Long-press clear ──────────────────────────────────────────────────────
+  async function clearInput(): Promise<void> {
+    if (!activeTarget.value) return
+    if (composing.value) {
+      try { await api.imeProcessInput('Escape') } catch { /* best-effort */ }
+      resetComposition()
+    }
+    if (!activeTarget.value) return
+    activeTarget.value.value = ''
+    activeTarget.value.setSelectionRange(0, 0)
+    dispatchInputEvent()
+  }
+
   // ── Public keyboard event handlers ────────────────────────────────────────
   function handleKeyClick(key: KeyboardKey): void {
+    if (key.action === 'backspace' && longPressTriggered) {
+      longPressTriggered = false
+      return
+    }
     if (key.action) void handleAction(key.action)
     else if (key.value) void handleKeyPress(key.value)
+  }
+
+  function onKeyPointerDown(key: KeyboardKey): void {
+    if (key.action !== 'backspace') return
+    longPressTriggered = false
+    longPressTimer = setTimeout(() => {
+      longPressTriggered = true
+      longPressTimer = null
+      void clearInput()
+    }, 600)
+  }
+
+  function onKeyPointerUp(): void {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer)
+      longPressTimer = null
+    }
   }
 
   function handleCandidateClick(index: number): void {
@@ -427,6 +465,8 @@ export function useVirtualKeyboard(
     cancelHide,
     focusActiveTarget,
     handleKeyClick,
+    onKeyPointerDown,
+    onKeyPointerUp,
     handleCandidateClick,
     nextPage,
     prevPage,
