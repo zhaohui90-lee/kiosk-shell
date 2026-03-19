@@ -163,7 +163,7 @@ export function buildKeyboardCss(rootId: string, zIndex: number): string {
   padding: 0;
 }
 .vk-row.is-alpha-row-3 {
-  padding: 0 2px;
+  padding: 0;
 }
 .vk-key {
   position: relative;
@@ -232,6 +232,7 @@ export function buildKeyboardCss(rootId: string, zIndex: number): string {
 .vk-row.is-num-row-3 .vk-key,
 .vk-row.is-num-row-4 .vk-key {
   height: 52px;
+  flex: 1;
 }
 .vk-row.is-num-row-1,
 .vk-row.is-num-row-2,
