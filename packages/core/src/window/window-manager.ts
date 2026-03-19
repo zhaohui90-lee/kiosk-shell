@@ -12,7 +12,7 @@ export class WindowManager {
   private readonly admin: AdminWindowController
 
   constructor(config: WindowConfig = {}) {
-    const strategy = createStrategy()
+    const strategy = createStrategy(config)
 
     logger.info('Initializing WindowManager', {
       strategy: strategy.constructor.name,

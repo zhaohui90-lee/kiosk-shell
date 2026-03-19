@@ -178,6 +178,19 @@ describe('WindowManager', () => {
       manager.focus()
       expect(mockWindow.focus).toHaveBeenCalled()
     })
+
+    it('openDevTools should still work for packaged app when config enables devTools', async () => {
+      const { app } = await import('electron')
+      Object.defineProperty(app, 'isPackaged', { value: true, configurable: true })
+
+      const manager = createWindowManager({ devTools: true })
+      manager.createWindow()
+      manager.openDevTools()
+
+      expect(mockWebContents.openDevTools).toHaveBeenCalled()
+
+      Object.defineProperty(app, 'isPackaged', { value: false, configurable: true })
+    })
   })
 
   describe('admin window delegation', () => {
