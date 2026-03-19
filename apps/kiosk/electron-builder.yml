@@ -29,6 +29,7 @@ asarUnpack:
   - "**/*.node"
   - "dist/preload/**/*"
   - "**/node_modules/@kiosk/plugin-rime/dist/worker/**/*"
+  - "**/node_modules/@kiosk/plugin-rime/dist/config/**/*"
   - "**/node_modules/@kiosk/plugin-rime/src/wasm/**/*"
 
 # Windows 配置
