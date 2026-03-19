@@ -15,24 +15,26 @@
       </div>
 
       <!-- Candidate strip -->
-      <div v-if="candidates.length" class="vk-candidates">
+      <div v-if="candidates.length" class="vk-candidates-bar">
         <button
           v-if="currentPage > 0"
           type="button"
           class="vk-page-btn"
           @click="prevPage"
         >‹</button>
-        <button
-          v-for="(candidate, index) in candidates"
-          :key="index"
-          type="button"
-          :class="['vk-candidate', index === 0 ? 'is-active' : '']"
-          @click="handleCandidateClick(index)"
-        >
-          <span class="vk-candidate-index">{{ candidateLabel(index) }}</span>
-          <span>{{ candidate.text }}</span>
-          <span v-if="candidate.comment" class="vk-candidate-comment">{{ candidate.comment }}</span>
-        </button>
+        <div class="vk-candidates" :style="candidatesGridStyle">
+          <button
+            v-for="(candidate, index) in candidates"
+            :key="index"
+            type="button"
+            :class="['vk-candidate', index === 0 ? 'is-active' : '']"
+            @click="handleCandidateClick(index)"
+          >
+            <span class="vk-candidate-index">{{ candidateLabel(index) }}</span>
+            <span>{{ candidate.text }}</span>
+            <span v-if="candidate.comment" class="vk-candidate-comment">{{ candidate.comment }}</span>
+          </button>
+        </div>
         <button
           v-if="!isLastPage"
           type="button"
@@ -58,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useVirtualKeyboard, candidateLabel } from './composables/useVirtualKeyboard'
 import { buildKeyboardCss } from './keyboard-theme'
 import type { KeyboardKey } from '../core/keyboard-model'
@@ -89,6 +91,20 @@ const {
   prevPage,
   onKeyboardPointerDown,
 } = useVirtualKeyboard(rootEl, props.options)
+
+const candidatesPerRow = computed(() => {
+  const total = candidates.value.length
+  if (total === 0) return 1
+  const maxChars = candidates.value.reduce((max, c) => Math.max(max, c.text.length), 0)
+  if (maxChars <= 2) return Math.min(total, 9)
+  if (maxChars <= 4) return Math.min(total, 5)
+  if (maxChars <= 6) return Math.min(total, 3)
+  return Math.min(total, 2)
+})
+
+const candidatesGridStyle = computed(() => ({
+  gridTemplateColumns: `repeat(${candidatesPerRow.value}, 1fr)`,
+}))
 
 function rowClasses(rowIndex: number): string[] {
   const rowClass = mode.value === 'num' ? `is-num-row-${rowIndex + 1}` : `is-alpha-row-${rowIndex + 1}`

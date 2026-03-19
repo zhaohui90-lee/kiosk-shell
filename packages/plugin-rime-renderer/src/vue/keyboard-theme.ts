@@ -76,16 +76,19 @@ export function buildKeyboardCss(rootId: string, zIndex: number): string {
   padding: 0 4px;
   white-space: nowrap;
 }
-.vk-candidates {
+.vk-candidates-bar {
   display: flex;
   flex-direction: row;
   align-items: stretch;
   gap: 6px;
   padding: 0 8px 8px;
 }
-.vk-candidate {
+.vk-candidates {
   flex: 1;
-  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+.vk-candidate {
   height: 48px;
   display: flex;
   align-items: center;
@@ -100,6 +103,8 @@ export function buildKeyboardCss(rootId: string, zIndex: number): string {
   color: #111827;
   cursor: pointer;
   overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .vk-candidate:active {
   transform: translateY(1px);
@@ -263,9 +268,12 @@ export function buildKeyboardCss(rootId: string, zIndex: number): string {
   .vk-status {
     font-size: 10px;
   }
-  .vk-candidates {
+  .vk-candidates-bar {
     padding-left: 4px;
     padding-right: 4px;
+    gap: 4px;
+  }
+  .vk-candidates {
     gap: 4px;
   }
   .vk-page-btn {
