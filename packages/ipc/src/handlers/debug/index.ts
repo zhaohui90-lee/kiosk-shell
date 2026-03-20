@@ -6,9 +6,9 @@
 import { ipcMain, BrowserWindow } from 'electron';
 import { getLogger } from '@kiosk/logger';
 import { isSecurePasswordOverride, verifyPassword as verifySharedPassword } from '@kiosk/shared';
-import { IPC_CHANNELS, type DebugResult } from '../types';
-import { DEFAULT_DEBUG_PASSWORD, ERROR_MESSAGES } from '../constants';
-import { checkRateLimit } from '../rate-limiter';
+import { IPC_CHANNELS, type DebugResult } from '../../types';
+import { DEFAULT_DEBUG_PASSWORD, ERROR_MESSAGES } from '../../constants';
+import { checkRateLimit } from '../../rate-limiter';
 
 const logger = getLogger();
 

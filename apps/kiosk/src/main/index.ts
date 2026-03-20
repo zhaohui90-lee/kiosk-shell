@@ -479,8 +479,7 @@ async function main(): Promise<void> {
   })
 
   // Request single instance lock
-  const gotTheLock = app.requestSingleInstanceLock()
-  if (!gotTheLock) {
+  if (!app.requestSingleInstanceLock()) {
     logger.warn('[main] Another instance is already running, quitting...')
     app.quit()
     return

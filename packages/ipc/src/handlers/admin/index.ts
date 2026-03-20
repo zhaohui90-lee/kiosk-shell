@@ -3,9 +3,9 @@
  * Keeps backward-compatible exports while implementation lives in submodules.
  */
 
-export { setAdminPassword, verifyAdminSessionToken, invalidateSession, handleAdminLogin } from './admin/auth'
-export { setMainWindowRef } from './admin/window-context'
-export { registerAdminHandlers, unregisterAdminHandlers } from './admin/registration'
+export { setAdminPassword, verifyAdminSessionToken, invalidateSession, handleAdminLogin } from './auth'
+export { setMainWindowRef } from './window-context'
+export { registerAdminHandlers, unregisterAdminHandlers } from './registration'
 export {
   handleAdminExitApp,
   handleAdminRestartApp,
@@ -17,4 +17,4 @@ export {
   handleAdminTestNetwork,
   parsePingResult,
   isValidHost,
-} from './admin/operations'
+} from './operations'
