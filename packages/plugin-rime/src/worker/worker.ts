@@ -1,12 +1,13 @@
 import { expose, control, loadWasm, fsOperate } from '@libreservice/my-worker'
 import { LazyCache } from '@libreservice/lazy-cache'
-import schemaName from '../config/schema-name.json'
-import schemaFiles from '../config/schema-files.json'
-import schemaTarget from '../config/schema-target.json'
-import dependencyMap from '../config/dependency-map.json'
-import targetFiles from '../config/target-files.json'
-import targetVersion from '../config/target-version.json'
-
+import {
+  schemaName,
+  schemaFiles,
+  schemaTarget,
+  dependencyMap,
+  targetFiles,
+  targetVersion,
+} from '../config/config-index'
 import type { RIME_RESULT } from '@kiosk/shared'
 import { normalizeProcessInput } from './input-sequence'
 import { shouldIgnoreRuntimeWarning } from './runtime-log'
@@ -32,12 +33,7 @@ interface WasmFs {
 
 interface WasmModule {
   FS: WasmFs
-  ccall(
-    name: string,
-    returnType: string,
-    argsType: string[],
-    args: Array<string | number | boolean>,
-  ): unknown
+  ccall(name: string, returnType: string, argsType: string[], args: Array<string | number | boolean>): unknown
 }
 
 interface RuntimeGlobals {
@@ -200,19 +196,22 @@ async function fetchPrebuilt(schemaId: string) {
     return files
   }
   const files = getFiles(schemaId)
-  await Promise.all(files.map(async ({ name, target, md5 }) => {
-    const path = `${RIME_SHARED}/build/${name}`
-    const moduleRef = getModule()
-    try {
-      moduleRef.FS.lookupPath(path)
-    } catch (e) { // not exists
-      const ab = await loadPrebuiltBinary(target, name, md5)
-      moduleRef.FS.writeFile(path, new Uint8Array(ab))
-    }
-  }))
+  await Promise.all(
+    files.map(async ({ name, target, md5 }) => {
+      const path = `${RIME_SHARED}/build/${name}`
+      const moduleRef = getModule()
+      try {
+        moduleRef.FS.lookupPath(path)
+      } catch (e) {
+        // not exists
+        const ab = await loadPrebuiltBinary(target, name, md5)
+        moduleRef.FS.writeFile(path, new Uint8Array(ab))
+      }
+    }),
+  )
 }
 
-async function setIME (schemaId: string) {
+async function setIME(schemaId: string) {
   if (!deployed) {
     await fetchPrebuilt(schemaId)
   }
@@ -220,7 +219,7 @@ async function setIME (schemaId: string) {
   return syncUserDirectory('write')
 }
 
-function syncUserDirectory (direction: 'read' | 'write') {
+function syncUserDirectory(direction: 'read' | 'write') {
   if (!enableUserDirPersistence) {
     return Promise.resolve()
   }
@@ -228,10 +227,10 @@ function syncUserDirectory (direction: 'read' | 'write') {
   return new Promise<void>((resolve, reject) => {
     const moduleRef = getModule()
     moduleRef.FS.syncfs(direction === 'read', (err: unknown) => {
-    if (err) {
-      reject(err)
-      return
-    }
+      if (err) {
+        reject(err)
+        return
+      }
       resolve()
     })
   })
@@ -247,7 +246,7 @@ const loadWasmOptions: {
     printErr: (message: string) => void
   }
 } = {
-  async init () {
+  async init() {
     const moduleRef = getModule()
     moduleRef.FS.mkdir(RIME_USER)
     const idbfs = getRuntimeGlobals().IDBFS
@@ -265,18 +264,18 @@ const loadWasmOptions: {
   },
   Module: {
     // Customize for glog
-    printErr (message: string) {
+    printErr(message: string) {
       if (shouldIgnoreRuntimeWarning(message)) {
         return
       }
       const match = message.match(/[EWID]\S+ \S+ \S+ (.*)/)
       if (match) {
-        const logByLevel = ({
+        const logByLevel = {
           E: console.error,
           W: console.warn,
           I: console.info,
-          D: console.debug
-        })[message[0] as 'E' | 'W' | 'I' | 'D']
+          D: console.debug,
+        }[message[0] as 'E' | 'W' | 'I' | 'D']
         if (logByLevel) {
           logByLevel(match[1])
           return
@@ -286,8 +285,8 @@ const loadWasmOptions: {
         return
       }
       console.error(message)
-    }
-  }
+    },
+  },
 }
 
 if (libreserviceCDN) {
@@ -296,7 +295,7 @@ if (libreserviceCDN) {
 
 const readyPromise = loadWasm(wasmEntryScript, loadWasmOptions)
 
-function rmStar (path: string) {
+function rmStar(path: string) {
   const moduleRef = getModule()
   for (const file of moduleRef.FS.readdir(path)) {
     if (file === '.' || file === '..') {
@@ -313,40 +312,43 @@ function rmStar (path: string) {
   }
 }
 
-async function resetUserDirectory () {
+async function resetUserDirectory() {
   rmStar(RIME_USER)
   await syncUserDirectory('write')
   deployed = false
   getModule().ccall('reset', 'null', [], [])
 }
 
-expose({
-  fsOperate,
-  resetUserDirectory,
-  setIME,
-  setOption(option: string, value: boolean): void {
-    getModule().ccall('set_option', 'null', ['string', 'number'], [option, value ? 1 : 0])
+expose(
+  {
+    fsOperate,
+    resetUserDirectory,
+    setIME,
+    setOption(option: string, value: boolean): void {
+      getModule().ccall('set_option', 'null', ['string', 'number'], [option, value ? 1 : 0])
+    },
+    setPageSize(size: number) {
+      return getModule().ccall('set_page_size', 'null', ['number'], [size])
+    },
+    deploy(): void {
+      getModule().ccall('deploy', 'null', [], [])
+    },
+    async process(input: string): Promise<RIME_RESULT> {
+      const normalizedInput = normalizeProcessInput(input)
+      const result = JSON.parse(
+        String(getModule().ccall('process', 'string', ['string'], [normalizedInput])),
+      ) as RIME_RESULT
+      if ('committed' in result) {
+        await syncUserDirectory('write')
+      }
+      return result
+    },
+    selectCandidateOnCurrentPage(index: number): string {
+      return String(getModule().ccall('select_candidate_on_current_page', 'string', ['number'], [index]))
+    },
+    changePage(backward: boolean): string {
+      return String(getModule().ccall('change_page', 'string', ['boolean'], [backward]))
+    },
   },
-  setPageSize(size: number) {
-    return getModule().ccall('set_page_size', 'null', ['number'], [size])
-  },
-  deploy(): void {
-    getModule().ccall('deploy', 'null', [], [])
-  },
-  async process(input: string): Promise<RIME_RESULT> {
-    const normalizedInput = normalizeProcessInput(input)
-    const result = JSON.parse(
-      String(getModule().ccall('process', 'string', ['string'], [normalizedInput])),
-    ) as RIME_RESULT
-    if ('committed' in result) {
-      await syncUserDirectory('write')
-    }
-    return result
-  },
-  selectCandidateOnCurrentPage(index: number): string {
-    return String(getModule().ccall('select_candidate_on_current_page', 'string', ['number'], [index]))
-  },
-  changePage(backward: boolean): string {
-    return String(getModule().ccall('change_page', 'string', ['boolean'], [backward]))
-  }
-}, readyPromise)
+  readyPromise,
+)

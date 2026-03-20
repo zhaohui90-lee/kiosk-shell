@@ -6,10 +6,10 @@
 import { ipcMain } from 'electron';
 import { getLogger } from '@kiosk/logger';
 import { getPlatformAdapter } from '@kiosk/platform';
-import { verifyAdminSessionToken } from './admin/auth';
-import { IPC_CHANNELS, type SystemShutdownResult, type SystemRestartResult } from '../types';
-import { ERROR_MESSAGES } from '../constants';
-import { checkRateLimit } from '../rate-limiter';
+import { verifyAdminSessionToken } from '../admin/auth';
+import { IPC_CHANNELS, type SystemShutdownResult, type SystemRestartResult } from '../../types';
+import { ERROR_MESSAGES } from '../../constants';
+import { checkRateLimit } from '../../rate-limiter';
 
 const logger = getLogger();
 

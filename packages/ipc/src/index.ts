@@ -45,8 +45,8 @@ export {
   getTimeUntilReset,
 } from './rate-limiter'
 
-// Export handlers
-export {
+// Import handlers (also re-exported below for public API)
+import {
   registerSystemHandlers,
   unregisterSystemHandlers,
   registerDebugHandlers,
@@ -63,6 +63,24 @@ export {
   setImeConfig,
 } from './handlers'
 
+// Re-export handlers for consumers
+export {
+  registerSystemHandlers,
+  unregisterSystemHandlers,
+  registerDebugHandlers,
+  unregisterDebugHandlers,
+  setDebugPassword,
+  registerAdminHandlers,
+  unregisterAdminHandlers,
+  setAdminPassword,
+  setMainWindowRef,
+  invalidateSession,
+  verifyAdminSessionToken,
+  registerImeHandlers,
+  unregisterImeHandlers,
+  setImeConfig,
+}
+
 // Export preload (for use in preload script)
 export { shellAPI, exposeShellAPI } from './preload'
 
@@ -71,14 +89,7 @@ export { shellAPI, exposeShellAPI } from './preload'
  * Call this in the main process during app initialization
  */
 export function registerAllHandlers(): void {
-  const { registerSystemHandlers } = require('./handlers/system')
-  const { registerDeviceHandlers } = require('./handlers/device')
-  const { registerDebugHandlers } = require('./handlers/debug')
-  const { registerAdminHandlers } = require('./handlers/admin')
-  const { registerImeHandlers } = require('./handlers/ime')
-
   registerSystemHandlers()
-  registerDeviceHandlers()
   registerDebugHandlers()
   registerAdminHandlers()
   registerImeHandlers()
@@ -89,14 +100,7 @@ export function registerAllHandlers(): void {
  * Call this during app shutdown
  */
 export function unregisterAllHandlers(): void {
-  const { unregisterSystemHandlers } = require('./handlers/system')
-  const { unregisterDeviceHandlers } = require('./handlers/device')
-  const { unregisterDebugHandlers } = require('./handlers/debug')
-  const { unregisterAdminHandlers } = require('./handlers/admin')
-  const { unregisterImeHandlers } = require('./handlers/ime')
-
   unregisterSystemHandlers()
-  unregisterDeviceHandlers()
   unregisterDebugHandlers()
   unregisterAdminHandlers()
   unregisterImeHandlers()
