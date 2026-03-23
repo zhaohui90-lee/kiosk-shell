@@ -1,6 +1,8 @@
+import { LEVEL_PRIORITY } from './types'
+import { UploadQueue } from './upload-queue'
 import type { LogEntry, LogLevel, RemoteTransportOptions, Transport } from './types'
 
-const DEFAULT_OPTIONS: Required<RemoteTransportOptions> = {
+const DEFAULT_OPTIONS: Required<Omit<RemoteTransportOptions, 'persistencePath'>> = {
   serverUrl: '',
   deviceId: '',
   minLevel: 'warn',
@@ -10,28 +12,39 @@ const DEFAULT_OPTIONS: Required<RemoteTransportOptions> = {
   maxBufferSize: 500,
 }
 
-const LEVEL_PRIORITY: Record<LogLevel, number> = {
-  error: 0,
-  warn: 1,
-  info: 2,
-  debug: 3,
-}
-
-const INITIAL_RETRY_DELAY_MS = 60000
-const MAX_RETRY_DELAY_MS = 600000
+const INITIAL_RETRY_DELAY_MS = 60_000
+const MAX_RETRY_DELAY_MS = 600_000
 
 export class RemoteTransport implements Transport {
-  private options: Required<RemoteTransportOptions>
+  private options: Required<Omit<RemoteTransportOptions, 'persistencePath'>> & RemoteTransportOptions
   private buffer: LogEntry[] = []
   private flushTimer: ReturnType<typeof setInterval> | null = null
   private flushPromise: Promise<void> | null = null
   private retryCount = 0
   private nextFlushAt = 0
+  private queue: UploadQueue | null = null
+  private restorePromise: Promise<void> | null = null
 
   constructor(options: RemoteTransportOptions = {}) {
     this.options = { ...DEFAULT_OPTIONS, ...options }
+
+    if (this.options.persistencePath) {
+      this.queue = new UploadQueue(this.options.persistencePath)
+      this.restorePromise = this.restoreQueue()
+    }
+
     if (this.options.enabled && this.options.flushInterval > 0) {
       this.startFlushTimer()
+    }
+  }
+
+  private async restoreQueue(): Promise<void> {
+    if (!this.queue) return
+    const restored = await this.queue.restore()
+    if (restored.length > 0) {
+      const combined = [...restored, ...this.buffer]
+      this.buffer =
+        this.options.maxBufferSize > 0 ? combined.slice(0, this.options.maxBufferSize) : combined
     }
   }
 
@@ -49,7 +62,7 @@ export class RemoteTransport implements Transport {
   log(entry: LogEntry): void {
     if (!this.options.enabled || !this.options.serverUrl) return
     if (!this.shouldLog(entry.level)) return
-    if (this.buffer.length >= this.options.maxBufferSize) return
+    if (this.options.maxBufferSize > 0 && this.buffer.length >= this.options.maxBufferSize) return
 
     this.buffer.push(entry)
 
@@ -59,6 +72,10 @@ export class RemoteTransport implements Transport {
   }
 
   async flush(): Promise<void> {
+    if (this.restorePromise) {
+      await this.restorePromise
+      this.restorePromise = null
+    }
     if (this.flushPromise) return this.flushPromise
     if (!this.options.enabled || !this.options.serverUrl || this.buffer.length === 0) return
     if (Date.now() < this.nextFlushAt) return
@@ -71,6 +88,10 @@ export class RemoteTransport implements Transport {
 
   private async sendBatch(): Promise<void> {
     const logsToSend = this.buffer.splice(0)
+
+    if (this.queue) {
+      await this.queue.persist(logsToSend)
+    }
 
     try {
       const payload = {
@@ -95,6 +116,7 @@ export class RemoteTransport implements Transport {
         this.requeueFailed(logsToSend)
         console.warn(`[RemoteTransport] Failed to send logs: ${response.status}`)
       } else {
+        if (this.queue) await this.queue.clear()
         this.retryCount = 0
         this.nextFlushAt = 0
       }
@@ -106,9 +128,13 @@ export class RemoteTransport implements Transport {
 
   private requeueFailed(failed: LogEntry[]): void {
     const combined = [...failed, ...this.buffer]
-    this.buffer = combined.slice(0, this.options.maxBufferSize)
+    this.buffer =
+      this.options.maxBufferSize > 0 ? combined.slice(0, this.options.maxBufferSize) : combined
     this.retryCount++
-    const delay = Math.min(INITIAL_RETRY_DELAY_MS * Math.pow(2, this.retryCount - 1), MAX_RETRY_DELAY_MS)
+    const delay = Math.min(
+      INITIAL_RETRY_DELAY_MS * Math.pow(2, this.retryCount - 1),
+      MAX_RETRY_DELAY_MS,
+    )
     this.nextFlushAt = Date.now() + delay
   }
 

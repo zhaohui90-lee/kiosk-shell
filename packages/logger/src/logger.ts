@@ -5,15 +5,8 @@
 
 import { FileTransport, createFileTransport } from './file-transport'
 import { RemoteTransport, createRemoteTransport } from './remote-transport'
+import { LEVEL_PRIORITY } from './types'
 import type { Logger, LoggerOptions, LogEntry, LogLevel, Transport } from './types'
-
-// Log level priority (lower = more severe)
-const LEVEL_PRIORITY: Record<LogLevel, number> = {
-  error: 0,
-  warn: 1,
-  info: 2,
-  debug: 3,
-}
 
 const DEFAULT_OPTIONS: Required<Omit<LoggerOptions, 'file' | 'remote'>> & LoggerOptions = {
   level: 'info',

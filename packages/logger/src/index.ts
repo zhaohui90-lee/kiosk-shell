@@ -12,22 +12,20 @@ export type {
   LoggerOptions,
   Logger,
   Transport,
-} from './types';
+} from './types'
+
+export { LEVEL_PRIORITY } from './types'
+export { UploadQueue } from './upload-queue'
 
 // Export file transport
-export { FileTransport, createFileTransport } from './file-transport';
+export { FileTransport, createFileTransport } from './file-transport'
 
 // Export remote transport
-export { RemoteTransport, createRemoteTransport } from './remote-transport';
+export { RemoteTransport, createRemoteTransport } from './remote-transport'
 
 // Export logger
-export {
-  KioskLogger,
-  createLogger,
-  getLogger,
-  initLogger,
-} from './logger';
+export { KioskLogger, createLogger, getLogger, initLogger } from './logger'
 
 // Default export: the default logger instance getter
-import { getLogger } from './logger';
-export default getLogger;
+import { getLogger } from './logger'
+export default getLogger

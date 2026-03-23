@@ -4,6 +4,13 @@
 
 export type LogLevel = 'error' | 'warn' | 'info' | 'debug'
 
+export const LEVEL_PRIORITY: Record<LogLevel, number> = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  debug: 3,
+}
+
 export interface LogEntry {
   level: LogLevel
   message: string
@@ -21,8 +28,6 @@ export interface FileTransportOptions {
   maxDays?: number
   /** Maximum number of log files to keep (0 = unlimited) */
   maxFiles?: number
-  /** Whether to compress rotated files */
-  compress?: boolean
   /** Log file name format */
   fileName?: string
 }
@@ -42,6 +47,8 @@ export interface RemoteTransportOptions {
   enabled?: boolean
   /** Maximum number of entries to keep in buffer (0 = unlimited) */
   maxBufferSize?: number
+  /** File path to persist upload queue for crash recovery */
+  persistencePath?: string
 }
 
 export interface LoggerOptions {

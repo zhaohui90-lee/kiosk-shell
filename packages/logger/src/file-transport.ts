@@ -7,7 +7,6 @@ const DEFAULT_OPTIONS: Required<FileTransportOptions> = {
   maxSize: '10m',
   maxDays: 7,
   maxFiles: 0,
-  compress: true,
   fileName: 'kiosk-{date}.log',
 }
 
