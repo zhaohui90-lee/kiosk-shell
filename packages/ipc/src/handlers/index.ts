@@ -8,6 +8,12 @@ export { registerSystemHandlers, unregisterSystemHandlers, handleSystemShutdown,
 export { registerDebugHandlers, unregisterDebugHandlers, handleOpenDevTools, setDebugPassword } from './debug'
 
 export {
+  registerDeviceHandlers,
+  unregisterDeviceHandlers,
+  handleGetDeviceInfo,
+} from './device'
+
+export {
   registerAdminHandlers,
   unregisterAdminHandlers,
   handleAdminLogin,

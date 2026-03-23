@@ -16,6 +16,9 @@ describe('Admin Trigger Click Zone', () => {
   })
 
   it('should export CLICK_ZONE_CONFIG with correct defaults', async () => {
+    vi.doMock('@kiosk/plugin-rime-renderer', () => ({
+      installVirtualKeyboardPlugin: vi.fn(),
+    }))
     vi.doMock('electron', () => ({
       contextBridge: undefined,
       ipcRenderer: { invoke: vi.fn(), send: vi.fn() },
@@ -52,6 +55,9 @@ describe('Admin Trigger Click Zone', () => {
       configurable: true,
     })
 
+    vi.doMock('@kiosk/plugin-rime-renderer', () => ({
+      installVirtualKeyboardPlugin: vi.fn(),
+    }))
     vi.doMock('electron', () => ({
       contextBridge: {
         exposeInMainWorld: vi.fn(),
@@ -114,6 +120,9 @@ describe('Admin Trigger Click Zone', () => {
       configurable: true,
     })
 
+    vi.doMock('@kiosk/plugin-rime-renderer', () => ({
+      installVirtualKeyboardPlugin: vi.fn(),
+    }))
     vi.doMock('electron', () => ({
       contextBridge: {
         exposeInMainWorld: vi.fn(),

@@ -51,6 +51,8 @@ import {
   unregisterSystemHandlers,
   registerDebugHandlers,
   unregisterDebugHandlers,
+  registerDeviceHandlers,
+  unregisterDeviceHandlers,
   setDebugPassword,
   registerAdminHandlers,
   unregisterAdminHandlers,
@@ -69,6 +71,8 @@ export {
   unregisterSystemHandlers,
   registerDebugHandlers,
   unregisterDebugHandlers,
+  registerDeviceHandlers,
+  unregisterDeviceHandlers,
   setDebugPassword,
   registerAdminHandlers,
   unregisterAdminHandlers,
@@ -91,6 +95,7 @@ export { shellAPI, exposeShellAPI } from './preload'
 export function registerAllHandlers(): void {
   registerSystemHandlers()
   registerDebugHandlers()
+  registerDeviceHandlers()
   registerAdminHandlers()
   registerImeHandlers()
 }
@@ -102,6 +107,7 @@ export function registerAllHandlers(): void {
 export function unregisterAllHandlers(): void {
   unregisterSystemHandlers()
   unregisterDebugHandlers()
+  unregisterDeviceHandlers()
   unregisterAdminHandlers()
   unregisterImeHandlers()
 }

@@ -146,6 +146,8 @@ export class RemoteTransport implements Transport {
     if (this.flushPromise) {
       await this.flushPromise
     }
+    // Bypass backoff on close — last chance to send remaining logs
+    this.nextFlushAt = 0
     await this.flush()
   }
 

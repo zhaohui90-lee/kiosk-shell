@@ -8,7 +8,10 @@ import { RemoteTransport, createRemoteTransport } from './remote-transport'
 import { LEVEL_PRIORITY } from './types'
 import type { Logger, LoggerOptions, LogEntry, LogLevel, Transport } from './types'
 
-const DEFAULT_OPTIONS: Required<Omit<LoggerOptions, 'file' | 'remote'>> & LoggerOptions = {
+/** LoggerOptions with required base fields (level, source) but optional transport configs */
+type ResolvedLoggerOptions = Required<Omit<LoggerOptions, 'file' | 'remote'>> & LoggerOptions
+
+const DEFAULT_OPTIONS: ResolvedLoggerOptions = {
   level: process.env['NODE_ENV'] === 'production' ? 'info' : 'debug',
   source: 'kiosk-shell',
 }
@@ -22,7 +25,7 @@ interface SharedTransports {
 }
 
 export class KioskLogger implements Logger {
-  private options: Required<Omit<LoggerOptions, 'file' | 'remote'>> & LoggerOptions
+  private options: ResolvedLoggerOptions
   private transports: Transport[] = []
   private fileTransport: FileTransport | null = null
   private remoteTransport: RemoteTransport | null = null
@@ -172,9 +175,11 @@ let defaultLogger: KioskLogger | null = null
 /**
  * Get the default logger instance
  */
-export function getLogger(options: LoggerOptions = DEFAULT_OPTIONS): KioskLogger {
+export function getLogger(options?: LoggerOptions): KioskLogger {
   if (!defaultLogger) {
     defaultLogger = createLogger(options)
+  } else if (options !== undefined) {
+    console.warn('[Logger] getLogger() options ignored — singleton already initialised. Call getLogger() with options only once, at startup.')
   }
   return defaultLogger
 }
