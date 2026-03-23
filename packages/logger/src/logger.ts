@@ -15,7 +15,6 @@ const LEVEL_PRIORITY: Record<LogLevel, number> = {
   debug: 3,
 }
 
-// Default options
 const DEFAULT_OPTIONS: Required<Omit<LoggerOptions, 'file' | 'remote'>> & LoggerOptions = {
   level: 'info',
   source: 'kiosk',
@@ -24,27 +23,34 @@ const DEFAULT_OPTIONS: Required<Omit<LoggerOptions, 'file' | 'remote'>> & Logger
 /**
  * KioskLogger class - unified logging interface
  */
+interface SharedTransports {
+  file: FileTransport | null
+  remote: RemoteTransport | null
+}
+
 export class KioskLogger implements Logger {
   private options: Required<Omit<LoggerOptions, 'file' | 'remote'>> & LoggerOptions
   private transports: Transport[] = []
   private fileTransport: FileTransport | null = null
   private remoteTransport: RemoteTransport | null = null
+  private ownsTransports: boolean
 
-  constructor(options: LoggerOptions = {}) {
+  constructor(options: LoggerOptions = {}, shared?: SharedTransports) {
     this.options = { ...DEFAULT_OPTIONS, ...options }
+    this.ownsTransports = !shared
 
-    // Initialize file transport
-    this.fileTransport = createFileTransport(this.options.file)
-    this.transports.push(this.fileTransport)
+    if (shared) {
+      this.fileTransport = shared.file
+      this.remoteTransport = shared.remote
+    } else {
+      this.fileTransport = createFileTransport(this.options.file)
+      this.remoteTransport = createRemoteTransport(this.options.remote)
+    }
 
-    // Initialize remote transport (disabled by default)
-    this.remoteTransport = createRemoteTransport(this.options.remote)
-    this.transports.push(this.remoteTransport)
+    if (this.fileTransport) this.transports.push(this.fileTransport)
+    if (this.remoteTransport) this.transports.push(this.remoteTransport)
   }
 
-  /**
-   * Check if a log level should be output
-   */
   private shouldLog(level: LogLevel): boolean {
     return LEVEL_PRIORITY[level] <= LEVEL_PRIORITY[this.options.level]
   }
@@ -109,11 +115,10 @@ export class KioskLogger implements Logger {
    */
   child(source: string): Logger {
     const childSource = this.options.source ? `${this.options.source}:${source}` : source
-
-    return new KioskLogger({
-      ...this.options,
-      source: childSource,
-    })
+    return new KioskLogger(
+      { ...this.options, source: childSource },
+      { file: this.fileTransport, remote: this.remoteTransport },
+    )
   }
 
   /**
@@ -125,9 +130,6 @@ export class KioskLogger implements Logger {
     }
   }
 
-  /**
-   * Flush all transports
-   */
   async flush(): Promise<void> {
     await Promise.all(
       this.transports.map(async (transport) => {
@@ -138,10 +140,8 @@ export class KioskLogger implements Logger {
     )
   }
 
-  /**
-   * Close all transports
-   */
   async close(): Promise<void> {
+    if (!this.ownsTransports) return
     await Promise.all(
       this.transports.map(async (transport) => {
         if (transport.close) {
