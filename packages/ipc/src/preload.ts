@@ -172,16 +172,20 @@ async function installImeVirtualKeyboard(): Promise<void> {
     // fall back to defaults
   }
 
-  installVirtualKeyboardPlugin({
-    api: shellAPI,
-    defaultSchema: vkConfig.defaultSchema,
-    candidatePageSize: vkConfig.candidatePageSize,
-    hideDelayMs: vkConfig.hideDelayMs,
-    showEmoji: vkConfig.showEmoji,
-    simplified: vkConfig.simplified,
-  })
-  virtualKeyboardInstalled = true
-  console.log('[Preload] IME virtual keyboard installed')
+  try {
+    installVirtualKeyboardPlugin({
+      api: shellAPI,
+      defaultSchema: vkConfig.defaultSchema,
+      candidatePageSize: vkConfig.candidatePageSize,
+      hideDelayMs: vkConfig.hideDelayMs,
+      showEmoji: vkConfig.showEmoji,
+      simplified: vkConfig.simplified,
+    })
+    virtualKeyboardInstalled = true
+    console.log('[Preload] IME virtual keyboard installed')
+  } catch (error) {
+    console.error('[Preload] Failed to install IME virtual keyboard:', error)
+  }
 }
 
 void installImeVirtualKeyboard()

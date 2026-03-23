@@ -191,6 +191,28 @@ describe('KioskLogger', () => {
       const logger2 = getLogger();
       expect(logger1).toBe(logger2);
     });
+
+    it('should warn when options are passed to an already-initialised singleton', () => {
+      const warnSpy = vi.spyOn(console, 'warn');
+      getLogger({ level: 'debug', source: 'first' });
+
+      getLogger({ level: 'error', source: 'second' });
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('options ignored'),
+      );
+    });
+
+    it('should not warn when called without options after initialisation', () => {
+      // Singleton is already initialised by previous tests
+      const warnSpy = vi.spyOn(console, 'warn');
+
+      getLogger();
+
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('options ignored'),
+      );
+    });
   });
 
   describe('flush and close', () => {

@@ -243,7 +243,7 @@ describe('RemoteTransport', () => {
       expect(transport.getBufferSize()).toBe(1);
     });
 
-    it('should reset backoff after a successful flush', async () => {
+    it('should reset backoff after a successful flush via close', async () => {
       fetchSpy
         .mockResolvedValueOnce(new Response('error', { status: 500 }))
         .mockResolvedValue(new Response('ok', { status: 200 }));
@@ -255,18 +255,43 @@ describe('RemoteTransport', () => {
       });
 
       transport.log(createLogEntry());
-      await transport.flush(); // fails
-
-      // Force past backoff by directly manipulating nextFlushAt
-      // (simulate time passing) — use the transport's close to flush without backoff check
-      // Instead, we test via close() which bypasses backoff check via explicit flush
-      // Actually close() also calls flush() which checks backoff. Let's just verify
-      // that if we wait, the buffer is still there and fetch count is 1.
+      await transport.flush(); // fails, sets backoff
       expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(transport.getBufferSize()).toBe(1);
+
+      // close() bypasses backoff and retries
+      await transport.close();
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(transport.getBufferSize()).toBe(0);
     });
   });
 
   describe('close', () => {
+    it('should bypass backoff and flush remaining logs', async () => {
+      fetchSpy
+        .mockResolvedValueOnce(new Response('error', { status: 500 }))
+        .mockResolvedValue(new Response('ok', { status: 200 }));
+
+      const transport = createRemoteTransport({
+        enabled: true,
+        serverUrl: 'https://example.com/logs',
+        flushInterval: 0,
+      });
+
+      transport.log(createLogEntry());
+      await transport.flush(); // fails, activates backoff
+      expect(transport.getBufferSize()).toBe(1);
+
+      // New entries added after the failed flush
+      transport.log(createLogEntry());
+      expect(transport.getBufferSize()).toBe(2);
+
+      // close() should bypass backoff and send everything
+      await transport.close();
+      expect(transport.getBufferSize()).toBe(0);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    });
+
     it('should wait for in-progress flush before returning', async () => {
       let resolveFlush!: (value: Response) => void;
       fetchSpy.mockReturnValueOnce(
