@@ -8,6 +8,10 @@
   "height": 1920,
   "whitelist": [],
   "deviceNo": "KSK-001",
+  "logger": {
+    "serverUrl": "",
+    "minLevel": "warn"
+  },
   "adminPassword": "12345678",
   "virtualKeyboard": {
     "defaultSchema": "luna_pinyin",
