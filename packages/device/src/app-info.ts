@@ -7,6 +7,17 @@ import { DEFAULT_CONFIG, type AppConfig } from '@kiosk/shared'
 
 const logger = getLogger()
 
+function mergeWithDefaultConfig(config: Partial<AppConfig> = {}): AppConfig {
+  return {
+    ...DEFAULT_CONFIG,
+    ...config,
+    logger: {
+      ...DEFAULT_CONFIG.logger,
+      ...(config.logger ?? {}),
+    },
+  }
+}
+
 /**
  * Configuration file name
  */
@@ -58,7 +69,7 @@ export function loadConfig(): AppConfig {
       const fileConfig = JSON.parse(content) as Partial<AppConfig>
 
       // Merge with defaults (file config takes precedence)
-      const mergedConfig = { ...DEFAULT_CONFIG, ...fileConfig }
+      const mergedConfig = mergeWithDefaultConfig(fileConfig)
 
       logger.info('[config] Configuration loaded from file', { path: configPath })
       logger.debug('[config] Configuration values', {
@@ -76,7 +87,7 @@ export function loadConfig(): AppConfig {
   }
 
   logger.info('[config] Using default configuration')
-  return { ...DEFAULT_CONFIG }
+  return mergeWithDefaultConfig()
 }
 
 /**
@@ -109,7 +120,7 @@ export function updateDevConfigFile(configPath: string): void {
   try {
     const content = readFileSync(configPath, 'utf-8')
     const existingConfig = JSON.parse(content) as Partial<AppConfig>
-    const mergedConfig = { ...DEFAULT_CONFIG, ...existingConfig }
+    const mergedConfig = mergeWithDefaultConfig(existingConfig)
 
     // Compare to avoid unnecessary writes
     const currentContent = JSON.stringify(existingConfig)

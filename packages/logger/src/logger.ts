@@ -9,8 +9,8 @@ import { LEVEL_PRIORITY } from './types'
 import type { Logger, LoggerOptions, LogEntry, LogLevel, Transport } from './types'
 
 const DEFAULT_OPTIONS: Required<Omit<LoggerOptions, 'file' | 'remote'>> & LoggerOptions = {
-  level: 'info',
-  source: 'kiosk',
+  level: process.env['NODE_ENV'] === 'production' ? 'info' : 'debug',
+  source: 'kiosk-shell',
 }
 
 /**
@@ -172,17 +172,9 @@ let defaultLogger: KioskLogger | null = null
 /**
  * Get the default logger instance
  */
-export function getLogger(): KioskLogger {
+export function getLogger(options: LoggerOptions = DEFAULT_OPTIONS): KioskLogger {
   if (!defaultLogger) {
-    defaultLogger = createLogger()
+    defaultLogger = createLogger(options)
   }
-  return defaultLogger
-}
-
-export function initLogger(options: LoggerOptions): KioskLogger {
-  if (defaultLogger) {
-    void defaultLogger.close()
-  }
-  defaultLogger = createLogger(options)
   return defaultLogger
 }

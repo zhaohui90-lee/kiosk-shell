@@ -6,12 +6,13 @@
 import { app } from 'electron'
 import { existsSync, mkdirSync, copyFileSync } from 'fs'
 import { dirname, join } from 'path'
-import { getLogger } from '@kiosk/logger'
+import { getLogger, type LoggerOptions } from '@kiosk/logger'
 import { type AppConfig, DEFAULT_CONFIG } from '@kiosk/shared'
 import {
   CONFIG_FILE_NAME,
   getUserConfigFilePath,
   getBundledConfigFilePath,
+  loadConfig,
   saveConfig,
   updateDevConfigFile,
 } from '@kiosk/device'
@@ -99,7 +100,22 @@ function ensureProdConfig(): void {
  * Get default configuration
  */
 export function getDefaultConfig(): AppConfig {
-  return { ...DEFAULT_CONFIG }
+  return {
+    ...DEFAULT_CONFIG,
+    logger: {
+      ...DEFAULT_CONFIG.logger,
+    },
+  }
+}
+
+export function getRemoteLoggerOptions(
+  config: AppConfig,
+): NonNullable<LoggerOptions['remote']> {
+  return {
+    enabled: true,
+    serverUrl: config.logger.serverUrl,
+    minLevel: config.logger.minLevel,
+  }
 }
 
 /**
@@ -130,4 +146,4 @@ export function generateCSP(whitelist: string[] = []): string {
   return directives.join('; ') + ';'
 }
 
-export { DEFAULT_CONFIG }
+export { DEFAULT_CONFIG, loadConfig, saveConfig }

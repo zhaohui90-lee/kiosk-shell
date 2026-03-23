@@ -24,7 +24,7 @@ export { FileTransport, createFileTransport } from './file-transport'
 export { RemoteTransport, createRemoteTransport } from './remote-transport'
 
 // Export logger
-export { KioskLogger, createLogger, getLogger, initLogger } from './logger'
+export { KioskLogger, createLogger, getLogger } from './logger'
 
 // Default export: the default logger instance getter
 import { getLogger } from './logger'
