@@ -2,13 +2,12 @@
  * Remote transport unit tests
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 import { RemoteTransport, createRemoteTransport } from '../remote-transport';
 import type { LogEntry } from '../types';
 
 describe('RemoteTransport', () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let fetchSpy: ReturnType<typeof vi.spyOn<any, any>>;
+  let fetchSpy: MockInstance;
 
   beforeEach(() => {
     fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(
