@@ -136,6 +136,40 @@ describe('KioskLogger', () => {
       child.warn('Should log');
       expect(logSpy).toHaveBeenCalled();
     });
+
+    it('should share transports with parent', () => {
+      const parent = createLogger({ source: 'app' });
+      const child = parent.child('module') as KioskLogger;
+
+      expect(child.getFileTransport()).toBe(parent.getFileTransport());
+      expect(child.getRemoteTransport()).toBe(parent.getRemoteTransport());
+    });
+
+    it('should prefix source in log entries', () => {
+      const parent = createLogger({ source: 'app', level: 'info' });
+      const child = parent.child('module') as KioskLogger;
+      const fileTransport = child.getFileTransport()!;
+      const logSpy = vi.spyOn(fileTransport, 'log');
+
+      child.info('test');
+
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ source: 'app:module' }),
+      );
+    });
+
+    it('should not close shared transports when child is closed', async () => {
+      const parent = createLogger({ source: 'app' });
+      const child = parent.child('module') as KioskLogger;
+      const fileTransport = parent.getFileTransport()!;
+      const closeSpy = vi.spyOn(fileTransport, 'close');
+
+      await child.close();
+      expect(closeSpy).not.toHaveBeenCalled();
+
+      await parent.close();
+      expect(closeSpy).toHaveBeenCalled();
+    });
   });
 
   describe('getLogger singleton', () => {

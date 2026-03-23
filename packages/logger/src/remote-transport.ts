@@ -17,11 +17,16 @@ const LEVEL_PRIORITY: Record<LogLevel, number> = {
   debug: 3,
 }
 
+const INITIAL_RETRY_DELAY_MS = 60000
+const MAX_RETRY_DELAY_MS = 600000
+
 export class RemoteTransport implements Transport {
   private options: Required<RemoteTransportOptions>
   private buffer: LogEntry[] = []
   private flushTimer: ReturnType<typeof setInterval> | null = null
   private flushPromise: Promise<void> | null = null
+  private retryCount = 0
+  private nextFlushAt = 0
 
   constructor(options: RemoteTransportOptions = {}) {
     this.options = { ...DEFAULT_OPTIONS, ...options }
@@ -56,6 +61,7 @@ export class RemoteTransport implements Transport {
   async flush(): Promise<void> {
     if (this.flushPromise) return this.flushPromise
     if (!this.options.enabled || !this.options.serverUrl || this.buffer.length === 0) return
+    if (Date.now() < this.nextFlushAt) return
 
     this.flushPromise = this.sendBatch().finally(() => {
       this.flushPromise = null
@@ -88,6 +94,9 @@ export class RemoteTransport implements Transport {
       if (!response.ok) {
         this.requeueFailed(logsToSend)
         console.warn(`[RemoteTransport] Failed to send logs: ${response.status}`)
+      } else {
+        this.retryCount = 0
+        this.nextFlushAt = 0
       }
     } catch (error) {
       this.requeueFailed(logsToSend)
@@ -98,6 +107,9 @@ export class RemoteTransport implements Transport {
   private requeueFailed(failed: LogEntry[]): void {
     const combined = [...failed, ...this.buffer]
     this.buffer = combined.slice(0, this.options.maxBufferSize)
+    this.retryCount++
+    const delay = Math.min(INITIAL_RETRY_DELAY_MS * Math.pow(2, this.retryCount - 1), MAX_RETRY_DELAY_MS)
+    this.nextFlushAt = Date.now() + delay
   }
 
   async close(): Promise<void> {
