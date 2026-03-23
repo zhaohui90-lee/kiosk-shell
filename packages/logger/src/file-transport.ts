@@ -1,161 +1,181 @@
-/**
- * File transport with log rotation
- * Uses electron-log for file logging with rotation support
- */
+import path from 'path'
+import { promises as fs } from 'fs'
+import type { FileTransportOptions, LogEntry, Transport } from './types'
 
-import type { FileTransportOptions, LogEntry, Transport } from './types';
-
-// Default options
 const DEFAULT_OPTIONS: Required<FileTransportOptions> = {
   logDir: '',
   maxSize: '10m',
   maxDays: 7,
+  maxFiles: 0,
   compress: true,
   fileName: 'kiosk-{date}.log',
-};
+}
 
-/**
- * Parse size string to bytes
- * @param size - Size string (e.g., '10m', '100k', '1g')
- */
 function parseSizeToBytes(size: string): number {
-  const match = /^(\d+)([kmg]?)$/i.exec(size.toLowerCase());
-  if (!match) {
-    return 10 * 1024 * 1024; // Default 10MB
-  }
-
-  const num = parseInt(match[1] ?? '10', 10);
-  const unit = match[2] ?? 'm';
-
+  const match = /^(\d+)([kmg]?)$/i.exec(size.toLowerCase())
+  if (!match) return 10 * 1024 * 1024
+  const num = parseInt(match[1] ?? '10', 10)
+  const unit = match[2] ?? 'm'
   switch (unit) {
     case 'k':
-      return num * 1024;
+      return num * 1024
     case 'm':
-      return num * 1024 * 1024;
+      return num * 1024 * 1024
     case 'g':
-      return num * 1024 * 1024 * 1024;
+      return num * 1024 * 1024 * 1024
     default:
-      return num;
+      return num
   }
 }
 
-/**
- * Format log entry to string
- */
 function formatLogEntry(entry: LogEntry): string {
-  const timestamp = entry.timestamp.toISOString();
-  const level = entry.level.toUpperCase().padEnd(5);
-  const source = entry.source ? `[${entry.source}] ` : '';
-  const data = entry.data ? ` ${JSON.stringify(entry.data)}` : '';
-
-  return `[${timestamp}] ${level} ${source}${entry.message}${data}`;
+  const timestamp = entry.timestamp.toISOString()
+  const level = entry.level.toUpperCase().padEnd(5)
+  const source = entry.source ? `[${entry.source}] ` : ''
+  const data = entry.data ? ` ${JSON.stringify(entry.data)}` : ''
+  return `[${timestamp}] ${level} ${source}${entry.message}${data}`
 }
 
-/**
- * File transport class for logging to files with rotation
- */
 export class FileTransport implements Transport {
-  private options: Required<FileTransportOptions>;
-  private electronLog: typeof import('electron-log') | null = null;
-  private initialized = false;
+  private options: Required<FileTransportOptions>
+  private electronLog: typeof import('electron-log') | null = null
+  private initialized = false
+  private initPromise: Promise<void> | null = null
+  private pendingQueue: LogEntry[] = []
 
   constructor(options: FileTransportOptions = {}) {
-    this.options = { ...DEFAULT_OPTIONS, ...options };
+    this.options = { ...DEFAULT_OPTIONS, ...options }
   }
 
-  /**
-   * Initialize electron-log (lazy loading for Node.js compatibility)
-   */
   private async initialize(): Promise<void> {
-    if (this.initialized) {
-      return;
-    }
+    if (this.initialized) return
 
     try {
-      // Dynamic import for electron-log
-      const electronLogModule = await import('electron-log');
-      this.electronLog = electronLogModule.default;
+      const electronLogModule = await import('electron-log')
+      this.electronLog = electronLogModule.default
 
-      // Configure file transport
       if (this.electronLog.transports.file) {
-        const fileTransport = this.electronLog.transports.file;
+        const fileTransport = this.electronLog.transports.file
+        fileTransport.maxSize = parseSizeToBytes(this.options.maxSize)
 
-        // Set max file size
-        fileTransport.maxSize = parseSizeToBytes(this.options.maxSize);
-
-        // Set log directory if provided
         if (this.options.logDir) {
           fileTransport.resolvePathFn = () => {
-            const date = new Date().toISOString().split('T')[0];
-            const fileName = this.options.fileName.replace('{date}', date ?? '');
-            return `${this.options.logDir}/${fileName}`;
-          };
+            const date = new Date().toISOString().split('T')[0]
+            const fileName = this.options.fileName.replace('{date}', date ?? '')
+            return `${this.options.logDir}/${fileName}`
+          }
         }
 
-        // Set log format
-        fileTransport.format = '{text}';
+        fileTransport.format = '{text}'
       }
-
-      this.initialized = true;
     } catch {
-      // electron-log not available (running in pure Node.js)
-      console.warn('[FileTransport] electron-log not available, falling back to console');
+      console.warn('[FileTransport] electron-log not available, falling back to console')
+    }
+
+    this.initialized = true
+
+    const pending = this.pendingQueue.splice(0)
+    for (const entry of pending) {
+      this.writeEntry(entry)
+    }
+
+    if (this.options.maxDays > 0 || this.options.maxFiles > 0) {
+      void this.cleanOldFiles()
     }
   }
 
-  /**
-   * Log an entry to file
-   */
-  log(entry: LogEntry): void {
-    const formatted = formatLogEntry(entry);
+  private writeEntry(entry: LogEntry): void {
+    if (!this.electronLog) {
+      console.log(formatLogEntry(entry))
+      return
+    }
+    const formatted = formatLogEntry(entry)
+    switch (entry.level) {
+      case 'error':
+        this.electronLog.error(formatted)
+        break
+      case 'warn':
+        this.electronLog.warn(formatted)
+        break
+      case 'info':
+        this.electronLog.info(formatted)
+        break
+      case 'debug':
+        this.electronLog.debug(formatted)
+        break
+    }
+  }
 
-    // Try to use electron-log if available
-    if (this.electronLog) {
-      switch (entry.level) {
-        case 'error':
-          this.electronLog.error(formatted);
-          break;
-        case 'warn':
-          this.electronLog.warn(formatted);
-          break;
-        case 'info':
-          this.electronLog.info(formatted);
-          break;
-        case 'debug':
-          this.electronLog.debug(formatted);
-          break;
+  private getLogDir(): string {
+    if (this.options.logDir) return this.options.logDir
+    if (this.electronLog?.transports.file) {
+      try {
+        return path.dirname(this.electronLog.transports.file.getFile().toString())
+      } catch {
+        return ''
       }
-    } else {
-      // Fallback: queue for initialization or console output
-      void this.initialize().then(() => {
-        if (this.electronLog) {
-          this.log(entry);
+    }
+    return ''
+  }
+
+  private async cleanOldFiles(): Promise<void> {
+    const logDir = this.getLogDir()
+    if (!logDir) return
+
+    try {
+      const names = await fs.readdir(logDir)
+      const entries = await Promise.all(
+        names
+          .filter((f) => f.endsWith('.log'))
+          .map(async (name) => {
+            const filePath = path.join(logDir, name)
+            const stat = await fs.stat(filePath)
+            return { path: filePath, mtime: stat.mtime }
+          }),
+      )
+      entries.sort((a, b) => b.mtime.getTime() - a.mtime.getTime()) // newest first
+
+      const cutoff = this.options.maxDays > 0 ? new Date(Date.now() - this.options.maxDays * 24 * 60 * 60 * 1000) : null
+
+      let kept = 0
+      for (const { path: filePath, mtime } of entries) {
+        const tooOld = cutoff !== null && mtime < cutoff
+        const tooMany = this.options.maxFiles > 0 && kept >= this.options.maxFiles
+
+        if (tooOld || tooMany) {
+          await fs.unlink(filePath)
         } else {
-          // Final fallback to console
-          console.log(formatted);
+          kept++
         }
-      });
+      }
+    } catch {
+      // cleanup failure is non-fatal
     }
   }
 
-  /**
-   * Flush pending logs (no-op for file transport)
-   */
+  log(entry: LogEntry): void {
+    if (this.initialized) {
+      this.writeEntry(entry)
+    } else {
+      this.pendingQueue.push(entry)
+      if (!this.initPromise) {
+        this.initPromise = this.initialize()
+      }
+    }
+  }
+
   async flush(): Promise<void> {
     // electron-log handles flushing internally
   }
 
-  /**
-   * Close the transport
-   */
   async close(): Promise<void> {
+    if (this.initPromise) {
+      await this.initPromise
+    }
     // electron-log handles cleanup internally
   }
 }
 
-/**
- * Create a file transport instance
- */
 export function createFileTransport(options?: FileTransportOptions): FileTransport {
-  return new FileTransport(options);
+  return new FileTransport(options)
 }
