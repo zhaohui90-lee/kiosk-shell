@@ -104,23 +104,25 @@ this.buffer = [...logsToSend, ...this.buffer];
 
 这是比“纯内存 buffer 会在崩溃时丢失”更直接的生命周期缺陷。
 
-### 2.7 initLogger() 覆盖单例时没有关闭旧实例
+### 2.7 单例 logger 的配置只在首次初始化时生效
 
-**文件**：`logger.ts:184-202`
+**文件**：`logger.ts:169-180`
 
-`initLogger()` 会直接替换 `defaultLogger`：
+当前默认 logger 通过单例缓存：
 
 ```typescript
-defaultLogger = createLogger(options);
+if (!defaultLogger) {
+  defaultLogger = createLogger(options)
+}
 ```
 
-但不会关闭旧实例。若旧实例启用了 remote transport，则可能遗留：
+这意味着：
 
-- 旧的 flush timer
-- 旧的 buffer
-- 旧配置对应的后台上传行为
+- 首次 `getLogger(options)` 之后，后续再传入 options 不会重新初始化
+- 调用方如果误以为可以“晚一点再传配置”，这些配置会被忽略
+- 该约束需要在 API 契约和调用顺序上明确下来
 
-这属于资源泄漏和行为重复风险。
+当前代码已不再暴露 `initLogger()`，因此旧版本“覆盖单例但不关闭旧实例”的问题已移除；现在的重点变成“首次初始化顺序必须清晰”。
 
 ### 2.8 RemoteTransport 的运行时重配置不完整
 
@@ -192,7 +194,7 @@ Required<Omit<LoggerOptions, 'file' | 'remote'>> & LoggerOptions
 | RemoteTransport buffer 无上限 | 高 | 持续网络故障时内存无限增长 |
 | 无退避策略 | 中 | 故障期间固定频率重试，不够稳健 |
 | `close()` 不等待进行中的 flush | 高 | 关闭时存在日志处理状态不确定的问题 |
-| `initLogger()` 不关闭旧实例 | 中 | 可能遗留 timer、buffer 和重复上报行为 |
+| 单例 logger 配置仅在首次初始化生效 | 中 | 后续传入 options 不会生效，需要明确初始化时机 |
 | child logger 创建独立 transport | 中 | 资源浪费，buffer 与 timer 碎片化 |
 | 宕机后未上报日志无法续传 | 高 | 远程上报状态纯内存，重启后丢失上下文 |
 | RemoteTransport 配置热更新不完整 | 中 | 修改 `flushInterval` 后行为可能与配置不一致 |
@@ -207,7 +209,7 @@ Required<Omit<LoggerOptions, 'file' | 'remote'>> & LoggerOptions
 - `FileTransport` 中 `fileName` / `logDir` 的实际生效路径
 - `maxDays` / `compress` 这类声明能力未实现的契约测试
 - `RemoteTransport.close()` 遇到进行中 flush 的场景
-- `initLogger()` 重复初始化后的旧实例清理
+- `getLogger(options)` 的首次初始化行为和后续调用契约
 - `configure()` 修改 `flushInterval` 的运行时行为
 
 这意味着当前测试通过，并不能证明 logger 生命周期可靠。
@@ -223,7 +225,7 @@ Required<Omit<LoggerOptions, 'file' | 'remote'>> & LoggerOptions
 - 实现本地日志清理能力：`maxDays`，并补充 `maxFiles`
 - 修复 `FileTransport` 初始化时序，至少要去重初始化过程
 - 修复 `RemoteTransport.close()`，确保能等待进行中的 flush
-- 修复 `initLogger()`，替换单例前先关闭旧实例
+- 明确 `getLogger(options)` 只在首次初始化时生效的契约
 - 给 remote buffer 加上上限和基础丢弃策略
 
 ### 6.2 P1：明确远程上报的可靠性目标
@@ -254,7 +256,7 @@ Required<Omit<LoggerOptions, 'file' | 'remote'>> & LoggerOptions
 
 - `FileTransport` 初始化去重
 - `RemoteTransport.close()` 生命周期修复
-- `initLogger()` 正确关闭旧实例
+- 统一默认 logger 的初始化入口和调用顺序
 - `maxDays` / `maxFiles` 清理能力
 - remote buffer 上限
 

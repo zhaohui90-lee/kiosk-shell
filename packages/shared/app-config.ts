@@ -14,6 +14,15 @@ export interface VirtualKeyboardConfig {
   simplified?: boolean
 }
 
+export type RemoteLogLevel = 'error' | 'warn' | 'info' | 'debug'
+
+export interface LoggerConfig {
+  /** Remote log upload endpoint */
+  serverUrl: string
+  /** Minimum level to upload remotely */
+  minLevel: RemoteLogLevel
+}
+
 /**
  * Application configuration interface
  */
@@ -40,6 +49,8 @@ export interface AppConfig {
   deviceNo: string
   /** Virtual keyboard configuration */
   virtualKeyboard?: VirtualKeyboardConfig
+  /** Logger configuration */
+  logger: LoggerConfig
 }
 
 /**
@@ -57,4 +68,8 @@ export const DEFAULT_CONFIG: AppConfig = {
   height: 1080,
   whitelist: [],
   deviceNo: 'KSK-001',
+  logger: {
+    serverUrl: '',
+    minLevel: 'warn',
+  },
 }

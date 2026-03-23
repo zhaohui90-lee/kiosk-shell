@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { KioskLogger, createLogger, getLogger, initLogger } from '../logger';
+import { KioskLogger, createLogger, getLogger } from '../logger';
 
 describe('KioskLogger', () => {
   beforeEach(() => {
@@ -170,17 +170,26 @@ describe('KioskLogger', () => {
   });
 
   describe('getLogger singleton', () => {
+    it('should initialize singleton with provided options on first call', () => {
+      const logger = getLogger({ level: 'debug', source: 'custom' });
+      const fileTransport = logger.getFileTransport();
+      const logSpy = vi.spyOn(fileTransport!, 'log');
+
+      logger.debug('Test debug message');
+
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          level: 'debug',
+          message: 'Test debug message',
+          source: 'custom',
+        })
+      );
+    });
+
     it('should return the same instance', () => {
       const logger1 = getLogger();
       const logger2 = getLogger();
       expect(logger1).toBe(logger2);
-    });
-  });
-
-  describe('initLogger', () => {
-    it('should initialize logger with custom options', () => {
-      const logger = initLogger({ level: 'debug', source: 'custom' });
-      expect(logger).toBeInstanceOf(KioskLogger);
     });
   });
 

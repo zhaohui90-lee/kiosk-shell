@@ -9,8 +9,8 @@
 import { app, BrowserWindow, protocol, session, globalShortcut, ipcMain } from 'electron'
 import { join } from 'path'
 
-// Logger (initialize first)
-import { initLogger, getLogger } from '@kiosk/logger'
+// Logger
+import { getLogger } from '@kiosk/logger'
 
 // Core modules
 import { getWindowManager, getProtocolHandler, getLifecycleManager, KIOSK_PROTOCOL, WindowManager } from '@kiosk/core'
@@ -35,13 +35,13 @@ import {
 } from '@kiosk/recovery'
 
 // Device
-import { initUuidManager, getDeviceUuidAsync, loadConfig } from '@kiosk/device'
+import { initUuidManager, getDeviceUuidAsync } from '@kiosk/device'
 
 // Platform
 import { getPlatformAdapter } from '@kiosk/platform'
 
 // Configuration
-import { ensureConfigFile, generateCSP } from './config'
+import { ensureConfigFile, generateCSP, getRemoteLoggerOptions, loadConfig } from './config'
 
 import type { AppConfig } from '@kiosk/shared'
 
@@ -59,7 +59,8 @@ let cleanupStarted = false
 /**
  * Get logger instance
  */
-const logger = getLogger().child('apps:main')
+const rootLogger = getLogger()
+const logger = rootLogger.child('apps:main')
 
 /**
  * Initialize the application
@@ -456,12 +457,6 @@ function onSecondInstance(): void {
  * Application entry point
  */
 async function main(): Promise<void> {
-  // Initialize logger
-  initLogger({
-    level: process.env['NODE_ENV'] === 'production' ? 'info' : 'debug',
-    source: 'kiosk-shell',
-  })
-
   logger.info('[main] Kiosk Shell starting...')
   logger.info(`[main] Version: ${app.getVersion()}`)
   logger.info(`[main] Electron: ${process.versions['electron']}`)
@@ -473,6 +468,13 @@ async function main(): Promise<void> {
 
   // Load configuration from file
   config = loadConfig()
+  const remoteLoggerOptions = getRemoteLoggerOptions(config)
+  rootLogger.configureRemote(remoteLoggerOptions)
+  logger.info('[main] Remote logger configured', {
+    serverUrl: remoteLoggerOptions.serverUrl,
+    minLevel: remoteLoggerOptions.minLevel,
+  })
+
   logger.info('[main] Configuration loaded', {
     kioskMode: config.kioskMode,
     devMode: config.devMode,

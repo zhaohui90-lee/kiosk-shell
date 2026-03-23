@@ -29,13 +29,20 @@ vi.mock('electron', () => ({
 }));
 
 // Mock logger
-vi.mock('@kiosk/logger', () => ({
-  getLogger: () => ({
+function createMockLogger() {
+  const logger = {
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
     debug: vi.fn(),
-  }),
+    child: vi.fn(() => logger),
+  };
+
+  return logger;
+}
+
+vi.mock('@kiosk/logger', () => ({
+  getLogger: () => createMockLogger(),
 }));
 
 // Set process.resourcesPath for production tests (only exists in Electron)
@@ -48,6 +55,7 @@ import {
   ensureConfigFile,
   generateCSP,
   getDefaultConfig,
+  getRemoteLoggerOptions,
 } from '../main/config';
 import { app } from 'electron';
 
@@ -82,6 +90,8 @@ describe('Config Module', () => {
       expect(config.crashMonitoring).toBe(true);
       expect(config.blankDetection).toBe(true);
       expect(config.contentUrl).toBe('kiosk://renderer/index.html');
+      expect(config.logger.serverUrl).toBe('');
+      expect(config.logger.minLevel).toBe('warn');
     });
 
     it('should load and merge config from file in development', () => {
@@ -102,6 +112,24 @@ describe('Config Module', () => {
       // Defaults should be preserved for unset values
       expect(config.crashMonitoring).toBe(true);
       expect(config.contentUrl).toBe('kiosk://renderer/index.html');
+      expect(config.logger.serverUrl).toBe('');
+      expect(config.logger.minLevel).toBe('warn');
+    });
+
+    it('should merge logger defaults when only serverUrl is configured', () => {
+      mockedExistsSync.mockReturnValue(true);
+      mockedReadFileSync.mockReturnValue(
+        JSON.stringify({
+          logger: {
+            serverUrl: 'https://logs.example.com/ingest',
+          },
+        })
+      );
+
+      const config = loadConfig();
+
+      expect(config.logger.serverUrl).toBe('https://logs.example.com/ingest');
+      expect(config.logger.minLevel).toBe('warn');
     });
 
     it('should read config from project root in development', () => {
@@ -198,6 +226,11 @@ describe('Config Module', () => {
         width: 1920,
         height: 1080,
         whitelist: [],
+        deviceNo: 'KSK-001',
+        logger: {
+          serverUrl: '',
+          minLevel: 'warn',
+        },
       };
       mockedReadFileSync.mockReturnValue(JSON.stringify(fullConfig));
 
@@ -343,6 +376,24 @@ describe('Config Module', () => {
         expect.stringContaining('"devMode": true'),
         'utf-8'
       );
+    });
+  });
+
+  describe('getRemoteLoggerOptions', () => {
+    it('should map app config logger fields to remote logger options', () => {
+      const config = getDefaultConfig();
+      config.logger = {
+        serverUrl: 'https://logs.example.com/ingest',
+        minLevel: 'error',
+      };
+
+      const remoteOptions = getRemoteLoggerOptions(config);
+
+      expect(remoteOptions).toEqual({
+        enabled: true,
+        serverUrl: 'https://logs.example.com/ingest',
+        minLevel: 'error',
+      });
     });
   });
 

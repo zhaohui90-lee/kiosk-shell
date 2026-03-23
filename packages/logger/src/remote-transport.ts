@@ -8,12 +8,12 @@ const DEFAULT_OPTIONS: Required<Omit<RemoteTransportOptions, 'persistencePath'>>
   minLevel: 'warn',
   batchSize: 50,
   flushInterval: 30000,
-  enabled: false,
+  enabled: true,
   maxBufferSize: 500,
 }
 
-const INITIAL_RETRY_DELAY_MS = 60_000
-const MAX_RETRY_DELAY_MS = 600_000
+const INITIAL_RETRY_DELAY_MS = 60000
+const MAX_RETRY_DELAY_MS = 600000
 
 export class RemoteTransport implements Transport {
   private options: Required<Omit<RemoteTransportOptions, 'persistencePath'>> & RemoteTransportOptions

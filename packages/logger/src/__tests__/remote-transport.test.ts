@@ -58,6 +58,16 @@ describe('RemoteTransport', () => {
       expect(transport.getBufferSize()).toBe(1);
     });
 
+    it('should buffer logs by default when server URL is configured', () => {
+      const transport = createRemoteTransport({
+        serverUrl: 'https://example.com/logs',
+        flushInterval: 0,
+      });
+
+      transport.log(createLogEntry());
+      expect(transport.getBufferSize()).toBe(1);
+    });
+
     it('should respect minLevel setting', () => {
       const transport = createRemoteTransport({
         enabled: true,
