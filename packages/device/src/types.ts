@@ -100,6 +100,16 @@ export interface MemoryInfo {
 }
 
 /**
+ * Disk information
+ */
+export interface DiskInfo {
+  total: string
+  free: string
+  used: string
+  usagePercent: number
+}
+
+/**
  * Network interface information
  */
 export interface NetworkInterface {

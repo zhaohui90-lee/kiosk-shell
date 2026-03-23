@@ -43,7 +43,7 @@
         >›</button>
       </div>
 
-      <!-- Keyboard rows -->
+      <!-- Keyboard rows (mode switch is in the bottom row from the model) -->
       <div class="vk-keyboard">
         <div v-for="(row, rowIndex) in keyboardRows" :key="rowIndex" :class="rowClasses(rowIndex)">
           <button
