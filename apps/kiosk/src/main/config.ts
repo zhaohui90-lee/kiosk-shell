@@ -119,22 +119,34 @@ export function getRemoteLoggerOptions(
 }
 
 /**
- * Generate Content-Security-Policy string based on whitelist
+ * Generate Content-Security-Policy string based on whitelist and sandbox mode
  * @param whitelist - Array of allowed external domains
+ * @param sandboxMode - When true, only whitelist domains are allowed; when false, all origins are allowed
  * @returns CSP policy string
  */
-export function generateCSP(whitelist: string[] = []): string {
-  // Base sources (always allowed)
-  const baseSources = ["'self'", 'kiosk:']
+export function generateCSP(whitelist: string[] = [], sandboxMode: boolean = true): string {
+  if (!sandboxMode) {
+    // Open mode: allow any origin
+    return [
+      'default-src *',
+      "script-src * 'unsafe-inline' 'unsafe-eval'",
+      "style-src * 'unsafe-inline'",
+      'img-src * data: blob:',
+      'font-src * data:',
+      'connect-src *',
+      'media-src *',
+      'frame-src *',
+    ].join('; ') + ';'
+  }
 
-  // Add whitelist domains
+  // Sandbox mode: restrict to self, kiosk: and whitelist domains
+  const baseSources = ["'self'", 'kiosk:']
   const allSources = [...baseSources, ...whitelist]
   const sourcesStr = allSources.join(' ')
 
-  // Build CSP directives
   const directives = [
     `default-src ${sourcesStr}`,
-    `script-src ${sourcesStr} 'unsafe-inline'`,
+    `script-src ${sourcesStr} 'unsafe-inline' 'unsafe-eval'`,
     `style-src ${sourcesStr} 'unsafe-inline'`,
     `img-src ${sourcesStr} data: blob:`,
     `font-src ${sourcesStr} data:`,

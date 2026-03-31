@@ -231,6 +231,7 @@ describe('Config Module', () => {
           serverUrl: '',
           minLevel: 'warn',
         },
+        sandboxMode: true,
       };
       mockedReadFileSync.mockReturnValue(JSON.stringify(fullConfig));
 
@@ -399,14 +400,14 @@ describe('Config Module', () => {
 
   describe('generateCSP', () => {
     it('should generate CSP with base sources', () => {
-      const csp = generateCSP();
+      const csp = generateCSP([], true);
 
       expect(csp).toContain("'self'");
       expect(csp).toContain('kiosk:');
     });
 
     it('should include whitelist domains', () => {
-      const csp = generateCSP(['https://cdn.example.com', 'https://api.example.com']);
+      const csp = generateCSP(['https://cdn.example.com', 'https://api.example.com'], true);
 
       expect(csp).toContain('https://cdn.example.com');
       expect(csp).toContain('https://api.example.com');
@@ -422,6 +423,34 @@ describe('Config Module', () => {
       expect(csp).toContain('font-src');
       expect(csp).toContain('connect-src');
     });
+
+    it('should generate strict CSP when sandboxMode is true', () => {
+      const csp = generateCSP(['https://cdn.example.com'], true);
+
+      expect(csp).toContain("'self'");
+      expect(csp).toContain('kiosk:');
+      expect(csp).toContain('https://cdn.example.com');
+      // should not have bare wildcard as source token
+      expect(csp).not.toMatch(/default-src \*/);
+    });
+
+    it('should generate open CSP when sandboxMode is false', () => {
+      const csp = generateCSP(['https://cdn.example.com'], false);
+
+      expect(csp).toContain('default-src *');
+      expect(csp).toContain('connect-src *');
+      expect(csp).not.toContain("'self'");
+      expect(csp).not.toContain('kiosk:');
+      // whitelist domain is not explicitly listed (superseded by *)
+      expect(csp).not.toContain('https://cdn.example.com');
+    });
+
+    it('should default to sandboxMode true when second argument is omitted', () => {
+      const cspDefault = generateCSP([]);
+      const cspExplicit = generateCSP([], true);
+
+      expect(cspDefault).toBe(cspExplicit);
+    });
   });
 
   describe('getDefaultConfig', () => {
@@ -436,6 +465,11 @@ describe('Config Module', () => {
     it('should have correct default contentUrl', () => {
       const config = getDefaultConfig();
       expect(config.contentUrl).toBe('kiosk://renderer/index.html');
+    });
+
+    it('should have sandboxMode defaulting to true', () => {
+      const config = getDefaultConfig();
+      expect(config.sandboxMode).toBe(true);
     });
   });
 });

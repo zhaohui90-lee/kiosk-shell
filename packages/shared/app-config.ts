@@ -51,6 +51,8 @@ export interface AppConfig {
   virtualKeyboard?: VirtualKeyboardConfig
   /** Logger configuration */
   logger: LoggerConfig
+  /** Sandbox configuration */
+  sandboxMode: boolean
 }
 
 /**
@@ -72,4 +74,5 @@ export const DEFAULT_CONFIG: AppConfig = {
     serverUrl: '',
     minLevel: 'warn',
   },
+  sandboxMode: true
 }

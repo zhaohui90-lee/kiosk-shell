@@ -378,8 +378,8 @@ async function cleanup(): Promise<void> {
 async function onAppReady(): Promise<void> {
   logger.info('[main] App is ready')
 
-  // Generate CSP based on whitelist configuration
-  const cspPolicy = generateCSP(config.whitelist)
+  // Generate CSP based on whitelist and sandboxMode configuration
+  const cspPolicy = generateCSP(config.whitelist, config.sandboxMode)
   logger.info('[main] CSP policy generated', {
     whitelist: config.whitelist,
     policy: cspPolicy.substring(0, 100) + '...',

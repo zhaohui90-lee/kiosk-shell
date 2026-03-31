@@ -1,5 +1,5 @@
 {
-  "kioskMode": true,
+  "kioskMode": false,
   "devMode": true,
   "crashMonitoring": true,
   "blankDetection": true,
@@ -12,6 +12,7 @@
     "serverUrl": "",
     "minLevel": "warn"
   },
+  "sandboxMode": false,
   "adminPassword": "12345678",
   "virtualKeyboard": {
     "defaultSchema": "luna_pinyin",
