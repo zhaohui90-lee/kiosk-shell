@@ -1,5 +1,5 @@
 {
-  "kioskMode": true,
+  "kioskMode": false,
   "devMode": false,
   "crashMonitoring": true,
   "blankDetection": true,
@@ -9,6 +9,9 @@
   "whitelist": [],
   "deviceNo": "KSK-001",
   "logger": {
+    "logDir": "./logs",
+    "locales": "zh-CN",
+    "timeZone": "Asia/Shanghai",
     "serverUrl": "",
     "minLevel": "warn"
   },

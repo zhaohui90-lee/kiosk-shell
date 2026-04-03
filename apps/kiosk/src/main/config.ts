@@ -108,6 +108,16 @@ export function getDefaultConfig(): AppConfig {
   }
 }
 
+export function getFileLoggerOptions(
+  config: AppConfig
+): NonNullable<LoggerOptions['file']> {
+  return {
+    logDir: config.logger.logDir,
+    locales: config.logger.locales,
+    timeZone: config.logger.timeZone,
+  }
+}
+
 export function getRemoteLoggerOptions(
   config: AppConfig,
 ): NonNullable<LoggerOptions['remote']> {

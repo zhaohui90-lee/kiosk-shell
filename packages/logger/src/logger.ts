@@ -117,6 +117,12 @@ export class KioskLogger implements Logger {
     )
   }
 
+  configureFile(options: LoggerOptions['file']): void {
+    if (this.fileTransport && options) {
+      this.fileTransport.configure(options)
+    }
+  }
+
   /**
    * Configure remote transport
    */

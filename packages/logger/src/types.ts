@@ -22,6 +22,10 @@ export interface LogEntry {
 export interface FileTransportOptions {
   /** Log file directory path */
   logDir?: string
+  /** locales */
+  locales?: string
+  /** Time zone */
+  timeZone?: string
   /** Maximum file size before rotation (e.g., '10m', '100k') */
   maxSize?: string
   /** Maximum number of days to keep log files */

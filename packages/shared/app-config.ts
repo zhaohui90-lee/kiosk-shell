@@ -17,6 +17,12 @@ export interface VirtualKeyboardConfig {
 export type RemoteLogLevel = 'error' | 'warn' | 'info' | 'debug'
 
 export interface LoggerConfig {
+  /** Save log dir */
+  logDir: string
+  /** locales */
+  locales: string
+  /** Time zone */
+  timeZone: string
   /** Remote log upload endpoint */
   serverUrl: string
   /** Minimum level to upload remotely */
@@ -71,6 +77,9 @@ export const DEFAULT_CONFIG: AppConfig = {
   whitelist: [],
   deviceNo: 'KSK-001',
   logger: {
+    logDir: './logs',
+    locales: 'zh-CN',
+    timeZone: 'Asia/Shanghai',
     serverUrl: '',
     minLevel: 'warn',
   },

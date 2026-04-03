@@ -41,7 +41,7 @@ import { initUuidManager, getDeviceUuidAsync } from '@kiosk/device'
 import { getPlatformAdapter } from '@kiosk/platform'
 
 // Configuration
-import { ensureConfigFile, generateCSP, getRemoteLoggerOptions, loadConfig } from './config'
+import { ensureConfigFile, generateCSP, getFileLoggerOptions, getRemoteLoggerOptions, loadConfig } from './config'
 
 import type { AppConfig } from '@kiosk/shared'
 
@@ -470,6 +470,8 @@ async function main(): Promise<void> {
   config = loadConfig()
   const remoteLoggerOptions = getRemoteLoggerOptions(config)
   rootLogger.configureRemote(remoteLoggerOptions)
+  const fileLoggerOptions = getFileLoggerOptions(config)
+  rootLogger.configureFile(fileLoggerOptions)
   logger.info('[main] Remote logger configured', {
     serverUrl: remoteLoggerOptions.serverUrl,
     minLevel: remoteLoggerOptions.minLevel,

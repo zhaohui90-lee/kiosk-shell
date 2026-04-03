@@ -4,35 +4,12 @@ import type { FileTransportOptions, LogEntry, Transport } from './types'
 
 const DEFAULT_OPTIONS: Required<FileTransportOptions> = {
   logDir: '',
+  locales: '',
+  timeZone: '',
   maxSize: '10m',
   maxDays: 7,
   maxFiles: 0,
   fileName: 'kiosk-{date}.log',
-}
-
-function parseSizeToBytes(size: string): number {
-  const match = /^(\d+)([kmg]?)$/i.exec(size.toLowerCase())
-  if (!match) return 10 * 1024 * 1024
-  const num = parseInt(match[1] ?? '10', 10)
-  const unit = match[2] ?? 'm'
-  switch (unit) {
-    case 'k':
-      return num * 1024
-    case 'm':
-      return num * 1024 * 1024
-    case 'g':
-      return num * 1024 * 1024 * 1024
-    default:
-      return num
-  }
-}
-
-function formatLogEntry(entry: LogEntry): string {
-  const timestamp = entry.timestamp.toISOString()
-  const level = entry.level.toUpperCase().padEnd(5)
-  const source = entry.source ? `[${entry.source}] ` : ''
-  const data = entry.data ? ` ${JSON.stringify(entry.data)}` : ''
-  return `[${timestamp}] ${level} ${source}${entry.message}${data}`
 }
 
 export class FileTransport implements Transport {
@@ -55,11 +32,11 @@ export class FileTransport implements Transport {
 
       if (this.electronLog.transports.file) {
         const fileTransport = this.electronLog.transports.file
-        fileTransport.maxSize = parseSizeToBytes(this.options.maxSize)
+        fileTransport.maxSize = this.parseSizeToBytes(this.options.maxSize)
 
         if (this.options.logDir) {
           fileTransport.resolvePathFn = () => {
-            const date = new Date().toISOString().split('T')[0]
+            const date = this.formatFileDate(new Date())
             const fileName = this.options.fileName.replace('{date}', date ?? '')
             return `${this.options.logDir}/${fileName}`
           }
@@ -83,12 +60,74 @@ export class FileTransport implements Transport {
     }
   }
 
+  private formatTimestamp(date: Date): string {
+    const locales = this.options.locales || 'zh-CN'
+    const timeZone = this.options.timeZone || 'Asia/Shanghai'
+
+    try {
+      const formatter = new Intl.DateTimeFormat(locales, {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      })
+
+      const parts = Object.fromEntries(
+        formatter
+          .formatToParts(date)
+          .filter((part) => part.type !== 'literal')
+          .map((part) => [part.type, part.value])
+      )
+
+      return `${parts['year']}-${parts['month']}-${parts['day']}T${parts['hour']}:${parts['minute']}:${parts['second']}`
+    } catch {
+      return date.toISOString()
+    }
+  }
+
+  private formatFileDate(date: Date): string {
+    const locales = this.options.locales || 'zh-CN'
+    const timeZone = this.options.timeZone || 'Asia/Shanghai'
+
+    try {
+      const formatter = new Intl.DateTimeFormat(locales, {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      })
+
+      const parts = Object.fromEntries(
+        formatter
+          .formatToParts(date)
+          .filter((part) => part.type !== 'literal')
+          .map((part) => [part.type, part.value])
+      )
+
+      return `${parts['year']}-${parts['month']}-${parts['day']}`
+    } catch {
+      return date.toISOString().slice(0, 10)
+    }
+  }
+
+  private formatLogEntry(entry: LogEntry): string {
+    const timestamp = this.formatTimestamp(entry.timestamp)
+    const level = entry.level.toUpperCase().padEnd(5)
+    const source = entry.source ? `[${entry.source}] ` : ''
+    const data = entry.data ? ` ${JSON.stringify(entry.data)}` : ''
+    return `[${timestamp}] ${level} ${source}${entry.message}${data}`
+  }
+
   private writeEntry(entry: LogEntry): void {
     if (!this.electronLog) {
-      console.log(formatLogEntry(entry))
+      console.log(this.formatLogEntry(entry))
       return
     }
-    const formatted = formatLogEntry(entry)
+    const formatted = this.formatLogEntry(entry)
     switch (entry.level) {
       case 'error':
         this.electronLog.error(formatted)
@@ -102,6 +141,23 @@ export class FileTransport implements Transport {
       case 'debug':
         this.electronLog.debug(formatted)
         break
+    }
+  }
+
+  private parseSizeToBytes(size: string): number {
+    const match = /^(\d+)([kmg]?)$/i.exec(size.toLowerCase())
+    if (!match) return 10 * 1024 * 1024
+    const num = parseInt(match[1] ?? '10', 10)
+    const unit = match[2] ?? 'm'
+    switch (unit) {
+      case 'k':
+        return num * 1024
+      case 'm':
+        return num * 1024 * 1024
+      case 'g':
+        return num * 1024 * 1024 * 1024
+      default:
+        return num
     }
   }
 
@@ -150,6 +206,10 @@ export class FileTransport implements Transport {
     } catch {
       // cleanup failure is non-fatal
     }
+  }
+
+  configure(options: Partial<FileTransportOptions>): void {
+    this.options = { ...this.options, ...options }
   }
 
   log(entry: LogEntry): void {
