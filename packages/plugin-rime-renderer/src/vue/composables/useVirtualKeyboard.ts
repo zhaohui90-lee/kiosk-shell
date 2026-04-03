@@ -17,6 +17,7 @@ import {
   type KeyboardMode,
 } from '../../core/keyboard-model'
 import type { VirtualKeyboardOptions } from '../../types'
+import { createIframeListenerRegistry } from '../iframe-listener-registry'
 
 function isEditableElement(target: EventTarget | null): target is HTMLInputElement | HTMLTextAreaElement {
   return isSupportedKeyboardTarget(coerceKeyboardTarget(target))
@@ -203,12 +204,25 @@ export function useVirtualKeyboard(
     scheduleHide()
   }
 
-  const handleDocumentPointerDown = (event: PointerEvent): void => {
-    if (eventPathIncludesRoot(event)) return
+  // 核心 pointerdown 逻辑，父文档和 iframe 共用
+  function handlePointerDown(event: PointerEvent): void {
     if (isEditableElement(event.target)) { activateTarget(event.target); return }
     scheduleActiveElementSync()
     scheduleHide()
   }
+
+  // 父文档专用：额外排除键盘根元素自身的点击
+  const handleDocumentPointerDown = (event: PointerEvent): void => {
+    if (eventPathIncludesRoot(event)) return
+    handlePointerDown(event)
+  }
+
+  const iframeListenerRegistry = createIframeListenerRegistry({
+    focusInHandler: handleFocusIn as EventListener,
+    focusOutHandler: handleFocusOut as EventListener,
+    pointerDownHandler: handlePointerDown as EventListener,
+    createObserver: (callback) => new MutationObserver(callback),
+  })
 
   // ── IME ───────────────────────────────────────────────────────────────────
   async function ensureImeReady(): Promise<void> {
@@ -431,6 +445,10 @@ export function useVirtualKeyboard(
     document.addEventListener('focusin', handleFocusIn, true)
     document.addEventListener('focusout', handleFocusOut, true)
     document.addEventListener('pointerdown', handleDocumentPointerDown, true)
+    iframeListenerRegistry.scan(document)
+    if (document.documentElement) {
+      iframeListenerRegistry.startObserving(document.documentElement)
+    }
     void ensureImeReady()
   })
 
@@ -438,6 +456,7 @@ export function useVirtualKeyboard(
     document.removeEventListener('focusin', handleFocusIn, true)
     document.removeEventListener('focusout', handleFocusOut, true)
     document.removeEventListener('pointerdown', handleDocumentPointerDown, true)
+    iframeListenerRegistry.stop()
     cancelHide()
     if (syncTimer) { clearTimeout(syncTimer); syncTimer = null }
   })
