@@ -11,11 +11,14 @@ const mockAdminWindow = {
   on: vi.fn(),
   show: vi.fn(),
   hide: vi.fn(),
+  moveTop: vi.fn(),
   focus: vi.fn(),
   close: vi.fn(),
   destroy: vi.fn(),
   isDestroyed: vi.fn(() => false),
   isVisible: vi.fn(() => false),
+  setAlwaysOnTop: vi.fn(),
+  setVisibleOnAllWorkspaces: vi.fn(),
   loadURL: vi.fn(() => Promise.resolve()),
   loadFile: vi.fn(() => Promise.resolve()),
   removeAllListeners: vi.fn(),
@@ -81,8 +84,15 @@ describe('AdminWindowController', () => {
           show: false,
           alwaysOnTop: true,
           center: true,
+          fullscreenable: false,
+          maximizable: false,
+          minimizable: false,
         })
       )
+      expect(mockAdminWindow.setAlwaysOnTop).toHaveBeenCalledWith(true, 'screen-saver')
+      expect(mockAdminWindow.setVisibleOnAllWorkspaces).toHaveBeenCalledWith(true, {
+        visibleOnFullScreen: true,
+      })
     })
 
     it('should create with custom size', () => {
@@ -104,6 +114,17 @@ describe('AdminWindowController', () => {
             contextIsolation: true,
             nodeIntegration: false,
           }),
+        })
+      )
+    })
+
+    it('should set parent window when provided', () => {
+      const parentWindow = {} as BrowserWindow
+      ctrl.create({ parent: parentWindow })
+
+      expect(BrowserWindow).toHaveBeenCalledWith(
+        expect.objectContaining({
+          parent: parentWindow,
         })
       )
     })
@@ -130,6 +151,7 @@ describe('AdminWindowController', () => {
       ctrl.create({})
       ctrl.show(false)
       expect(mockAdminWindow.show).toHaveBeenCalled()
+      expect(mockAdminWindow.moveTop).toHaveBeenCalled()
       expect(mockAdminWindow.focus).toHaveBeenCalled()
     })
 
@@ -148,7 +170,18 @@ describe('AdminWindowController', () => {
     it('should recreate and show if window is invalid', () => {
       ctrl.show(false)
       expect(mockAdminWindow.show).toHaveBeenCalled()
+      expect(mockAdminWindow.moveTop).toHaveBeenCalled()
       expect(mockAdminWindow.focus).toHaveBeenCalled()
+    })
+
+    it('should invoke onShow hook after showing', () => {
+      const onShow = vi.fn()
+      const hookedController = new AdminWindowController({ onShow })
+
+      hookedController.create({})
+      hookedController.show(false)
+
+      expect(onShow).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -178,6 +211,16 @@ describe('AdminWindowController', () => {
     it('should noop when window is invalid', () => {
       ctrl.hide() // no window created
       expect(mockAdminWindow.hide).not.toHaveBeenCalled()
+    })
+
+    it('should invoke onHide hook after hiding', () => {
+      const onHide = vi.fn()
+      const hookedController = new AdminWindowController({ onHide })
+
+      hookedController.create({})
+      hookedController.hide()
+
+      expect(onHide).toHaveBeenCalledTimes(1)
     })
   })
 

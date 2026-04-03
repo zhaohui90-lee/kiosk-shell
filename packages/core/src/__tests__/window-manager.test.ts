@@ -3,9 +3,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { BrowserWindow } from 'electron'
 
-// Mock BrowserWindow
-const mockWebContents = {
+// ---- Main window mock ----
+
+const mockMainWebContents = {
   setWindowOpenHandler: vi.fn(),
   on: vi.fn(),
   openDevTools: vi.fn(),
@@ -13,19 +15,22 @@ const mockWebContents = {
   isDevToolsOpened: vi.fn(() => false),
   reload: vi.fn(),
   reloadIgnoringCache: vi.fn(),
+  executeJavaScript: vi.fn(() => Promise.resolve()),
 }
 
-const mockWindow = {
+const mockMainWindow = {
   once: vi.fn(),
   on: vi.fn(),
   show: vi.fn(),
   hide: vi.fn(),
+  moveTop: vi.fn(),
   focus: vi.fn(),
   close: vi.fn(),
   destroy: vi.fn(),
   isDestroyed: vi.fn(() => false),
   isVisible: vi.fn(() => false),
   isAlwaysOnTop: vi.fn(() => false),
+  setVisibleOnAllWorkspaces: vi.fn(),
   loadURL: vi.fn(() => Promise.resolve()),
   loadFile: vi.fn(() => Promise.resolve()),
   removeAllListeners: vi.fn(),
@@ -34,12 +39,43 @@ const mockWindow = {
   setKiosk: vi.fn(),
   setAlwaysOnTop: vi.fn(),
   setSkipTaskbar: vi.fn(),
-  webContents: mockWebContents,
+  webContents: mockMainWebContents,
 }
 
+// ---- Admin window mock ----
+
+const mockAdminWebContents = {
+  setWindowOpenHandler: vi.fn(),
+  on: vi.fn(),
+  openDevTools: vi.fn(),
+  closeDevTools: vi.fn(),
+  isDevToolsOpened: vi.fn(() => false),
+}
+
+const mockAdminWindow = {
+  once: vi.fn(),
+  on: vi.fn(),
+  show: vi.fn(),
+  hide: vi.fn(),
+  moveTop: vi.fn(),
+  focus: vi.fn(),
+  close: vi.fn(),
+  destroy: vi.fn(),
+  isDestroyed: vi.fn(() => false),
+  isVisible: vi.fn(() => false),
+  setAlwaysOnTop: vi.fn(),
+  setVisibleOnAllWorkspaces: vi.fn(),
+  loadFile: vi.fn(() => Promise.resolve()),
+  removeAllListeners: vi.fn(),
+  webContents: mockAdminWebContents,
+}
+
+// Admin window is distinguished by fullscreenable: false in its options
 vi.mock('electron', () => ({
   app: { isPackaged: false },
-  BrowserWindow: vi.fn(() => mockWindow),
+  BrowserWindow: vi.fn().mockImplementation((options: Record<string, unknown>) => {
+    return options?.fullscreenable === false ? mockAdminWindow : mockMainWindow
+  }),
   screen: {
     getPrimaryDisplay: vi.fn(() => ({
       workAreaSize: { width: 1920, height: 1080 },
@@ -71,9 +107,11 @@ import { createWindowManager, resetWindowManager, getWindowManager, WindowManage
 describe('WindowManager', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockWindow.isDestroyed.mockReturnValue(false)
-    mockWindow.isVisible.mockReturnValue(false)
-    mockWindow.isAlwaysOnTop.mockReturnValue(false)
+    mockMainWindow.isDestroyed.mockReturnValue(false)
+    mockMainWindow.isVisible.mockReturnValue(false)
+    mockMainWindow.isAlwaysOnTop.mockReturnValue(false)
+    mockAdminWindow.isDestroyed.mockReturnValue(false)
+    mockAdminWindow.isVisible.mockReturnValue(false)
     resetWindowManager()
   })
 
@@ -113,70 +151,70 @@ describe('WindowManager', () => {
       const manager = createWindowManager()
       manager.createWindow()
       await manager.loadURL('https://example.com')
-      expect(mockWindow.loadURL).toHaveBeenCalledWith('https://example.com')
+      expect(mockMainWindow.loadURL).toHaveBeenCalledWith('https://example.com')
     })
 
     it('loadFile should delegate', async () => {
       const manager = createWindowManager()
       manager.createWindow()
       await manager.loadFile('/path/to/file.html')
-      expect(mockWindow.loadFile).toHaveBeenCalledWith('/path/to/file.html')
+      expect(mockMainWindow.loadFile).toHaveBeenCalledWith('/path/to/file.html')
     })
 
     it('enterFullscreen should delegate', () => {
       const manager = createWindowManager()
       manager.createWindow()
       manager.enterFullscreen()
-      expect(mockWindow.setFullScreen).toHaveBeenCalledWith(true)
+      expect(mockMainWindow.setFullScreen).toHaveBeenCalledWith(true)
     })
 
     it('exitFullscreen should delegate', () => {
       const manager = createWindowManager()
       manager.createWindow()
       manager.exitFullscreen()
-      expect(mockWindow.setFullScreen).toHaveBeenCalledWith(false)
+      expect(mockMainWindow.setFullScreen).toHaveBeenCalledWith(false)
     })
 
     it('toggleFullscreen should delegate', () => {
       const manager = createWindowManager()
       manager.createWindow()
       manager.toggleFullscreen()
-      expect(mockWindow.setFullScreen).toHaveBeenCalled()
+      expect(mockMainWindow.setFullScreen).toHaveBeenCalled()
     })
 
     it('enterKioskMode should delegate', () => {
       const manager = createWindowManager()
       manager.createWindow()
       manager.enterKioskMode()
-      expect(mockWindow.setKiosk).toHaveBeenCalledWith(true)
+      expect(mockMainWindow.setKiosk).toHaveBeenCalledWith(true)
     })
 
     it('exitKioskMode should delegate', () => {
       const manager = createWindowManager()
       manager.createWindow()
       manager.exitKioskMode()
-      expect(mockWindow.setKiosk).toHaveBeenCalledWith(false)
+      expect(mockMainWindow.setKiosk).toHaveBeenCalledWith(false)
     })
 
     it('reload should delegate', () => {
       const manager = createWindowManager()
       manager.createWindow()
       manager.reload()
-      expect(mockWebContents.reload).toHaveBeenCalled()
+      expect(mockMainWebContents.reload).toHaveBeenCalled()
     })
 
     it('forceReload should delegate', () => {
       const manager = createWindowManager()
       manager.createWindow()
       manager.forceReload()
-      expect(mockWebContents.reloadIgnoringCache).toHaveBeenCalled()
+      expect(mockMainWebContents.reloadIgnoringCache).toHaveBeenCalled()
     })
 
     it('focus should delegate', () => {
       const manager = createWindowManager()
       manager.createWindow()
       manager.focus()
-      expect(mockWindow.focus).toHaveBeenCalled()
+      expect(mockMainWindow.focus).toHaveBeenCalled()
     })
 
     it('openDevTools should still work for packaged app when config enables devTools', async () => {
@@ -187,7 +225,7 @@ describe('WindowManager', () => {
       manager.createWindow()
       manager.openDevTools()
 
-      expect(mockWebContents.openDevTools).toHaveBeenCalled()
+      expect(mockMainWebContents.openDevTools).toHaveBeenCalled()
 
       Object.defineProperty(app, 'isPackaged', { value: false, configurable: true })
     })
@@ -198,6 +236,20 @@ describe('WindowManager', () => {
       const manager = createWindowManager()
       const win = manager.createAdminWindow({})
       expect(win).toBeDefined()
+    })
+
+    it('createAdminWindow should use main window as parent when available', () => {
+      const manager = createWindowManager()
+      manager.createWindow()
+
+      manager.createAdminWindow({})
+
+      const browserWindowMock = vi.mocked(BrowserWindow)
+      expect(browserWindowMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          parent: mockMainWindow,
+        })
+      )
     })
 
     it('getAdminWindow should return null before create', () => {
@@ -216,30 +268,123 @@ describe('WindowManager', () => {
       const manager = createWindowManager()
       manager.createAdminWindow({})
       manager.showAdminWindow(false)
-      expect(mockWindow.show).toHaveBeenCalled()
+      expect(mockAdminWindow.show).toHaveBeenCalled()
+    })
+
+    it('showAdminWindow should raise admin without hiding main window in kiosk mode', () => {
+      const manager = createWindowManager()
+      manager.createWindow()
+      manager.createAdminWindow({})
+      vi.clearAllMocks()
+      mockMainWindow.isDestroyed.mockReturnValue(false)
+      mockAdminWindow.isDestroyed.mockReturnValue(false)
+
+      manager.showAdminWindow(false)
+
+      // Admin is shown and brought to top
+      expect(mockAdminWindow.show).toHaveBeenCalledTimes(1)
+      expect(mockAdminWindow.moveTop).toHaveBeenCalledTimes(1)
+      // Main window stays visible — never hidden
+      expect(mockMainWindow.hide).not.toHaveBeenCalled()
+      // Admin overlay level is raised above kiosk window
+      expect(mockAdminWindow.setAlwaysOnTop).toHaveBeenCalledWith(true, 'screen-saver')
+      expect(mockAdminWindow.setVisibleOnAllWorkspaces).toHaveBeenCalledWith(true, {
+        visibleOnFullScreen: true,
+      })
+      // Main window interaction is blocked via mask
+      expect(mockMainWebContents.executeJavaScript).toHaveBeenCalledWith(
+        expect.stringContaining('__kiosk_shell_main_window_mask__')
+      )
     })
 
     it('hideAdminWindow should hide', () => {
       const manager = createWindowManager()
       manager.createAdminWindow({})
       manager.hideAdminWindow()
-      expect(mockWindow.hide).toHaveBeenCalled()
+      expect(mockAdminWindow.hide).toHaveBeenCalled()
+    })
+
+    it('hideAdminWindow should focus main window after hiding admin', () => {
+      const manager = createWindowManager()
+      manager.createWindow()
+      manager.createAdminWindow({})
+      manager.showAdminWindow(false)
+      vi.clearAllMocks()
+      mockMainWindow.isDestroyed.mockReturnValue(false)
+      mockAdminWindow.isDestroyed.mockReturnValue(false)
+
+      manager.hideAdminWindow()
+
+      expect(mockAdminWindow.hide).toHaveBeenCalledTimes(1)
+      expect(mockMainWindow.focus).toHaveBeenCalledTimes(1)
+      expect(mockMainWebContents.executeJavaScript).toHaveBeenCalledWith(
+        expect.stringContaining('mask.remove()')
+      )
     })
 
     it('toggleAdminWindow should toggle', () => {
       const manager = createWindowManager()
       manager.createAdminWindow({})
-      mockWindow.isVisible.mockReturnValue(false)
+      mockAdminWindow.isVisible.mockReturnValue(false)
       manager.toggleAdminWindow(false)
-      expect(mockWindow.show).toHaveBeenCalled()
+      expect(mockAdminWindow.show).toHaveBeenCalled()
+    })
+
+    it('toggleAdminWindow should focus main window when hiding admin', () => {
+      const manager = createWindowManager()
+      manager.createWindow()
+      manager.createAdminWindow({})
+      manager.showAdminWindow(false)
+      mockAdminWindow.isVisible.mockReturnValue(true)
+
+      vi.clearAllMocks()
+      mockMainWindow.isDestroyed.mockReturnValue(false)
+      mockAdminWindow.isDestroyed.mockReturnValue(false)
+
+      manager.toggleAdminWindow(false)
+
+      expect(mockAdminWindow.hide).toHaveBeenCalledTimes(1)
+      expect(mockMainWindow.focus).toHaveBeenCalledTimes(1)
+      expect(mockMainWebContents.executeJavaScript).toHaveBeenCalledWith(
+        expect.stringContaining('mask.remove()')
+      )
+    })
+
+    it('closing admin window should focus main window after close intercept', () => {
+      const manager = createWindowManager()
+      manager.createWindow()
+      manager.createAdminWindow({})
+
+      const closeCall = mockAdminWindow.on.mock.calls.find(
+        (call: unknown[]) => call[0] === 'close'
+      )
+      expect(closeCall).toBeDefined()
+      const closeHandler = closeCall![1] as (event: { preventDefault: () => void }) => void
+
+      manager.showAdminWindow(false)
+      vi.clearAllMocks()
+      mockMainWindow.isDestroyed.mockReturnValue(false)
+      mockAdminWindow.isDestroyed.mockReturnValue(false)
+
+      const mockEvent = { preventDefault: vi.fn() }
+      closeHandler(mockEvent)
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled()
+      expect(mockAdminWindow.hide).toHaveBeenCalledTimes(1)
+      expect(mockMainWindow.focus).toHaveBeenCalledTimes(1)
+      expect(mockMainWebContents.executeJavaScript).toHaveBeenCalledWith(
+        expect.stringContaining('mask.remove()')
+      )
     })
 
     it('destroyAdminWindow should only destroy admin window', () => {
       const manager = createWindowManager()
       manager.createWindow()
       manager.createAdminWindow({})
+      manager.showAdminWindow(false)
       vi.clearAllMocks()
-      mockWindow.isDestroyed.mockReturnValue(false)
+      mockMainWindow.isDestroyed.mockReturnValue(false)
+      mockAdminWindow.isDestroyed.mockReturnValue(false)
 
       manager.destroyAdminWindow()
 
@@ -247,6 +392,9 @@ describe('WindowManager', () => {
       expect(manager.isAdminWindowValid()).toBe(false)
       // Main still valid
       expect(manager.isValid()).toBe(true)
+      expect(mockMainWebContents.executeJavaScript).toHaveBeenCalledWith(
+        expect.stringContaining('mask.remove()')
+      )
     })
   })
 
@@ -256,11 +404,13 @@ describe('WindowManager', () => {
       manager.createWindow()
       manager.createAdminWindow({})
       vi.clearAllMocks()
-      mockWindow.isDestroyed.mockReturnValue(false)
+      mockMainWindow.isDestroyed.mockReturnValue(false)
+      mockAdminWindow.isDestroyed.mockReturnValue(false)
 
       manager.destroy()
-      // destroy is called for both main and admin
-      expect(mockWindow.destroy).toHaveBeenCalled()
+
+      expect(mockMainWindow.destroy).toHaveBeenCalled()
+      expect(mockAdminWindow.destroy).toHaveBeenCalled()
     })
   })
 

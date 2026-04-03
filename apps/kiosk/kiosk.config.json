@@ -1,6 +1,6 @@
 {
-  "kioskMode": false,
-  "devMode": true,
+  "kioskMode": true,
+  "devMode": false,
   "crashMonitoring": true,
   "blankDetection": true,
   "contentUrl": "https://www.google.com",

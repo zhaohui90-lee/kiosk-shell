@@ -13,12 +13,14 @@ const mockWebContents = {
   isDevToolsOpened: vi.fn(() => false),
   reload: vi.fn(),
   reloadIgnoringCache: vi.fn(),
+  executeJavaScript: vi.fn(() => Promise.resolve()),
 }
 
 const mockWindow = {
   once: vi.fn(),
   on: vi.fn(),
   show: vi.fn(),
+  hide: vi.fn(),
   focus: vi.fn(),
   close: vi.fn(),
   destroy: vi.fn(),
@@ -229,17 +231,6 @@ describe('MainWindowController', () => {
       expect(ctrl.isKioskMode()).toBe(true)
     })
 
-    it('exitAlwaysOnTop should only work in kiosk mode', () => {
-      const ctrl = createController()
-      ctrl.create()
-      mockWindow.isAlwaysOnTop.mockReturnValue(false)
-      ctrl.exitAlwaysOnTop()
-      expect(mockWindow.setAlwaysOnTop).not.toHaveBeenCalled()
-
-      mockWindow.isAlwaysOnTop.mockReturnValue(true)
-      ctrl.exitAlwaysOnTop()
-      expect(mockWindow.setAlwaysOnTop).toHaveBeenCalledWith(false)
-    })
   })
 
   describe('DevTools', () => {
@@ -331,6 +322,68 @@ describe('MainWindowController', () => {
       const ctrl = createController()
       ctrl.focus()
       expect(mockWindow.focus).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('visibility', () => {
+    it('show should display and focus window', () => {
+      const ctrl = createController()
+      ctrl.create()
+      ctrl.show()
+      expect(mockWindow.show).toHaveBeenCalled()
+      expect(mockWindow.focus).toHaveBeenCalled()
+    })
+
+    it('hide should hide window', () => {
+      const ctrl = createController()
+      ctrl.create()
+      ctrl.hide()
+      expect(mockWindow.hide).toHaveBeenCalled()
+    })
+  })
+
+  describe('interaction mask', () => {
+    it('showInteractionMask should inject blocking overlay script', () => {
+      const ctrl = createController()
+      ctrl.create()
+
+      ctrl.showInteractionMask()
+
+      expect(mockWebContents.executeJavaScript).toHaveBeenCalledWith(
+        expect.stringContaining('__kiosk_shell_main_window_mask__')
+      )
+    })
+
+    it('hideInteractionMask should inject removal script', () => {
+      const ctrl = createController()
+      ctrl.create()
+
+      ctrl.hideInteractionMask()
+
+      expect(mockWebContents.executeJavaScript).toHaveBeenCalledWith(
+        expect.stringContaining("mask.remove()")
+      )
+    })
+
+    it('should reapply interaction mask after page reload when enabled', () => {
+      const ctrl = createController()
+      ctrl.create()
+      ctrl.showInteractionMask()
+
+      const finishLoadCall = mockWebContents.on.mock.calls.find(
+        (call: unknown[]) => call[0] === 'did-finish-load'
+      )
+
+      expect(finishLoadCall).toBeDefined()
+      const finishLoadHandler = finishLoadCall![1] as () => void
+
+      mockWebContents.executeJavaScript.mockClear()
+      mockWindow.isDestroyed.mockReturnValue(false)
+      finishLoadHandler()
+
+      expect(mockWebContents.executeJavaScript).toHaveBeenCalledWith(
+        expect.stringContaining('__kiosk_shell_main_window_mask__')
+      )
     })
   })
 })

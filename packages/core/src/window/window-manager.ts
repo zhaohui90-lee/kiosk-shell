@@ -19,7 +19,10 @@ export class WindowManager {
     })
 
     this.main = new MainWindowController(strategy, config)
-    this.admin = new AdminWindowController()
+    this.admin = new AdminWindowController({
+      onShow: () => this.showMainWindowInteractionMask(),
+      onHide: () => this.restoreMainWindowAfterAdmin(),
+    })
   }
 
   createWindow(): BrowserWindow {
@@ -66,10 +69,6 @@ export class WindowManager {
     this.main.exitKioskMode()
   }
 
-  exitAlwaysOnTop(): void {
-    this.main.exitAlwaysOnTop()
-  }
-
   /** devTools */
 
   openDevTools(): void {
@@ -107,7 +106,12 @@ export class WindowManager {
   // ---- Admin窗口 ----
 
   createAdminWindow(config: AdminWindowConfig): BrowserWindow {
-    return this.admin.create(config)
+    const parentWindow = config.parent ?? this.main.getWindow()
+
+    return this.admin.create({
+      ...config,
+      ...(parentWindow ? { parent: parentWindow } : {}),
+    })
   }
 
   getAdminWindow(): BrowserWindow | null {
@@ -132,14 +136,33 @@ export class WindowManager {
 
   destroyAdminWindow(): void {
     this.admin.destroy()
+    this.restoreMainWindowAfterAdmin()
   }
 
   // ---- 全局销毁 ----
 
   destroy(): void {
     logger.info('Destroying WindowManager')
+    this.main.hideInteractionMask()
     this.main.destroy()
     this.admin.destroy()
+  }
+
+  private showMainWindowInteractionMask(): void {
+    this.main.showInteractionMask()
+  }
+
+  private restoreMainWindowAfterAdmin(): void {
+    this.main.hideInteractionMask()
+    this.focusMainWindowAfterAdmin()
+  }
+
+  private focusMainWindowAfterAdmin(): void {
+    if (!this.main.isValid()) {
+      return
+    }
+
+    this.main.focus()
   }
 }
 

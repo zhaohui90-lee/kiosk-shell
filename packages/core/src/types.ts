@@ -2,7 +2,7 @@
  * @kiosk/core type definitions
  */
 
-import type { BrowserWindowConstructorOptions } from 'electron';
+import type { BrowserWindow, BrowserWindowConstructorOptions } from 'electron';
 
 /**
  * Window configuration options
@@ -48,6 +48,8 @@ export interface AdminWindowConfig {
   height?: number;
   /** HTML file path to load */
   loadFile?: string;
+  /** Parent window used to keep admin above the main window */
+  parent?: BrowserWindow;
 }
 
 /**

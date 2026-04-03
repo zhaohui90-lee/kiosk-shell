@@ -7,13 +7,20 @@ import { WindowOptionsBuilder } from '../builder/window-options-builder'
 
 const logger = getLogger().child('core:window:admin')
 
+interface AdminWindowVisibilityHooks {
+  onShow?: () => void
+  onHide?: () => void
+}
+
 export class AdminWindowController {
   private window: BrowserWindow | null = null
   private savedConfig: AdminWindowConfig = {}
   private readonly eventHandler: WindowEventHandler
+  private readonly visibilityHooks: AdminWindowVisibilityHooks
 
-  constructor() {
+  constructor(visibilityHooks: AdminWindowVisibilityHooks = {}) {
     this.eventHandler = new WindowEventHandler()
+    this.visibilityHooks = visibilityHooks
   }
 
   /**
@@ -41,7 +48,13 @@ export class AdminWindowController {
       .withBackgroundColor('#1a1a2e')
       .withSandbox(true)
       .withDevTools(true)
-      .withExtraOptions({ skipTaskbar: true })
+      .withExtraOptions({
+        skipTaskbar: true,
+        fullscreenable: false,
+        maximizable: false,
+        minimizable: false,
+        ...(config.parent ? { parent: config.parent } : {}),
+      })
 
     if (config.preload) {
       builder.withPreload(config.preload)
@@ -52,6 +65,7 @@ export class AdminWindowController {
     logger.info('Creating admin window', { width, height })
 
     this.window = new BrowserWindow(options)
+    this.configureOverlayWindow()
 
     // 将「隐藏自身」的逻辑以回调形式传入 EventHandler
     // EventHandler 不需要持有 AdminWindowController 的引用
@@ -97,8 +111,11 @@ export class AdminWindowController {
     if (!this.isValid()) return
 
     logger.info('Showing admin window')
+    this.configureOverlayWindow()
     this.window!.show()
+    this.window!.moveTop()
     this.window!.focus()
+    this.visibilityHooks.onShow?.()
 
     // Admin 面板显示时 判断是否开启devTools
     if (isDev) {
@@ -120,6 +137,7 @@ export class AdminWindowController {
     }
     logger.debug('Hiding admin window')
     this.window!.hide()
+    this.visibilityHooks.onHide?.()
   }
 
   /**
@@ -146,5 +164,14 @@ export class AdminWindowController {
 
   isVisible(): boolean {
     return this.isValid() && this.window!.isVisible()
+  }
+
+  private configureOverlayWindow(): void {
+    if (!this.window || this.window.isDestroyed()) return
+
+    this.window.setAlwaysOnTop(true, 'screen-saver')
+    this.window.setVisibleOnAllWorkspaces(true, {
+      visibleOnFullScreen: true,
+    })
   }
 }

@@ -6,12 +6,72 @@ import type { WindowConfig } from '../../types'
 import { WindowOptionsBuilder } from '../builder/window-options-builder'
 
 const logger = getLogger().child('core:window:main')
+const MAIN_WINDOW_MASK_ID = '__kiosk_shell_main_window_mask__'
+const MAIN_WINDOW_MASK_SCRIPT = `(() => {
+  const maskId = '${MAIN_WINDOW_MASK_ID}';
+  const existingMask = document.getElementById(maskId);
+
+  if (existingMask) {
+    return;
+  }
+
+  const mask = document.createElement('div');
+  const stopEvent = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    return false;
+  };
+
+  mask.id = maskId;
+  mask.setAttribute('aria-hidden', 'true');
+
+  const styles = {
+    position: 'fixed',
+    inset: '0',
+    zIndex: '2147483647',
+    background: 'rgba(0, 0, 0, 0.35)',
+    pointerEvents: 'auto',
+    touchAction: 'none',
+    userSelect: 'none',
+    cursor: 'not-allowed',
+  };
+
+  Object.assign(mask.style, styles);
+
+  [
+    'click',
+    'dblclick',
+    'mousedown',
+    'mouseup',
+    'mousemove',
+    'pointerdown',
+    'pointerup',
+    'pointermove',
+    'touchstart',
+    'touchmove',
+    'touchend',
+    'wheel',
+    'contextmenu',
+  ].forEach((eventName) => {
+    mask.addEventListener(eventName, stopEvent, true);
+  });
+
+  (document.body ?? document.documentElement).appendChild(mask);
+})();`
+const REMOVE_MAIN_WINDOW_MASK_SCRIPT = `(() => {
+  const mask = document.getElementById('${MAIN_WINDOW_MASK_ID}');
+  if (mask) {
+    mask.remove();
+  }
+})();`
 
 export class MainWindowController {
   private window: BrowserWindow | null = null
   private readonly strategy: WindowStrategy
   private readonly eventHandler: WindowEventHandler
   private readonly userConfig: WindowConfig
+  private interactionMaskVisible = false
 
   constructor(strategy: WindowStrategy, userConfig: WindowConfig) {
     this.strategy = strategy
@@ -40,7 +100,12 @@ export class MainWindowController {
 
     this.window = new BrowserWindow(options)
     this.eventHandler.setupMainWindow(this.window, this.strategy, () => {
+      this.interactionMaskVisible = false
       this.window = null
+    })
+    this.window.webContents.on('did-finish-load', () => {
+      if (!this.interactionMaskVisible) return
+      this.applyInteractionMask()
     })
 
     return this.window
@@ -61,10 +126,47 @@ export class MainWindowController {
   destroy(): void {
     if (!this.window) return
     logger.info('Destroying window')
+    this.interactionMaskVisible = false
     if (!this.window.isDestroyed()) {
       this.window.destroy()
     }
     this.window = null
+  }
+
+  /**
+   * 隐藏主窗口 一般是启动admin窗口时调用
+   */
+  hide(): void {
+    if (!this.isValid()) return
+    logger.info('Hidding window')
+    this.window!.hide()
+  }
+
+  /**
+   * 显示主窗口 一般是关闭admin窗口时调用
+   */
+  show(): void {
+    if (!this.isValid()) return
+    logger.info('Showing window')
+    this.window!.show()
+    this.window!.focus()
+  }
+
+  showInteractionMask(): void {
+    if (!this.isValid()) return
+
+    logger.info('Showing main window interaction mask')
+    this.interactionMaskVisible = true
+    this.applyInteractionMask()
+  }
+
+  hideInteractionMask(): void {
+    this.interactionMaskVisible = false
+
+    if (!this.isValid()) return
+
+    logger.info('Hiding main window interaction mask')
+    this.removeInteractionMask()
   }
 
   /** 内容加载 */
@@ -118,12 +220,6 @@ export class MainWindowController {
     this.window!.setKiosk(false)
     this.window!.setAlwaysOnTop(false)
     this.window!.setSkipTaskbar(false)
-  }
-
-  exitAlwaysOnTop(): void {
-    if (!this.isKioskMode()) return
-    logger.info('Exiting always on top')
-    this.window!.setAlwaysOnTop(false)
   }
 
   /** devTools */
@@ -250,5 +346,24 @@ export class MainWindowController {
     if (!this.isValid()) {
       throw new Error(`Cannot perform '${operation}': main window is not valid`)
     }
+  }
+
+  private applyInteractionMask(): void {
+    this.executeScript(MAIN_WINDOW_MASK_SCRIPT, 'apply interaction mask')
+  }
+
+  private removeInteractionMask(): void {
+    this.executeScript(REMOVE_MAIN_WINDOW_MASK_SCRIPT, 'remove interaction mask')
+  }
+
+  private executeScript(script: string, description: string): void {
+    if (!this.isValid()) return
+
+    this.window!.webContents.executeJavaScript(script).catch((error: unknown) => {
+      const err = error as Error
+      logger.error(`Failed to ${description}`, {
+        error: err.message,
+      })
+    })
   }
 }
