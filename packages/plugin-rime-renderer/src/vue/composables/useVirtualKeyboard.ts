@@ -18,8 +18,6 @@ import {
 } from '../../core/keyboard-model'
 import type { VirtualKeyboardOptions } from '../../types'
 
-const ACTIVE_ELEMENT_SYNC_INTERVAL_MS = 180
-
 function isEditableElement(target: EventTarget | null): target is HTMLInputElement | HTMLTextAreaElement {
   return isSupportedKeyboardTarget(coerceKeyboardTarget(target))
 }
@@ -93,7 +91,6 @@ export function useVirtualKeyboard(
   let imeInitialized = false
   let hideTimer: ReturnType<typeof setTimeout> | null = null
   let syncTimer: ReturnType<typeof setTimeout> | null = null
-  let pollTimer: ReturnType<typeof setInterval> | null = null
   let longPressTimer: ReturnType<typeof setTimeout> | null = null
   let longPressTriggered = false
 
@@ -122,8 +119,26 @@ export function useVirtualKeyboard(
     }
   }
 
+  /**
+   * 递归穿透 iframe contentDocument 获取真正的焦点元素
+   * 解决 document.activeElement 返回 iframe 而非内部 input 的问题
+   */
+  function getDeepActiveElement(): Element | null {
+    let el: Element | null = document.activeElement
+    while (el?.tagName === 'IFRAME') {
+      try {
+        const iframeDoc = (el as HTMLIFrameElement).contentDocument
+        if (!iframeDoc?.activeElement) break
+        el = iframeDoc.activeElement
+      } catch {
+        break // cross-origin iframe
+      }
+    }
+    return el
+  }
+
   function getActiveEditable(): HTMLInputElement | HTMLTextAreaElement | null {
-    const el = document.activeElement
+    const el = getDeepActiveElement()
     return isEditableElement(el) ? el : null
   }
 
@@ -148,7 +163,7 @@ export function useVirtualKeyboard(
     cancelHide()
     hideTimer = setTimeout(() => {
       if (!isVisible.value) return
-      const activeEl = document.activeElement
+      const activeEl = getDeepActiveElement()
       if (activeEl && rootEl.value?.contains(activeEl)) return
       hide()
     }, hideDelayMs)
@@ -193,25 +208,6 @@ export function useVirtualKeyboard(
     if (isEditableElement(event.target)) { activateTarget(event.target); return }
     scheduleActiveElementSync()
     scheduleHide()
-  }
-
-  function startPolling(): void {
-    pollTimer = setInterval(() => {
-      const el = getActiveEditable()
-      if (el) {
-        if (activeTarget.value !== el || !isVisible.value) activateTarget(el)
-        return
-      }
-      if (isVisible.value) {
-        const activeEl = document.activeElement
-        const keyboardFocused = !!activeEl && !!rootEl.value && rootEl.value.contains(activeEl)
-        if (!keyboardFocused) hide()
-      }
-    }, ACTIVE_ELEMENT_SYNC_INTERVAL_MS)
-  }
-
-  function stopPolling(): void {
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
   }
 
   // ── IME ───────────────────────────────────────────────────────────────────
@@ -435,7 +431,6 @@ export function useVirtualKeyboard(
     document.addEventListener('focusin', handleFocusIn, true)
     document.addEventListener('focusout', handleFocusOut, true)
     document.addEventListener('pointerdown', handleDocumentPointerDown, true)
-    startPolling()
     void ensureImeReady()
   })
 
@@ -443,7 +438,6 @@ export function useVirtualKeyboard(
     document.removeEventListener('focusin', handleFocusIn, true)
     document.removeEventListener('focusout', handleFocusOut, true)
     document.removeEventListener('pointerdown', handleDocumentPointerDown, true)
-    stopPolling()
     cancelHide()
     if (syncTimer) { clearTimeout(syncTimer); syncTimer = null }
   })
